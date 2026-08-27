@@ -2,8 +2,11 @@
   "name": "confession",
   "version": "0.1.0",
   "private": true,
-  "description": "Week-2 data model slice: schema, DB-level constraints and typed query/action functions for the confession app.",
+  "description": "The confession app: schema, domain layer and the Next.js web surfaces.",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate"
@@ -22,10 +25,17 @@
   "homepage": "https://github.com/sam27697/confession#readme",
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",
-    "drizzle-orm": "0.45.2"
+    "drizzle-orm": "0.45.2",
+    "next": "^15.5.24",
+    "pg": "^8.23.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/node": "22.18.10",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "drizzle-kit": "0.31.10",
     "tsx": "4.20.6",
     "typescript": "5.9.3"

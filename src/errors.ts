@@ -79,3 +79,13 @@ export class OfferNotPendingError extends Error {
     this.name = 'OfferNotPendingError'
   }
 }
+
+// Terms clause 5 ("this service is for ages 18 and over") is not optional —
+// createAccountWithTerms refuses to write anything for a caller who did not
+// attest (spec §4.2).
+export class AgeAttestationRequiredError extends Error {
+  constructor() {
+    super('age_attested_18 must be true — terms clause 5')
+    this.name = 'AgeAttestationRequiredError'
+  }
+}

@@ -7,7 +7,7 @@
 // see the comment on that branch below.
 
 import { randomUUID } from 'node:crypto'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, gte, lt, sql } from 'drizzle-orm'
 import type { Db } from './db.js'
 import {
   accounts,
@@ -15,11 +15,13 @@ import {
   confessions,
   linkBlocks,
   links,
+  reports,
   revealAnswers,
   revealOffers,
   sendCounters,
 } from './schema.js'
 import {
+  ConfessionNotFoundError,
   LinkDisabledError,
   LinkNotFoundError,
   NotYourConfessionError,
@@ -28,6 +30,7 @@ import {
   PerLinkRateLimitExceededError,
   RevealOfferNotFoundError,
   SenderAccountDisabledError,
+  ViewerNotLinkOwnerError,
 } from './errors.js'
 import { MAX_PER_ACCOUNT_PER_DAY, MAX_PER_LINK_PER_HOUR } from './limits.js'
 
@@ -114,25 +117,41 @@ export async function sendConfession(
   if (sender.disabledAt !== null) throw new SenderAccountDisabledError()
 
   return db.transaction(async (tx) => {
-    const [{ hourCount }] = await tx.execute<{ hourCount: number }>(sql`
-      select coalesce(count, 0)::int as "hourCount"
-      from ${sendCounters}
-      where ${sendCounters.senderAccountId} = ${senderAccountId}
-        and ${sendCounters.linkId} = ${link.id}
-        and ${sendCounters.windowHour} = date_trunc('hour', now())
-    `).then((r) => (r.rows.length ? r.rows : [{ hourCount: 0 }]))
+    // Widening Db to the driver-agnostic PgDatabase type (spec §4.1) means
+    // tx.execute<T>() can no longer be typed to a concrete row shape — the
+    // base PgQueryResultHKT carries no `rows` field, only a driver's
+    // concrete HKT does. Rewritten against the query builder instead of
+    // raw SQL, which stays typed under either driver.
+    const hourRows = await tx
+      .select({ hourCount: sql<number>`coalesce(${sendCounters.count}, 0)`.mapWith(Number) })
+      .from(sendCounters)
+      .where(
+        and(
+          eq(sendCounters.senderAccountId, senderAccountId),
+          eq(sendCounters.linkId, link.id),
+          eq(sendCounters.windowHour, sql`date_trunc('hour', now())`),
+        ),
+      )
+      .limit(1)
 
+    const hourCount = hourRows[0]?.hourCount ?? 0
     if (hourCount >= MAX_PER_LINK_PER_HOUR) {
       throw new PerLinkRateLimitExceededError(MAX_PER_LINK_PER_HOUR)
     }
 
-    const [{ dayTotal }] = await tx.execute<{ dayTotal: number }>(sql`
-      select coalesce(sum(count), 0)::int as "dayTotal"
-      from ${sendCounters}
-      where ${sendCounters.senderAccountId} = ${senderAccountId}
-        and ${sendCounters.windowHour} >= date_trunc('day', now())
-        and ${sendCounters.windowHour} < date_trunc('day', now()) + interval '1 day'
-    `).then((r) => r.rows)
+    // A SUM aggregate always returns exactly one row, even over zero
+    // matching sendCounters rows (coalesced to 0), so no fallback needed
+    // for the empty case here the way hourCount needed one above.
+    const [{ dayTotal }] = await tx
+      .select({ dayTotal: sql<number>`coalesce(sum(${sendCounters.count}), 0)`.mapWith(Number) })
+      .from(sendCounters)
+      .where(
+        and(
+          eq(sendCounters.senderAccountId, senderAccountId),
+          gte(sendCounters.windowHour, sql`date_trunc('day', now())`),
+          lt(sendCounters.windowHour, sql`date_trunc('day', now()) + interval '1 day'`),
+        ),
+      )
 
     if (dayTotal >= MAX_PER_ACCOUNT_PER_DAY) {
       throw new PerAccountRateLimitExceededError(MAX_PER_ACCOUNT_PER_DAY)
@@ -253,4 +272,75 @@ export async function declineRevealOffer(
     .update(revealOffers)
     .set({ state: 'declined', settledAt: new Date() })
     .where(eq(revealOffers.id, offerId))
+}
+
+// Shared by the three recipient actions below: loads the confession's link
+// owner and throws ViewerNotLinkOwnerError if the caller is not it — no
+// ownership decision in this slice is made from a form field (spec §5.3),
+// it is always re-checked here against the database.
+async function loadConfessionForOwner(db: Db, confessionId: string, viewerAccountId: string) {
+  const [row] = await db
+    .select({
+      linkId: confessions.linkId,
+      senderAccountId: confessions.senderAccountId,
+      ownerAccountId: links.ownerAccountId,
+    })
+    .from(confessions)
+    .innerJoin(links, eq(links.id, confessions.linkId))
+    .where(eq(confessions.id, confessionId))
+    .limit(1)
+
+  if (!row) throw new ConfessionNotFoundError(confessionId)
+  if (row.ownerAccountId !== viewerAccountId) throw new ViewerNotLinkOwnerError()
+  return row
+}
+
+// Verifies the caller owns the confession's link, resolves the sender
+// server-side, and inserts into link_blocks. Returns nothing — the
+// sender's id must not be in the return type, because a return value is a
+// thing a route handler can accidentally render (spec §4.2). Blocking is
+// per (link, account): ON CONFLICT DO NOTHING, blocking twice is not an
+// error.
+export async function blockSenderOfConfession(
+  db: Db,
+  { recipientAccountId, confessionId }: { recipientAccountId: string; confessionId: string },
+): Promise<void> {
+  const row = await loadConfessionForOwner(db, confessionId, recipientAccountId)
+
+  await db
+    .insert(linkBlocks)
+    .values({ linkId: row.linkId, blockedAccountId: row.senderAccountId })
+    .onConflictDoNothing({ target: [linkBlocks.linkId, linkBlocks.blockedAccountId] })
+}
+
+// Caller must own the confession's link. Inserts a `reports` row and sets
+// confessions.status = 'reported'. ON CONFLICT DO NOTHING on the unique
+// (confession_id, reported_by_account_id) — reporting the same confession
+// twice is not an error.
+export async function reportConfession(
+  db: Db,
+  { reporterAccountId, confessionId, reason }: { reporterAccountId: string; confessionId: string; reason: string },
+): Promise<void> {
+  await loadConfessionForOwner(db, confessionId, reporterAccountId)
+
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(reports)
+      .values({ confessionId, reportedByAccountId: reporterAccountId, reason })
+      .onConflictDoNothing({ target: [reports.confessionId, reports.reportedByAccountId] })
+
+    await tx.update(confessions).set({ status: 'reported' }).where(eq(confessions.id, confessionId))
+  })
+}
+
+// Caller must own the link. status = 'hidden_by_recipient'. Setting a
+// status column to the same value it already holds is a no-op, so this is
+// idempotent without needing a conflict clause.
+export async function hideConfession(
+  db: Db,
+  { recipientAccountId, confessionId }: { recipientAccountId: string; confessionId: string },
+): Promise<void> {
+  await loadConfessionForOwner(db, confessionId, recipientAccountId)
+
+  await db.update(confessions).set({ status: 'hidden_by_recipient' }).where(eq(confessions.id, confessionId))
 }

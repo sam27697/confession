@@ -239,3 +239,117 @@ export async function getAdminInbox(
 
   return rows.map((r) => ({ ...r, senderMasked: true as const }))
 }
+
+// The mutual reveal is the product (spec §4.2): without a page where a
+// sender can see that someone has staked something and is waiting, the
+// mechanic is unreachable. There are no notifications in v1 — this query is
+// the only delivery channel for that fact.
+export type SentReveal =
+  | { kind: 'none' }
+  | { kind: 'pending'; offerId: string; questionForSender: string; stakePrompt: string }
+  | { kind: 'resolved'; offerId: string; senderAnswer: string; recipientAnswer: string }
+  | { kind: 'declined' }
+
+export type SentConfession = {
+  confessionId: string
+  body: string
+  createdHour: Date
+  recipientDisplayName: string
+  offer: SentReveal
+}
+
+export async function getSentForSender(
+  db: Db,
+  { senderAccountId }: { senderAccountId: string },
+): Promise<SentConfession[]> {
+  const confessionRows = await db
+    .select({
+      confessionId: confessions.id,
+      body: confessions.body,
+      createdHour: confessions.createdHour,
+      recipientDisplayName: accounts.displayName,
+    })
+    .from(confessions)
+    .innerJoin(links, eq(links.id, confessions.linkId))
+    .innerJoin(accounts, eq(accounts.id, links.ownerAccountId))
+    .where(eq(confessions.senderAccountId, senderAccountId))
+
+  if (confessionRows.length === 0) return []
+
+  const confessionIds = confessionRows.map((c) => c.confessionId)
+
+  const offerRows = await db
+    .select({
+      offerId: revealOffers.id,
+      confessionId: revealOffers.confessionId,
+      state: revealOffers.state,
+      questionForSender: revealOffers.questionForSender,
+      stakePrompt: revealOffers.stakePrompt,
+    })
+    .from(revealOffers)
+    .where(inArray(revealOffers.confessionId, confessionIds))
+
+  const offerByConfessionId = new Map(offerRows.map((o) => [o.confessionId, o]))
+  const resolvedOfferIds = offerRows.filter((o) => o.state === 'resolved').map((o) => o.offerId)
+
+  // Both answer bodies are fetched ONLY for offers that are already
+  // resolved. This is the one property that has to be right: on a pending
+  // offer the recipient's staked answer must never be read here at all —
+  // she stakes sight unseen, and a sender who could read it before
+  // committing his own answer would break the mechanic the deferred-
+  // constraint work in week 2 exists to protect (spec §4.2).
+  const resolvedAnswers =
+    resolvedOfferIds.length === 0
+      ? []
+      : await db
+          .select({ offerId: revealAnswers.offerId, side: revealAnswers.side, body: revealAnswers.body })
+          .from(revealAnswers)
+          .where(inArray(revealAnswers.offerId, resolvedOfferIds))
+
+  const answersByOfferId = new Map<string, { recipient?: string; sender?: string }>()
+  for (const a of resolvedAnswers) {
+    const entry = answersByOfferId.get(a.offerId) ?? {}
+    entry[a.side] = a.body
+    answersByOfferId.set(a.offerId, entry)
+  }
+
+  return confessionRows.map((c) => {
+    const offer = offerByConfessionId.get(c.confessionId)
+    let reveal: SentReveal = { kind: 'none' }
+
+    if (offer?.state === 'pending') {
+      reveal = {
+        kind: 'pending',
+        offerId: offer.offerId,
+        questionForSender: offer.questionForSender,
+        stakePrompt: offer.stakePrompt,
+      }
+    } else if (offer?.state === 'declined') {
+      reveal = { kind: 'declined' }
+    } else if (offer?.state === 'resolved') {
+      const ans = answersByOfferId.get(offer.offerId)
+      if (ans && ans.recipient !== undefined && ans.sender !== undefined) {
+        reveal = {
+          kind: 'resolved',
+          offerId: offer.offerId,
+          senderAnswer: ans.sender,
+          recipientAnswer: ans.recipient,
+        }
+      }
+    }
+    // 'cancelled' is reachable only from 'pending', and only by the
+    // recipient (spec §1 state machine, step 4). From the sender's side
+    // there was never anything to see — the offer never reached him — so
+    // it collapses to 'none', same as a confession with no offer at all.
+    // The frozen SentConfession type (spec §4.2) has no 'cancelled'
+    // variant, which is consistent with that reading.
+
+    return {
+      confessionId: c.confessionId,
+      body: c.body,
+      createdHour: c.createdHour,
+      recipientDisplayName: c.recipientDisplayName,
+      offer: reveal,
+    }
+  })
+}

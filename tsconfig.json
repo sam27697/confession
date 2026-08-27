@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,7 +12,12 @@
     "outDir": "dist",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "allowJs": true,
+    "plugins": [{ "name": "next" }]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "drizzle.config.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "drizzle.config.ts", "app/**/*.ts", "app/**/*.tsx", "next-env.d.ts"],
+  "exclude": ["node_modules", ".next"]
 }

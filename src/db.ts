@@ -1,13 +1,14 @@
 // src/db.ts
 //
 // Shared type for the drizzle handle passed into views.ts / actions.ts.
-// This slice's only driver is PGlite (spec §0: no Postgres server, no
-// Docker in this container). A future deploy slice against a real Postgres
-// box would use drizzle-orm/node-postgres instead; the query builder calls
-// in views.ts/actions.ts are driver-agnostic drizzle-orm, so only this
-// alias and the harness that builds it would need to change.
+// Week 2 aliased this to PgliteDatabase, since the only driver in the room
+// was PGlite (no Postgres server, no Docker, in that container). Week 3
+// runs the real server against Postgres 17 over node-postgres (src/pool.ts)
+// while the test suite keeps running on PGlite (test/harness.ts). Both are
+// drivers of the same driver-agnostic drizzle type, so the alias widens to
+// that instead of picking one driver (spec §4.1).
 
-import type { PgliteDatabase } from 'drizzle-orm/pglite'
+import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import type * as schema from './schema.js'
 
-export type Db = PgliteDatabase<typeof schema>
+export type Db = PgDatabase<PgQueryResultHKT, typeof schema>
