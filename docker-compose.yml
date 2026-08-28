@@ -1,0 +1,94 @@
+# Service definition for the confession app. Deployed to /srv/apps/confession/
+# on asam-prod-01, next to .env (never committed) and the repo/ checkout.
+#
+# deploy.sh is the only thing that invokes this file, and it always sets
+# CONFESSION_IMAGE_TAG on the command line first, so a bare `docker compose up`
+# never silently rebuilds or repulls. The deploy script controls that.
+
+services:
+  confession-db:
+    image: postgres:17-alpine
+    container_name: confession-db
+    restart: unless-stopped
+
+    # No `ports:` at all. The database is reachable only from the app
+    # container on this compose network. A published Postgres port would be
+    # a DNAT rule the host firewall never sees.
+
+    environment:
+      POSTGRES_DB: confession
+      POSTGRES_USER: confession
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- it belongs in .env, never in this file}
+
+    # Privacy, not tuning. `log_error_verbosity=terse` drops the DETAIL line
+    # from error logs, and the DETAIL line is what carries bind parameter
+    # values: without this, one failed INSERT writes a confession body and a
+    # sender account id into the container log. log_statement=none is the
+    # default and is repeated here so that turning it on is a deliberate act
+    # by somebody who has read this comment.
+    command:
+      - postgres
+      - -c
+      - log_statement=none
+      - -c
+      - log_min_messages=warning
+      - -c
+      - log_error_verbosity=terse
+      - -c
+      - log_connections=off
+      - -c
+      - log_disconnections=off
+
+    volumes:
+      - confession-pgdata:/var/lib/postgresql/data
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U confession -d confession"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+
+  confession-web:
+    image: ${CONFESSION_IMAGE_TAG:?CONFESSION_IMAGE_TAG is not set -- run deploy.sh, do not call compose directly}
+    container_name: confession-web
+    restart: unless-stopped
+
+    depends_on:
+      confession-db:
+        condition: service_healthy
+
+    # Host loopback only. The container binds 0.0.0.0:3000 inside its own
+    # network namespace, which is private; the host side is 127.0.0.1 and
+    # the reverse proxy is the only way in. 8182 is staging per
+    # /srv/apps/PORTS.md; production is 8082 and is a different .env.
+    ports:
+      - "127.0.0.1:${HOST_PORT:?HOST_PORT is not set -- 8182 staging, 8082 production}:3000"
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: postgres://confession:${POSTGRES_PASSWORD}@confession-db:5432/confession
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/healthz || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  confession-pgdata:
