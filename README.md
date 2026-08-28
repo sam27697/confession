@@ -1,18 +1,64 @@
-# confession — week 2: the data model
+# confession — مصارحة
 
 ## What this is
 
-The Postgres schema and typed query/action layer for مصارحة (confession),
-implemented exactly as frozen in
-[`docs/SPEC-week2-data-model.md`](docs/SPEC-week2-data-model.md). The whole
-point of this slice: **the anonymity claim is a schema decision, not a
-feature.** The recipient can never see who sent a confession; the admin can,
-and every time the admin looks, that look is logged, in the database, in a
-way the application layer cannot suppress or edit.
+A confidential confession web app: someone sends you a message without you
+seeing who they are, and the mutual-reveal mechanic («صارحني بدورك») lets the
+two sides unmask each other only if both agree. Built to
+`work/confession-app/BRIEF.md`, `STACK.md` and `DESIGN.md`, one frozen spec
+per slice under `docs/`.
 
-This is TypeScript + Drizzle ORM against Postgres 17 dialect, per
-`work/confession-app/STACK.md`. There is no Next.js app, no UI, and no
-Facebook Login in this slice — see "What is NOT built yet" below.
+**The anonymity claim is a schema decision, not a feature.** The recipient can
+never see who sent a confession; the administrator can, and every time the
+administrator looks, that look is written to an append-only table the
+application layer cannot suppress or edit.
+
+TypeScript end to end: Next.js 15 (App Router) + Postgres 17 + Drizzle, one
+container beside one database, behind a reverse proxy that terminates TLS.
+
+## Running it
+
+```bash
+npm ci
+npx tsc --noEmit   # typecheck
+npm test           # applies drizzle/*.sql to a fresh PGlite instance, runs every test
+npm run build      # the production build the image runs
+```
+
+The tests need no external service, no Docker, no network and no environment
+variables: PGlite is a real Postgres compiled to WASM, and the migration files
+it applies are the same files the deploy applies.
+
+## Deploying
+
+Staging is `stg.confession.fayad.app` on port 8182; production is
+`confession.fayad.app` on 8082. Both are the reverse proxy's business, not
+this repo's. The deploy account is not root and has no access to the proxy.
+
+From the build session, with `bin/asam.sh` as the only channel to the box:
+
+```bash
+git archive --format=tar HEAD | gzip > /tmp/confession-repo.tar.gz
+git rev-parse --short HEAD > /tmp/DEPLOY_VERSION
+bin/asam.sh put /tmp/confession-repo.tar.gz /srv/apps/confession/repo.tar.gz
+bin/asam.sh put /tmp/DEPLOY_VERSION        /srv/apps/confession/DEPLOY_VERSION
+bin/asam.sh sh 'set -e; cd /srv/apps/confession; rm -rf repo; mkdir repo;
+  tar xzf repo.tar.gz -C repo; mv DEPLOY_VERSION repo/DEPLOY_VERSION;
+  rm -f repo.tar.gz; chmod +x repo/deploy.sh; ./repo/deploy.sh'
+bin/asam.sh check stg.confession.fayad.app
+```
+
+The tree is transferred as files rather than cloned: the deploy account holds
+no GitHub credential, the repository is private, and there is nothing on that
+box that should be able to read it. `deploy.sh` builds, brings the stack up,
+waits for the health check and exits non-zero if it never goes healthy. That
+proves a process is alive and nothing more — the claim that counts is
+`asam.sh check`, which goes over the real internet through the real
+certificate.
+
+`/srv/apps/confession/.env` holds `SESSION_SECRET`, `POSTGRES_PASSWORD`,
+`APP_ORIGIN`, `HOST_PORT` and `ALLOW_DEV_LOGIN`. It was generated on the
+server, it is chmod 600, and it is never committed and never printed.
 
 ## What this slice covers
 
@@ -39,31 +85,27 @@ Facebook Login in this slice — see "What is NOT built yet" below.
   state machine.
 - `src/limits.ts` — the rate-limit constants (`MAX_PER_LINK_PER_HOUR = 5`,
   `MAX_PER_ACCOUNT_PER_DAY = 30`).
-- `test/*.test.ts` — all 22 tests from spec §4, numbered in their test names
-  (e.g. `4.3.5 ...`) so they can be matched back to the spec. They run
+- `app/` — the web surfaces (spec `docs/SPEC-week3-web.md` §5): `/`,
+  `/terms`, `/privacy`, the Facebook OAuth routes, `/onboarding` where terms
+  acceptance *is* account creation, `/inbox`, `/c/[slug]`, `/sent`,
+  `/offer/[offerId]` and `/healthz`. Server Components and Server Actions
+  only. No client-side data fetching, no state library, no UI framework, no
+  analytics of any kind.
+- `test/*.test.ts` — 58 tests, numbered in their test names (e.g. `4.3.5 ...`)
+  so they can be matched back to the spec that requires them. They run
   against a **real Postgres engine** — `@electric-sql/pglite` (Postgres
   compiled to WASM) — with the actual migration files in `drizzle/` applied
   in order by `test/harness.ts`. No mocked database, no `drizzle-kit push`.
 
-## How to run the tests
+## What is deliberately NOT built yet
 
-```bash
-npm ci
-npx tsc --noEmit   # typecheck
-npm test           # applies drizzle/*.sql to a fresh PGlite instance, runs all 22 tests
-```
-
-No external services, no Docker, no network access, no environment
-variables are required. Everything runs in-process; PGlite is an
-in-memory/WASM Postgres, torn down at the end of each test file.
-
-## What this slice deliberately does NOT do (spec §5)
-
-- **No Next.js pages, no Facebook Login, no UI.** Auth is represented purely
-  as "an `accounts` row exists"; the OAuth flow is a later slice and needs
-  Meta App Review.
-- **No deploy.** Nothing is rented until Sam says yes to the €5.99/month
-  Hetzner box (STACK.md). This slice runs entirely in-process, in tests.
+- **Facebook Login is written but dark.** It needs a Facebook App ID and
+  secret from a Meta app under Sam's own account. Without them
+  `/auth/facebook/*` answers 503 by design, and `POST /auth/dev` — which
+  exists only when `ALLOW_DEV_LOGIN=1`, and refuses to start on any origin
+  that is not `https://stg.` or `http://localhost` — is the only way in.
+- **Nothing is promoted to production.** `confession.fayad.app` still answers
+  503, which is the proxy's "not deployed yet" page.
 - **No moderation dashboard.** `getAdminInbox` and `adminReveal` are the
   primitives a dashboard would be built from, not the dashboard itself.
 - **No analytics of any kind**, by design — an analytics SDK on the send
@@ -96,9 +138,8 @@ in-memory/WASM Postgres, torn down at the end of each test file.
 
 ## Open questions / things worth flagging
 
-None of the 22 required tests were impossible to build as specified, and no
-constraint in the spec had to be weakened. Two minor judgement calls were
-necessary because the spec describes them by name/intent rather than by
+No test in either spec was impossible to build as specified, and no
+constraint had to be weakened. Three judgement calls were necessary because the spec describes them by name/intent rather than by
 exact mechanism, and both are called out in the "implementation choices"
 section above and in code comments at the point they're made:
 
@@ -109,3 +150,10 @@ section above and in code comments at the point they're made:
    (spec says "a `BEFORE UPDATE` trigger enforces the legal transitions"
    without specifying every transition explicitly). Decided: once state
    leaves `pending`, the row is fully locked against further `UPDATE`.
+3. The offer composer takes three fields where `SPEC-week3-web.md` §5.3 names
+   two. `openRevealOffer` needs `questionForSender`, `stakePrompt` and
+   `recipientAnswer`, and folding the last two together would print the
+   recipient's hidden answer straight onto the sender's screen, which is the
+   one thing the deferred constraint in `0001_constraints.sql` exists to make
+   impossible. Decided: three fields. The copy for the third one is not in
+   `COPY-ar.md` and is worth a second look.
