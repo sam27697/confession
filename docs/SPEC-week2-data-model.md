@@ -351,3 +351,77 @@ check does not.
 - Every non-obvious constraint carries a comment naming **which promise it
   keeps** — terms clause number, or the `STACK.md` rule. A constraint whose
   reason is not written down is a constraint the next beat deletes.
+
+---
+
+## CORRECTION, 2026-08-28 — `senderProviderUserId` was one field wider than the promise
+
+**This section is a defect in the frozen spec above, found by an adversarial
+review of the shipped code and verified against the running system, and
+recorded rather than quietly patched.**
+
+Line 218 of this document put `senderProviderUserId: string` into
+`RecipientConfession.reveal`, the object handed to a **recipient** when a mutual
+reveal resolves. The comment beside it says *"ONLY on resolved. Sam's approved
+mechanic."* That comment justifies `senderDisplayName`. It never justified the
+field below it, and nothing in `DESIGN.md` asks for it.
+
+### What the sender is actually promised
+
+The consent screen at `/offer/[offerId]`, which is the last thing a sender reads
+before accepting:
+
+> «إذا وافقت، اسمك رح ينكشف إلو — وبس إلو، وبس على هالرسالة.»
+> ("If you agree, **your name** will be revealed to him — only to him, and only
+> for this message.")
+
+The promise is a name. `accounts.provider_user_id` is not a name: it is the
+Facebook account id captured at login, and `facebook.com/<id>` resolves to the
+profile. It is materially more identifying than a display name, which many
+people share with strangers.
+
+### Why this is a real defect and not a nitpick
+
+Nothing renders it today. `app/inbox/page.tsx` reads `senderDisplayName`,
+`senderAnswer` and `recipientAnswer`, and every component in this app is a
+Server Component, so the unrendered field does not reach the browser. Over the
+wire, today, only the name leaks.
+
+That is a property of one file, not of the boundary. `STACK.md` rule 1 says the
+sender's identity is *"excluded at the serializer, not filtered in the UI"* —
+and here the serializer let it through and the UI is what happens to be holding
+it back. `DESIGN.md` frames the reveal as *"an actual reveal"* of a real
+account, so linking the revealed name to the sender's Facebook profile is a
+natural thing for a future beat to add. That edit would touch `app/inbox/page.tsx`
+alone. It would ship the account id to the recipient without anyone opening
+`views.ts`, `schema.ts`, or the consent copy. The leak was pre-provisioned.
+
+### The change
+
+- `RecipientReveal`'s `resolved` variant loses `senderProviderUserId`.
+- `getInboxForRecipient` stops selecting `accounts.provider_user_id`. The join
+  to `accounts` stays, because `display_name` still comes from it.
+- Line 218 above is void.
+
+### What this does NOT decide
+
+Whether the mutual reveal *should* show the recipient a link to the sender's
+real Facebook profile is a **product question, and it is Sam's**. It is a
+stronger reveal and it is arguably what «مصارحة» means. It is also a materially
+bigger disclosure than the sentence the sender agrees to.
+
+The rule this project already set, when terms clause 1 was rewritten on
+2026-08-25, applies unchanged: **the copy the user reads is changed first, and
+the schema is what makes it true.** If the answer is yes, the consent line
+changes before the field comes back. Until then the code matches the sentence,
+which is the direction this correction moves it.
+
+### The test
+
+`test/04-mutual-reveal.test.ts` asserted this field's presence. That assertion
+is not deleted to make a suite green — the requirement changed, so its proof
+changes with it, and the replacement is **stronger than what it replaces**: the
+recipient payload is serialised and the sender's `provider_user_id` is asserted
+**absent from the JSON string**, not merely absent from a key. Same discipline
+as the week-2 sender-uuid assertions. Written by an agent that did not write
+the fix.

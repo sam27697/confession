@@ -21,9 +21,19 @@ test('§3 the exact production origin returns the allow-list body with the six n
   }
 })
 
-test('§3 the production allow-list body does not contain a bare "Disallow: /" line', () => {
+// Updated 2026-08-28 for share-card spec §5.1: production's `*` group is
+// still the unchanged week-5 allow-list, but production now also carries a
+// `meta-externalagent` group whose body is deliberately a bare
+// `Disallow: /` (Meta's separate AI-training crawler, disallowed
+// everywhere, spec §5.1 point 2) — so a bare `Disallow: /` line can no
+// longer be asserted absent from the whole document. What must still hold
+// is that it is not the `*` group that closes the whole site.
+test('§5.1 the production `*` group does not contain a bare "Disallow: /" line', () => {
   const body = robotsBody(PRODUCTION_ORIGIN)
-  assert.ok(!lines(body).includes('Disallow: /'), 'the production body must not close the whole site')
+  const groups = body.split(/\nUser-agent: /).map((g, i) => (i === 0 ? g : 'User-agent: ' + g))
+  const starGroup = groups.find((g) => g.startsWith('User-agent: *'))
+  assert.ok(starGroup, 'production body must have a User-agent: * group')
+  assert.ok(!lines(starGroup!).includes('Disallow: /'), 'the production * group must not close the whole site')
 })
 
 test('§3 the staging origin (https://stg.confession.fayad.app) returns the closed body', () => {
@@ -65,7 +75,11 @@ test('§3 default-deny matches the production origin exactly, not by prefix or s
   }
 })
 
-test('§3 both the allow-list body and the closed body start with a "User-agent: *" line', () => {
-  assert.equal(lines(robotsBody(PRODUCTION_ORIGIN))[0], 'User-agent: *')
+// Updated 2026-08-28 for share-card spec §5.1: production now leads with a
+// named `facebookexternalhit` group (so the link-preview crawler gets an
+// explicit allow on `/c/` — see §5.1), not `User-agent: *`. Staging is
+// untouched by §5.1 and still leads with `User-agent: *`.
+test('§5.1 the closed body starts with "User-agent: *"; the production body starts with the named facebookexternalhit group', () => {
+  assert.equal(lines(robotsBody(PRODUCTION_ORIGIN))[0], 'User-agent: facebookexternalhit')
   assert.equal(lines(robotsBody(STAGING_ORIGIN))[0], 'User-agent: *')
 })
