@@ -7,5 +7,8 @@ set -e
 echo "entrypoint: running migrations"
 node /app/migrate.mjs
 
+echo "entrypoint: bootstrapping admin access"
+node /app/bootstrap-admin.mjs
+
 echo "entrypoint: starting web server"
 exec "$@"

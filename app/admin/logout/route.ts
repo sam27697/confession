@@ -1,0 +1,18 @@
+// POST /admin/logout (spec §3.5). Clears admin_sid with the same attributes
+// it was set with and Max-Age=0, then a 303 to /admin/login. A plain
+// redirect() from next/navigation defaults to 307 outside a Server Action,
+// so the response is built by hand here to get the status the spec asks
+// for, with the cookie clear attached to that same response.
+import { NextResponse } from 'next/server'
+import { env } from '../../_lib/domain/env.js'
+import { ADMIN_SID_COOKIE, adminSidCookieOptions } from '../_lib/session.js'
+
+export async function POST(request: Request) {
+  if (!env.adminEnabled) {
+    return new Response('not found', { status: 404 })
+  }
+
+  const response = NextResponse.redirect(new URL('/admin/login', request.url), 303)
+  response.cookies.set(ADMIN_SID_COOKIE, '', { ...adminSidCookieOptions(), maxAge: 0 })
+  return response
+}

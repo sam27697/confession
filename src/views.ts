@@ -21,7 +21,7 @@
 // change needs one, the sentence the sender consents to changes first.
 // See docs/SPEC-week2-data-model.md, CORRECTION 2026-08-28.
 
-import { eq, inArray } from 'drizzle-orm'
+import { desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from './db.js'
 import {
   accounts,
@@ -256,6 +256,28 @@ export async function getAdminInbox(
       status: confessions.status,
     })
     .from(confessions)
+
+  return rows.map((r) => ({ ...r, senderMasked: true as const }))
+}
+
+// The masked list behind the week 7 admin surface (spec §3.2) -- a NEW
+// function, so getAdminInbox above is untouched and its existing test keeps
+// passing against the function it was written for.
+export async function getAdminInboxPage(
+  db: Db,
+  { limit, offset }: { limit: number; offset: number },
+): Promise<AdminConfession[]> {
+  const rows = await db
+    .select({
+      id: confessions.id,
+      body: confessions.body,
+      createdHour: confessions.createdHour,
+      status: confessions.status,
+    })
+    .from(confessions)
+    .orderBy(desc(confessions.createdHour))
+    .limit(limit)
+    .offset(offset)
 
   return rows.map((r) => ({ ...r, senderMasked: true as const }))
 }

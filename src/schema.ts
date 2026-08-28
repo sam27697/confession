@@ -94,9 +94,27 @@ export const confessions = pgTable('confessions', {
   status: confessionStatusEnum('status').notNull().default('delivered'),
 })
 
+// The administrator's own identity (spec §1.1, week 7). Deliberately not a
+// row in `accounts`: an administrator is not a product user, does not own a
+// link, is not a sender - see drizzle/0002_admin.sql for the full list of
+// shapes this was rejected in favour of.
+export const adminUsers = pgTable('admin_users', {
+  id: uuid('id').primaryKey().default(sqlDefaultRandomUuid()),
+  username: text('username').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  disabledAt: timestamp('disabled_at', { withTimezone: true }),
+  // CHECK admin_users_username_nonblank, CHECK admin_users_password_hash_is_scrypt
+  // - both in the hand-written migration drizzle/0002_admin.sql.
+})
+
 export const adminRevealLog = pgTable('admin_reveal_log', {
   id: uuid('id').primaryKey().default(sqlDefaultRandomUuid()),
-  adminAccountId: uuid('admin_account_id').notNull().references(() => accounts.id),
+  // Nullable as of drizzle/0002_admin.sql: an admin_users row is a second,
+  // equally valid actor, and admin_reveal_log_exactly_one_actor (also added
+  // in that migration) is what still guarantees every row names exactly one.
+  adminAccountId: uuid('admin_account_id').references(() => accounts.id),
+  adminUserId: uuid('admin_user_id').references(() => adminUsers.id),
   confessionId: uuid('confession_id').notNull().references(() => confessions.id),
   revealedAt: timestamp('revealed_at', { withTimezone: true }).notNull().defaultNow(),
   // CHECK (length(btrim(reason)) >= 8) in the hand-written migration — a

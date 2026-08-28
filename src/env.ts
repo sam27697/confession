@@ -7,6 +7,8 @@
 // process's real environment; `env` is the eagerly-validated singleton
 // every other module imports for normal use.
 
+import { isAdminPasswordHash } from './admin-auth.js'
+
 export type Env = {
   databaseUrl: string
   sessionSecret: string
@@ -17,6 +19,11 @@ export type Env = {
   // Must be absent in production — see the APP_ORIGIN check below.
   allowDevLogin: boolean
   port: number
+  // The week 7 admin surface (spec §2.4). Both optional; the deploy rules
+  // below make "half set" a startup failure rather than a state to run in.
+  adminBootstrapUsername: string | null
+  adminBootstrapPasswordHash: string | null
+  adminEnabled: boolean
 }
 
 function required(source: NodeJS.ProcessEnv, name: string): string {
@@ -57,7 +64,45 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error('PORT must be a positive integer')
   }
 
-  return { databaseUrl, sessionSecret, appOrigin, facebookAppId, facebookAppSecret, allowDevLogin, port }
+  // Spec §2.4 rule 1: half-configured admin access is a configuration
+  // error, not a state to run in.
+  const adminBootstrapUsername = source.ADMIN_BOOTSTRAP_USERNAME?.trim() || null
+  const adminBootstrapPasswordHash = source.ADMIN_BOOTSTRAP_PASSWORD_HASH?.trim() || null
+
+  if ((adminBootstrapUsername === null) !== (adminBootstrapPasswordHash === null)) {
+    throw new Error(
+      'ADMIN_BOOTSTRAP_USERNAME and ADMIN_BOOTSTRAP_PASSWORD_HASH must both be set or both be left unset (spec §2.4)',
+    )
+  }
+
+  // Spec §2.4 rule 3: the same floor as the admin_users_username_nonblank
+  // CHECK in drizzle/0002_admin.sql, so the two cannot disagree.
+  if (adminBootstrapUsername !== null && adminBootstrapUsername.length < 3) {
+    throw new Error('ADMIN_BOOTSTRAP_USERNAME must be at least 3 characters after trimming (spec §2.4)')
+  }
+
+  // Spec §2.4 rule 2: the malformed value is never included in the thrown
+  // message, only the expected shape.
+  if (adminBootstrapPasswordHash !== null && !isAdminPasswordHash(adminBootstrapPasswordHash)) {
+    throw new Error(
+      'ADMIN_BOOTSTRAP_PASSWORD_HASH is not a valid scrypt hash of the form scrypt$N$r$p$salt$key (spec §2.4)',
+    )
+  }
+
+  const adminEnabled = adminBootstrapUsername !== null
+
+  return {
+    databaseUrl,
+    sessionSecret,
+    appOrigin,
+    facebookAppId,
+    facebookAppSecret,
+    allowDevLogin,
+    port,
+    adminBootstrapUsername,
+    adminBootstrapPasswordHash,
+    adminEnabled,
+  }
 }
 
 // Lazily-initialised singleton, not a top-level `loadEnv()` call: importing
