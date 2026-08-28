@@ -600,3 +600,19 @@ having a different agent prove it:
 Option 3 with a single-use, immediately-consumed token is the most likely
 answer, and it is a design decision that belongs in a frozen spec written
 before the code, which is where the next session starts.
+
+### §7.1 A second unproven thing, hidden behind the first
+
+Every other module under `app/` reaches `src/` through a re-export wrapper in
+`app/_lib/domain/`. The admin routes do not: `app/admin/**` imports `src/*`
+directly, because §2 and §3 listed the files to create and that list did not
+include wrappers.
+
+`tsc --noEmit` is happy with those imports. **Whether webpack is has not been
+established**, because the build never got past the `react-dom/server` error in
+§7. Week 4 lost most of a session to precisely this gap, where webpack and tsc
+disagreed about module resolution and only the container build could tell the
+difference.
+
+So the next session should expect two build problems, not one, and should not
+read a green typecheck as evidence about either.
