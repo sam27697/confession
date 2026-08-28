@@ -60,7 +60,7 @@ export default async function SendPage({
       ) : (
         <div className="card">
           <p className="muted">لازم تسجل دخول قبل ما تبعت.</p>
-          <a className="btn" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
+          <a className="btn" href="/">سجل دخول</a>
         </div>
       )}
     </div>

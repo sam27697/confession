@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /c/
+Disallow: /inbox
+Disallow: /sent
+Disallow: /offer/
+Disallow: /onboarding
+Disallow: /auth/
