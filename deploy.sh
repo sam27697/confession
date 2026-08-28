@@ -14,8 +14,15 @@
 # that is the claim that counts.
 set -euo pipefail
 
-APP_DIR=/srv/apps/confession
-REPO_DIR="$APP_DIR/repo"
+# APP_DIR used to be a constant, which is exactly the bug recorded in spec
+# §1.3: run this script from the wrong directory (e.g. production's copy
+# invoked while sitting in staging's tree) and it would happily cd into
+# staging, read staging's .env and redeploy staging, then exit 0. The script
+# always lives at $APP_DIR/repo/deploy.sh, so APP_DIR is derived from its own
+# location instead -- a script that only works from one directory has no
+# business being copied into two (spec §1.3).
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$(dirname "$REPO_DIR")"
 
 cd "$APP_DIR"
 
@@ -34,8 +41,8 @@ set -a; . ./.env; set +a
 # The pairing guard runs before the build (spec §1.2): a deploy that is
 # going to be refused should be refused before it spends four minutes
 # compiling, not after.
-echo "deploy: checking STACK_NAME/HOST_PORT/APP_ORIGIN/ALLOW_DEV_LOGIN pairing"
-"$REPO_DIR/scripts/check-deploy-pairing.sh" "$STACK_NAME" "$HOST_PORT" "${APP_ORIGIN:-}" "${ALLOW_DEV_LOGIN:-}"
+echo "deploy: checking STACK_NAME/HOST_PORT/APP_ORIGIN/ALLOW_DEV_LOGIN/APP_DIR pairing"
+"$REPO_DIR/scripts/check-deploy-pairing.sh" "$STACK_NAME" "$HOST_PORT" "${APP_ORIGIN:-}" "${ALLOW_DEV_LOGIN:-}" "$APP_DIR"
 
 # The repo is transferred to the box as files, not cloned: this account holds
 # no GitHub credential and the repository is private, so there is nothing here
