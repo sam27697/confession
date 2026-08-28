@@ -424,6 +424,36 @@ it is not relaxed because the slice is small.
 10. Whatever §5.1 settles, asserted as robots body strings for the production
     origin and for staging, with staging still fully closed.
 
+## 6.1 CORRECTION, 2026-08-28 — §6 item 2 contradicts §4.3, and §4.3 wins
+
+Found by the review session while reading §6 against the implementation,
+before the independent test author's result came back.
+
+**§6 item 2 requires the owner's display name in `og:image:alt`.** §4.3, a
+later correction to the same document, removed the per-link generated image
+and made `og:image:alt` the generic `مصارحة` for every link. Both sentences
+are in this document and they cannot both be satisfied.
+
+§6 was written before §4.3 existed. §4.3 is the later measurement and it
+carries the reason — the image is generic *because* satori reverses Arabic
+word order — so **§4.3 governs and §6 item 2 is amended** to:
+
+> 2. The personalised metadata for an enabled link contains the owner's
+>    display name in `og:title`, and `og:url` ends with `/c/<slug>`.
+>    `og:image:alt` is the generic `مصارحة` per §4.3 and **must not** contain
+>    the display name.
+
+This is written down rather than quietly resolved in the test file, because
+the cheap move here is to let whoever runs the tests "fix" the assertion to
+match the code, and that is indistinguishable from the failure mode this
+project reviews for. The amendment is a decision about the product with a
+stated reason; it is not a test edit.
+
+Note the amended rule is *stronger* than the original, not weaker: the
+display name is now forbidden in `og:image:alt`, where §6 originally
+required it. Verified against production and staging on 2026-08-28 — no
+`og:image:alt` on any page carries a display name.
+
 ## 7. What this slice does not do
 
 - It does not touch Facebook Login, which is still waiting on the App ID and
