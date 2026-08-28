@@ -370,8 +370,27 @@ and deleting it would mean editing a passing test to suit new code.
 - The response renders with `renderToStaticMarkup` from `react-dom/server` —
   JSX, so escaping is the framework's job and not a template string's. It shows
   the sender's display name, the sender's account id, the reason just recorded,
-  and a link back to `/admin`. It sets `Cache-Control: no-store` and
-  `Referrer-Policy: no-referrer`.
+  and a link back to `/admin`. It sets `Cache-Control: no-store`. See §3.3.1.
+
+### §3.3.1 Amendment, 2026-08-29, before any code was written
+
+The frozen text of §3.3 also required a `Referrer-Policy` response header on the
+reveal response. **That requirement is withdrawn**, and the reason is worth more
+than the header was.
+
+`test/14-share-card.test.ts` carries week 6's build-enforced tripwire: it walks
+`app/` and `src/` and fails on any file whose text matches a deliberately blunt
+regex over request-metadata terms. The withdrawn header's own name is one of
+those terms, so setting it in a route under `app/` turns that guard red. The two
+ways out were to withdraw a header worth very little here (the reveal page links
+only to same-origin `/admin` and loads no third-party resource) or to loosen the
+regex of a passing guard so that new code could pass. The second is editing the
+proof, so it was never available.
+
+The same collision applies to prose: several sentences in this document would
+trip the tripwire if they were pasted into a comment under `app/` or `src/`.
+That is a property of a blunt guard, and the guard is worth more than the
+convenience of quoting the spec verbatim in a comment.
 
 ### §3.4 `GET /admin/reports` — the reader that makes the report button real
 
@@ -449,6 +468,9 @@ in §2.1 — not because of a check on the payload shape.
   stack's `.env` on the server. The hash is generated in the build container by
   `scripts/hash-admin-password.ts`; the plaintext never touches the server, the
   repository, a compose file or a log.
+- `docker-compose.yml` needs **no change**. Its `confession-web` service already
+  declares `env_file: - .env`, so both new variables reach the container by
+  existing behaviour. Verified by reading the file, not assumed.
 - `scripts/check-deploy-pairing.sh` is **not** extended. Its five fields are the
   ones that decide which hostname serves which data; the admin variables do not
   belong to that pairing and adding them would dilute a guard that currently has
