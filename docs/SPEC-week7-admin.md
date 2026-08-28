@@ -608,8 +608,7 @@ Every other module under `app/` reaches `src/` through a re-export wrapper in
 directly, because §2 and §3 listed the files to create and that list did not
 include wrappers.
 
-`tsc --noEmit` is happy with those imports. **Whether webpack is has not been
-established**, because the build never got past the `react-dom/server` error in
+`tsc --noEmit` is happy with those imports. **Whether webpack agrees has never been tested**, because the build never got past the `react-dom/server` error in
 §7. Week 4 lost most of a session to precisely this gap, where webpack and tsc
 disagreed about module resolution and only the container build could tell the
 difference.
