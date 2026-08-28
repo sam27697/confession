@@ -8,7 +8,7 @@
 // Graph API version, pinned in one constant rather than scattered through
 // URLs, so a Meta version bump is a one-line change and not a silent
 // behaviour shift under a running deploy (spec §3.1).
-const GRAPH_VERSION = 'v21.0'
+export const GRAPH_API_VERSION = 'v21.0'
 
 // public_profile is the only scope this app ever requests, and it appears
 // in exactly this one constant. BRIEF.md's measured finding: public_profile
@@ -26,7 +26,7 @@ export function buildAuthorizeUrl({
   redirectUri: string
   state: string
 }): string {
-  const url = new URL(`https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`)
+  const url = new URL(`https://www.facebook.com/${GRAPH_API_VERSION}/dialog/oauth`)
   url.searchParams.set('client_id', appId)
   url.searchParams.set('redirect_uri', redirectUri)
   url.searchParams.set('state', state)
@@ -51,7 +51,7 @@ export async function exchangeCodeForToken({
   redirectUri: string
   code: string
 }): Promise<FacebookTokenResult> {
-  const url = new URL(`https://graph.facebook.com/${GRAPH_VERSION}/oauth/access_token`)
+  const url = new URL(`https://graph.facebook.com/${GRAPH_API_VERSION}/oauth/access_token`)
   url.searchParams.set('client_id', appId)
   url.searchParams.set('client_secret', appSecret)
   url.searchParams.set('redirect_uri', redirectUri)
@@ -77,7 +77,7 @@ export type FacebookProfile = { id: string; name: string }
 // fields is "id,name" and nothing else (spec §3.1) — no email, no picture,
 // no friend list.
 export async function fetchProfile({ accessToken }: { accessToken: string }): Promise<FacebookProfile> {
-  const url = new URL(`https://graph.facebook.com/${GRAPH_VERSION}/me`)
+  const url = new URL(`https://graph.facebook.com/${GRAPH_API_VERSION}/me`)
   url.searchParams.set('fields', 'id,name')
   url.searchParams.set('access_token', accessToken)
 

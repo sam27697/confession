@@ -17,13 +17,13 @@ export default async function HomePage() {
       </p>
 
       <div className="card">
-        {env.FACEBOOK_APP_ID ? (
+        {env.facebookAppId ? (
           <a className="btn" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
         ) : (
           <p className="muted">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
         )}
 
-        {env.ALLOW_DEV_LOGIN === '1' && (
+        {env.allowDevLogin && (
           <form action="/auth/dev" method="post">
             <label htmlFor="displayName">اسم تجريبي (وضع تجربة فقط)</label>
             <input id="displayName" type="text" name="displayName" required minLength={1} maxLength={80} />

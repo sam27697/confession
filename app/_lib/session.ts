@@ -4,66 +4,42 @@
 // web-app scope, so it is implemented here, once, and reused by both signed
 // cookies (spec §3.4: "same signing helper").
 //
-// Wire format, verbatim from spec §3.3:
-//   base64url(JSON(payload)) + '.' + base64url(HMAC-SHA256(SESSION_SECRET, payload))
-// Verified with crypto.timingSafeEqual. Any parse failure is rejected
-// without detail — never logged (spec §1 rule 3: no cookie value in a log).
+// The wire format and the HMAC itself live in src/session.ts, which is
+// framework-free and directly tested. This file is only the cookie-shaped
+// wrapper around it: names, options, and the payload types. Any parse
+// failure is rejected without detail and never logged (spec §1 rule 3).
 
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import {
+  signPayload,
+  verifyPayload,
+  SESSION_MAX_AGE_MS,
+  PENDING_IDENTITY_MAX_AGE_MS,
+} from '../../src/session.js'
 import { env } from './domain/env.js'
 
 export const SID_COOKIE = 'sid'
 export const PENDING_IDENTITY_COOKIE = 'pending_identity'
 export const FB_OAUTH_STATE_COOKIE = 'fb_oauth_state'
 
-const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60 // spec §3.3
-const PENDING_IDENTITY_MAX_AGE_SECONDS = 30 * 60 // spec §3.4
+const SESSION_MAX_AGE_SECONDS = SESSION_MAX_AGE_MS / 1000
+const PENDING_IDENTITY_MAX_AGE_SECONDS = PENDING_IDENTITY_MAX_AGE_MS / 1000
 
-function hmac(payload: string): string {
-  return createHmac('sha256', env.SESSION_SECRET).update(payload).digest('base64url')
+function sign(data: object): string {
+  return signPayload(env.sessionSecret, data)
 }
 
-function sign(data: unknown): string {
-  const payload = Buffer.from(JSON.stringify(data), 'utf8').toString('base64url')
-  return `${payload}.${hmac(payload)}`
+function verify<T>(value: string, maxAgeMs: number): (T & { iat: number }) | null {
+  return verifyPayload<T>(env.sessionSecret, value, { maxAgeMs })
 }
 
-// Returns the parsed payload only if the signature verifies AND `iat` is
-// within `maxAgeSeconds`. Any failure returns null without detail (spec
-// §3.3: "Reject on any parse failure without detail").
-function verify<T extends { iat: number }>(value: string, maxAgeSeconds: number): T | null {
-  const dot = value.indexOf('.')
-  if (dot < 0) return null
-  const payload = value.slice(0, dot)
-  const signature = value.slice(dot + 1)
-  const expected = hmac(payload)
-
-  const a = Buffer.from(signature)
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
-  } catch {
-    return null
-  }
-  if (typeof parsed !== 'object' || parsed === null || typeof (parsed as { iat?: unknown }).iat !== 'number') {
-    return null
-  }
-  const data = parsed as T
-  if (Date.now() - data.iat > maxAgeSeconds * 1000) return null
-  return data
-}
-
-export type SessionPayload = { accountId: string; iat: number }
+export type SessionPayload = { accountId: string }
 
 export function createSessionCookieValue(accountId: string): string {
-  return sign({ accountId, iat: Date.now() } satisfies SessionPayload)
+  return sign({ accountId } satisfies SessionPayload)
 }
 
 export function verifySessionCookieValue(value: string): { accountId: string } | null {
-  const data = verify<SessionPayload>(value, SESSION_MAX_AGE_SECONDS)
+  const data = verify<SessionPayload>(value, SESSION_MAX_AGE_MS)
   if (!data || typeof data.accountId !== 'string') return null
   return { accountId: data.accountId }
 }
@@ -72,17 +48,16 @@ export type PendingIdentity = {
   provider: 'facebook'
   providerUserId: string
   displayName: string
-  iat: number
 }
 
-export function createPendingIdentityCookieValue(identity: Omit<PendingIdentity, 'iat'>): string {
-  return sign({ ...identity, iat: Date.now() } satisfies PendingIdentity)
+export function createPendingIdentityCookieValue(identity: PendingIdentity): string {
+  return sign(identity satisfies PendingIdentity)
 }
 
 export function verifyPendingIdentityCookieValue(
   value: string,
 ): { provider: 'facebook'; providerUserId: string; displayName: string } | null {
-  const data = verify<PendingIdentity>(value, PENDING_IDENTITY_MAX_AGE_SECONDS)
+  const data = verify<PendingIdentity>(value, PENDING_IDENTITY_MAX_AGE_MS)
   if (!data || typeof data.providerUserId !== 'string' || typeof data.displayName !== 'string') return null
   return { provider: 'facebook', providerUserId: data.providerUserId, displayName: data.displayName }
 }

@@ -9,7 +9,7 @@ import { env } from '../../_lib/domain/env.js'
 import { resolveLoginAndRedirect } from '../../_lib/login-flow.js'
 
 export async function POST(request: Request) {
-  if (env.ALLOW_DEV_LOGIN !== '1') {
+  if (!env.allowDevLogin) {
     return new Response('not found', { status: 404 })
   }
 

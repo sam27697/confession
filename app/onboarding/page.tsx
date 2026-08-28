@@ -5,6 +5,7 @@ import { getViewerAccountId } from '../_lib/auth.js'
 import { getAccountById } from '../_lib/domain/accounts.js'
 import { TERMS_VERSION, TERMS_TEXT_AR, TERMS_TEXT_EN } from '../_lib/domain/terms.js'
 import { PENDING_IDENTITY_COOKIE, verifyPendingIdentityCookieValue } from '../_lib/session.js'
+import { TermsBlock } from '../_lib/terms-block.js'
 import { acceptTermsAction } from './actions.js'
 
 export default async function OnboardingPage({
@@ -36,9 +37,9 @@ export default async function OnboardingPage({
       <h1>الشروط والأحكام</h1>
       <p className="muted">أهلا {displayName} — لازم توافق على هالشروط قبل ما تبلش.</p>
 
-      <div className="card pre">{TERMS_TEXT_AR}</div>
+      <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
       <hr />
-      <div className="card pre">{TERMS_TEXT_EN}</div>
+      <TermsBlock text={TERMS_TEXT_EN} dir="ltr" />
 
       {error === 'required' && <p className="error">لازم توافق على الشروط وتأكد إنك فوق ١٨.</p>}
 
