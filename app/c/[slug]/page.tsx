@@ -1,8 +1,44 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { getLinkBySlug } from '../../_lib/domain/links.js'
+import { env } from '../../_lib/domain/env.js'
+import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
+
+// Share-card spec §1, §3: an enabled link gets the personalised card; a
+// disabled link or a missing slug gets the generic card. Returning {} here
+// for the disabled/missing cases lets the root layout's generic metadata
+// (app/layout.tsx) apply unchanged, so the two cases are byte-identical and
+// neither becomes a second, easier user-enumeration oracle than the page
+// underneath already is (§2.6).
+//
+// This does exactly one read by slug, the same query the page component
+// below also runs — it is not combined with it because src/links.ts is
+// frozen (builder A's signatures) and generateMetadata and the page
+// component are two independent Next entry points, not a shared call
+// frame.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const db = getDb()
+  const link = await getLinkBySlug(db, { slug })
+
+  if (!link || !link.enabled) return {}
+
+  const share = personalisedShareMetadata({
+    appOrigin: env.appOrigin,
+    facebookAppId: env.facebookAppId,
+    slug,
+    ownerDisplayName: link.ownerDisplayName,
+  })
+
+  return {
+    openGraph: share.openGraph,
+    twitter: share.twitter,
+    ...(share.facebook ? { facebook: share.facebook } : {}),
+  }
+}
 
 const ERROR_COPY: Record<string, string> = {
   signin: 'لازم تسجل دخول تبعت رسالة.',

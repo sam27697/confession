@@ -8,9 +8,30 @@
 
 const PRODUCTION_ORIGIN = 'https://confession.fayad.app'
 
-// The allow-list that was previously public/robots.txt, unchanged. It only
-// ever ships for the exact production origin (spec §3).
+// Week-6 share-card spec §5.1: week 5's single `User-agent: *` block
+// disallowed `/c/` for every crawler, including facebookexternalhit — the
+// crawler that builds the Facebook link-preview card, which is the entire
+// distribution channel for this product (see BRIEF.md item 19). Per Meta's
+// own docs (developers.facebook.com/docs/sharing/webmasters/web-crawlers,
+// read 2026-08-28), a disallow blocks facebookexternalhit; the only named
+// exception is its own security/integrity checks, not building a preview.
+// So three groups, in this order:
+//   1. facebookexternalhit gets `/c/` and the site root, nothing private.
+//   2. meta-externalagent (Meta's separate AI-training crawler) is
+//      disallowed everywhere, by name, so it does not inherit group 1.
+//   3. `*` is unchanged from week 5 — Google still does not index `/c/`.
 const PRODUCTION_BODY = [
+  'User-agent: facebookexternalhit',
+  'Allow: /',
+  'Disallow: /inbox',
+  'Disallow: /sent',
+  'Disallow: /offer/',
+  'Disallow: /onboarding',
+  'Disallow: /auth/',
+  '',
+  'User-agent: meta-externalagent',
+  'Disallow: /',
+  '',
   'User-agent: *',
   'Disallow: /c/',
   'Disallow: /inbox',

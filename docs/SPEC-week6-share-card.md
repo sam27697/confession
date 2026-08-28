@@ -322,6 +322,78 @@ dressed up. Meta also caches `robots.txt`:
 
 so the first real card may be up to a day behind this deploy.
 
+## 4.3 CORRECTION, 2026-08-28 — satori (next/og) shapes Arabic but does not run bidi; the per-link image is not shipped
+
+**Measured while implementing §4.2, not assumed.** Three proof renders were
+written to `/tmp/og-proof/` using `ImageResponse` from `next/og` (satori,
+the version vendored by `next@15.5.24`) with `Tajawal-Bold.ttf` (the font
+vendored for this attempt) and `direction: 'rtl'` on the container:
+
+- `tajawal-short.png` — a short Arabic-only name. Letters within each word
+  are correctly joined.
+- `tajawal-long.png` — a long Arabic name past the 40-character truncation
+  point, to see wrapping.
+- `tajawal-latin.png` — the mixed-direction case, source string `صارِح John
+  Smith` (Arabic verb, Latin name).
+
+Letter **shaping is correct** in all three: joined forms, not isolated
+letters, not mirrored glyphs. **Bidi (word order) is not.** The clearest
+evidence is `tajawal-latin.png`: the logical order is [صارِح] [John Smith].
+In correct RTL layout the first logical run sits at the right edge, so
+"John Smith" (the second run) should render to its *left*. The actual
+render puts صارِح on the left and "John Smith" on the right — the two runs
+in left-to-right logical order, i.e. bidi reordering never ran. The same
+defect is visible in `tajawal-long.png`: once the text wraps, word order is
+reversed on both lines and the truncation ellipsis lands at the right end
+of the last line, where RTL requires it on the left. This is a known class
+of satori limitation — it shapes complex scripts but does not implement the
+Unicode Bidirectional Algorithm (UAX #9) before laying text out.
+
+**Decision, per §4.2's own stated fallback:** `app/c/[slug]/opengraph-image.tsx`
+is **not shipped**. A card with reversed Arabic word order in a Facebook
+feed is worse than a clean brand card, and §4.2 was explicit that this is
+not a case to ship "broken" or "transliterated or dropped silently" — it is
+a case to fall back. So:
+
+- `/c/<slug>`'s `og:image` and `og:image:alt` point at the same
+  `<appOrigin>/og/default.png` and `مصارحة` as the generic/root card — not a
+  personalised image, for every link, enabled or not.
+- The personalisation for an enabled link still ships in full in
+  `og:title` and `og:description` (§3) — those are plain text handed to the
+  browser/crawler's own text renderer, which does bidi correctly; they are
+  not run through satori and have no rendering defect.
+
+**The same defect hit `public/og/default.png` (§4.1) too**, and that one
+*is* fixable, because unlike a per-link name it is one fixed string decided
+at build time and can be checked by eye once, not regenerated per crawler
+hit. `scripts/generate-default-og-image.py` renders it with Python +
+Pillow, built with **libraqm** (HarfBuzz + FriBidi + FreeType) — a real
+implementation of both Arabic shaping and the bidi algorithm, not
+satori/next-og. The two-line brand image (`مصارحة` / the one-line pitch)
+was re-rendered this way and re-inspected; the subtitle now reads, right to
+left starting at the right edge, `خلي الناس تصارحك بصراحة، وهي متخفية` —
+correct visual order. This is the "preferred: something that does real
+bidi" option §4.2 anticipates, not the "pre-reverse the source string"
+workaround — the source string in the generator is the normal, forward,
+logical-order Arabic sentence; no reversal trick was needed once raqm was
+doing the layout.
+
+**Known fix path for a later slice, not implemented tonight, not tested:**
+satori accepts pre-shaped, pre-bidi-ordered *glyph strings* — it does not
+have to be given logical-order text if the caller does the Unicode
+Bidirectional Algorithm and Arabic contextual shaping itself first (e.g.
+`bidi-js` for UAX #9 reordering plus an Arabic reshaper for the
+presentation-form substitution, feeding satori the resulting visual-order
+string instead of the logical one). This was not attempted here: it adds a
+text-shaping dependency to the request path of a route that today has none,
+the interaction between manual pre-shaping and satori's own (partial)
+complex-text handling is unverified, and there was no time in this slice to
+render and inspect proof images for it. Whoever picks this up should treat
+"it doesn't throw" as insufficient evidence, the same way this correction
+does — render it, look at it, check word order specifically for
+mixed-direction and multi-word RTL strings, not just that Arabic letters
+join.
+
 ## 6. Tests
 
 Written by a **different agent** than the one that writes the implementation,
