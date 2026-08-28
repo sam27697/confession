@@ -30,7 +30,7 @@ export type TermsText = {
   closing: string
 }
 
-export const TERMS_AR: TermsText = {
+export const TERMS_TEXT_AR: TermsText = {
   intro: 'قبل ما تبلّش، لازم توافق على هالشروط:',
   clauses: [
     'الرسائل يلي بتوصلك ما بتشوف مين باعتها — هوية المُرسِل مخفية عنك. بس لازم تعرف: إدارة التطبيق بتقدر تشوف حساب المُرسِل، ومنستخدم هالشي فقط لمنع الإساءة أو إذا اضطرينا قانونياً.',
@@ -43,7 +43,7 @@ export const TERMS_AR: TermsText = {
   closing: 'بالضغط على "موافق" إنت مقرّ إنك قرأت هالشروط وقبلتها.',
 }
 
-export const TERMS_EN: TermsText = {
+export const TERMS_TEXT_EN: TermsText = {
   intro: 'Before you start, you must agree to these terms:',
   clauses: [
     "You will not see who sent the messages you receive — the sender's identity is hidden **from you**. But you should know: the app's administrators can see the sender's account, and we use that only to prevent abuse or where we are legally required to.",
