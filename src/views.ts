@@ -9,6 +9,17 @@
 // a non-admin caller; where it is needed at all (to resolve a display name
 // on a *resolved* offer) it is used only inside a JOIN condition, never
 // returned.
+//
+// 2026-08-28: that paragraph was true and it was not enough. It named ONE
+// column, confessions.sender_account_id, and an adversarial review found a
+// second identifier — accounts.provider_user_id, the Facebook account id —
+// being selected into the recipient's resolved-reveal payload, where the
+// paragraph's own reasoning says it must not be. So the rule is restated
+// here as the rule it always meant: NO identifier of the sender other than
+// display_name reaches a recipient-facing type from this file. Not the
+// internal uuid, not the provider id, not a hash of either. If a future
+// change needs one, the sentence the sender consents to changes first.
+// See docs/SPEC-week2-data-model.md, CORRECTION 2026-08-28.
 
 import { eq, inArray } from 'drizzle-orm'
 import type { Db } from './db.js'
@@ -32,8 +43,14 @@ export type RecipientReveal =
   | {
       kind: 'resolved'
       offerId: string
+      // The display name and nothing else. provider_user_id used to sit here
+      // and was removed on 2026-08-28 (SPEC-week2-data-model.md, CORRECTION):
+      // the sender's consent screen promises «اسمك رح ينكشف» -- a NAME -- and
+      // provider_user_id is the Facebook account id, which resolves to a
+      // profile. Nothing rendered it, but STACK.md rule 1 draws this boundary
+      // at the serializer and not in the UI, and a field that is already on
+      // the object is a field one careless render away from shipping.
       senderDisplayName: string
-      senderProviderUserId: string
       senderAnswer: string
       recipientAnswer: string
     }
@@ -109,10 +126,14 @@ export async function getInboxForRecipient(
     resolvedOfferIds.length === 0
       ? []
       : await db
+          // accounts is still joined, because display_name lives on it. What
+          // is NOT selected is provider_user_id -- see the note on
+          // RecipientReveal above and the CORRECTION in
+          // docs/SPEC-week2-data-model.md. Adding it back here without
+          // changing the sender's consent copy first makes that copy false.
           .select({
             offerId: revealOffers.id,
             senderDisplayName: accounts.displayName,
-            senderProviderUserId: accounts.providerUserId,
           })
           .from(revealOffers)
           .innerJoin(confessions, eq(confessions.id, revealOffers.confessionId))
@@ -152,7 +173,6 @@ export async function getInboxForRecipient(
             kind: 'resolved',
             offerId: offer.offerId,
             senderDisplayName: identity.senderDisplayName,
-            senderProviderUserId: identity.senderProviderUserId,
             senderAnswer: ans.sender,
             recipientAnswer: ans.recipient,
           }

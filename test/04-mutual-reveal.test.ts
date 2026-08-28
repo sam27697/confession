@@ -107,10 +107,26 @@ test('4.4.13 accept: both answers and the sender identity appear for that confes
   assert.equal(reveal.kind, 'resolved')
   if (reveal.kind === 'resolved') {
     assert.equal(reveal.senderDisplayName, sender.displayName)
-    assert.equal(reveal.senderProviderUserId, sender.providerUserId)
     assert.equal(reveal.senderAnswer, senderAnswer)
     assert.equal(reveal.recipientAnswer, recipientAnswer)
   }
+
+  // CORRECTION, 2026-08-28: the consent screen at /offer/[offerId] promises
+  // the sender «اسمك رح ينكشف إلو — وبس إلو» — "your NAME will be revealed
+  // to him, only him." Not the Facebook account id. accounts.provider_user_id
+  // is materially more identifying than a display name (facebook.com/<id>
+  // resolves to the profile), and it was never part of that sentence, so it
+  // must never appear on the wire to the recipient, resolved or not — same
+  // discipline as the sender-uuid assertions in 03-identity-model.test.ts.
+  const json = JSON.stringify(inbox)
+  assert.ok(
+    !json.includes(sender.providerUserId),
+    'recipient payload must not contain the sender Facebook account id — the consent screen promises only a name ("اسمك رح ينكشف إلو")',
+  )
+  assert.ok(
+    !json.includes(sender.id),
+    'recipient payload must not contain the sender account uuid, even after a resolved reveal',
+  )
 
   await client.close()
 })
