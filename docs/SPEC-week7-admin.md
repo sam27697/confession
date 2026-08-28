@@ -553,3 +553,50 @@ writing them.
 
 The suite must be green before deploy, and the master re-runs it rather than
 accepting a report of it.
+
+---
+
+## §7 Finding, 2026-08-29, from running it: §3.3's rendering mechanism does not build
+
+The container build fails, and it fails on a design decision in §3.3 of this
+document, not on the implementation of it:
+
+```
+Failed to compile.
+Error: x You're importing a component that imports react-dom/server. To fix it,
+render or return the content directly as a Server Component instead for perf
+and security.
+> Build failed because of webpack errors
+```
+
+Next refuses `react-dom/server` anywhere in the `app/` module graph. §3.3 chose
+`renderToStaticMarkup` precisely so that escaping would be the framework's job
+rather than a template string's, and the framework declines to be used that way
+from a route handler.
+
+**The slice is therefore NOT deployed and NOT verified against a running
+system.** What did not happen is written here rather than smoothed over.
+
+The three candidate repairs, none of which was taken tonight because each is
+security-relevant and the session's budget no longer allowed writing it *and*
+having a different agent prove it:
+
+1. **Hand-built HTML with an escape helper.** Smallest change. It replaces the
+   framework's escaping with about fifteen lines of new, unproven code on the
+   one surface in this product that renders an attacker-influenced string (a
+   display name that came from Facebook) to an authenticated operator. Writing
+   that at the end of a budget, with no independent test, is how the defect
+   class this project reviews for gets introduced.
+2. **A Server Action returning the identity into `useActionState`.** Builds, but
+   it puts the revealed identity into a client component's state and into the
+   RSC payload, where it survives client-side navigation until a reload. That
+   weakens §4.2 from "exists only in the response to the write" to "exists in
+   the browser until something clears it", and §4.2 is the rule that makes the
+   audit log meaningful.
+3. **A GET page keyed on a reveal id written by the POST.** Preserves escaping
+   and builds, at the cost of a second table and a URL that renders an identity
+   more than once. §4.2 exists to prevent exactly that URL.
+
+Option 3 with a single-use, immediately-consumed token is the most likely
+answer, and it is a design decision that belongs in a frozen spec written
+before the code, which is where the next session starts.
