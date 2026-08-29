@@ -447,3 +447,28 @@ test('§8.6.11b no file under app/ or src/ imports react-dom/server in any form,
     `no file under app/ or src/ may import react-dom/server, react-dom/server.edge, react-dom/server.node or react-dom/server.browser, statically or via dynamic import() (§8.1, §8.6 item 11): ${offenders.join(', ')}`,
   )
 })
+
+// ---------------------------------------------------------------------------
+// §9.3 item 7 — app/admin/logout/route.ts does not build its redirect
+// target from the request. Written from docs/SPEC-week7-admin.md §9.0 and
+// §9.1 only, not from the route file. §9.0 measured the live bug: a 303 to
+// https://0.0.0.0:3000/admin/login, because new URL('/admin/login',
+// request.url) reads the container's own bind address rather than the
+// hostname the request actually arrived on. §9.1's repair is to build the
+// target from env.appOrigin instead, the same configured value already
+// used elsewhere in this app for absolute URLs.
+// ---------------------------------------------------------------------------
+
+test('§9.3.7 app/admin/logout/route.ts does not build its redirect target from request.url, and derives it from the configured origin instead', () => {
+  const filePath = path.join(REPO_ROOT, 'app', 'admin', 'logout', 'route.ts')
+  // No existsSync guard: a missing file must fail this test loudly.
+  const src = readFileSync(filePath, 'utf8')
+  assert.ok(
+    !src.includes('request.url'),
+    'app/admin/logout/route.ts must not contain request.url -- inside the container that resolves to the bind address (0.0.0.0:3000), not the public hostname (§9.0)',
+  )
+  assert.ok(
+    src.includes('appOrigin'),
+    'the redirect target must be derived from the configured env.appOrigin instead of the request (§9.1)',
+  )
+})

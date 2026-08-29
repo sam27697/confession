@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import os from 'node:os'
 
 // Resolved relative to this file so the test works from any cwd, per §2:
 // "A standalone script, because it has to be testable off the box."
@@ -178,4 +180,121 @@ test('§2 a subdirectory of the legal name (/srv/apps/confession-prod/repo) is r
 test('§2 the old four-argument call, legal under the pre-correction signature, now exits non-zero', () => {
   const { status } = run([STAGING.stack, STAGING.port, STAGING.origin, ''])
   assert.notEqual(status, 0)
+})
+
+// ---------------------------------------------------------------------------
+// §9.3 items 1-6 — scripts/read-env-key.sh and deploy.sh no longer sourcing
+// .env. Written from docs/SPEC-week7-admin.md §9.0, §9.1 and §9.3 only. The
+// script is not opened before writing these; a missing scripts/read-env-key.sh
+// or an unrepaired deploy.sh is the correct reason for a failure here, not a
+// reason to change the assertion.
+// ---------------------------------------------------------------------------
+
+const READ_ENV_KEY_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../scripts/read-env-key.sh')
+const DEPLOY_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../deploy.sh')
+
+function runReadEnvKey(file: string, key: string): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync('bash', [READ_ENV_KEY_SCRIPT, file, key], { encoding: 'utf8' })
+  return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
+}
+
+// Every test below gets its own directory under /tmp, made with mkdtemp so
+// the name cannot collide with anything already there, and removes only
+// that directory afterwards -- nothing else under /tmp and nothing in the
+// repo.
+function withTempDir<T>(fn: (dir: string) => T): T {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'confession-w9test-read-env-key-'))
+  try {
+    return fn(dir)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+test('§9.3.1 read-env-key.sh prints the value with no expansion of any kind', () => {
+  withTempDir((dir) => {
+    const file = path.join(dir, '.env')
+    writeFileSync(file, 'K=scrypt$16384$8$1$abc$def\n')
+    const { status, stdout } = runReadEnvKey(file, 'K')
+    assert.equal(status, 0)
+    assert.equal(stdout.replace(/\n$/, ''), 'scrypt$16384$8$1$abc$def', 'the $-separated scrypt format must come out byte for byte, not expanded as positional parameters')
+  })
+})
+
+test('§9.3.2a read-env-key.sh does not execute a $(...) command substitution', () => {
+  withTempDir((dir) => {
+    const marker = path.join(dir, 'pwned-dollar-paren')
+    const file = path.join(dir, '.env')
+    writeFileSync(file, `K=$(touch ${marker})\n`)
+    const { status, stdout } = runReadEnvKey(file, 'K')
+    assert.equal(status, 0)
+    assert.equal(stdout.replace(/\n$/, ''), `$(touch ${marker})`, 'the $(...) form must come out as literal text')
+    assert.ok(!existsSync(marker), 'the file a $(...) substitution would have created must not exist')
+  })
+})
+
+test('§9.3.2b read-env-key.sh does not execute a backtick command substitution', () => {
+  withTempDir((dir) => {
+    const marker = path.join(dir, 'pwned-backtick')
+    const file = path.join(dir, '.env')
+    const line = 'K=`touch ' + marker + '`'
+    writeFileSync(file, line + '\n')
+    const { status, stdout } = runReadEnvKey(file, 'K')
+    assert.equal(status, 0)
+    assert.equal(stdout.replace(/\n$/, ''), line.slice(2), 'the backtick form must come out as literal text')
+    assert.ok(!existsSync(marker), 'the file a backtick substitution would have created must not exist')
+  })
+})
+
+test('§9.3.3 read-env-key.sh strips exactly one layer of matching quotes', () => {
+  withTempDir((dir) => {
+    const file = path.join(dir, '.env')
+    writeFileSync(
+      file,
+      ["SINGLE='v'", 'DOUBLE="v"', "DOUBLED=''v''", "MISMATCHED='v"].join('\n') + '\n',
+    )
+    assert.equal(runReadEnvKey(file, 'SINGLE').stdout.replace(/\n$/, ''), 'v', "K='v' must yield v")
+    assert.equal(runReadEnvKey(file, 'DOUBLE').stdout.replace(/\n$/, ''), 'v', 'K="v" must yield v')
+    assert.equal(runReadEnvKey(file, 'DOUBLED').stdout.replace(/\n$/, ''), "'v'", "K=''v'' must yield 'v', one layer stripped")
+    assert.equal(runReadEnvKey(file, 'MISMATCHED').stdout.replace(/\n$/, ''), "'v", "K='v (unmatched quotes) must come out unchanged")
+  })
+})
+
+test('§9.3.4 read-env-key.sh is exact about keys', () => {
+  withTempDir((dir) => {
+    const file = path.join(dir, '.env')
+    writeFileSync(
+      file,
+      ['KEY=a', 'OTHER_KEY=b', '# a comment that mentions KEY=c must not match'].join('\n') + '\n',
+    )
+    assert.equal(runReadEnvKey(file, 'KEY').stdout.replace(/\n$/, ''), 'a', 'KEY must yield its own value, never OTHER_KEY\'s')
+    assert.equal(runReadEnvKey(file, 'OTHER_KEY').stdout.replace(/\n$/, ''), 'b')
+    const missing = runReadEnvKey(file, 'MISSING_KEY')
+    assert.equal(missing.status, 0, 'a missing key is not an error')
+    assert.equal(missing.stdout.replace(/\n$/, ''), '', 'a missing key yields empty output, same as an empty value to the :? checks in deploy.sh')
+  })
+})
+
+test('§9.3.5 read-env-key.sh: the last assignment of a duplicated key wins', () => {
+  withTempDir((dir) => {
+    const file = path.join(dir, '.env')
+    writeFileSync(file, 'DUP=first\nDUP=second\n')
+    assert.equal(runReadEnvKey(file, 'DUP').stdout.replace(/\n$/, ''), 'second', 'the last assignment must win, matching what sourcing the file did')
+  })
+})
+
+test('§9.3.6 deploy.sh no longer sources .env, and calls the read-env-key.sh helper instead', () => {
+  const src = readFileSync(DEPLOY_SCRIPT, 'utf8')
+  assert.ok(
+    !src.includes('. ./.env'),
+    'deploy.sh must not contain ". ./.env" -- this is the exact line that expanded $16384/$8/$1 as positional parameters and killed the deploy under set -u (§9.0)',
+  )
+  assert.ok(
+    !/\bsource\s+\.?\/?\.env\b/.test(src),
+    'deploy.sh must not source .env via the "source" builtin either',
+  )
+  assert.ok(
+    src.includes('read-env-key.sh'),
+    'deploy.sh must read its five needed keys through scripts/read-env-key.sh rather than sourcing the file (§9.1)',
+  )
 })
