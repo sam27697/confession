@@ -368,8 +368,14 @@ test('§8.6.9d no file under app/admin/ interpolates into a URL-bearing attribut
   // equivalent: any href={...}/src={...}/etc in JSX source is inherently a
   // dynamic expression, since a JSX literal string attribute is written
   // href="..." rather than href={...}.
+  // `action` is in the template-literal set but not the JSX one (spec
+  // §8.4.1). In hand-built HTML a form's action is a URL string. In JSX,
+  // action={fn} is React's server action form and the value is a function
+  // reference that never reaches the document as a URL, which is what
+  // app/admin/login/page.tsx passes. Every other attribute here is
+  // URL-bearing in both forms and stays in both.
   const URL_ATTR_TEMPLATE_LITERAL = /(href|src|action|formaction|srcset|poster|cite)="\$\{/
-  const URL_ATTR_JSX = /(href|src|action|formaction|srcset|poster|cite)=\{/
+  const URL_ATTR_JSX = /(href|src|formaction|srcset|poster|cite)=\{/
   const offenders: string[] = []
   for (const file of files) {
     const content = readFileSync(file, 'utf8')

@@ -4,10 +4,11 @@
 // renders it again, and a refresh re-posts the form and writes a new audit
 // row, which is correct -- a second look is a second look.
 //
-// html() does the escaping here, not renderToStaticMarkup: react-dom/server
-// cannot be imported anywhere under app/** (spec §7, §8.0), so this file
-// builds its response through the hand-rolled, separately-tested escaper in
-// ../_lib/html.js instead of JSX.
+// html() does the escaping here rather than JSX: React's standalone server
+// renderer cannot be imported anywhere under app/**, because Next refuses to
+// build it (spec §7, §8.0). So this file builds its response through the
+// separately proven escaper in ../_lib/html.js. See the note at the top of
+// that file for why the package is not named here.
 import { getDb } from '../../_lib/domain/db.js'
 import { env } from '../../_lib/domain/env.js'
 import { adminRevealByAdminUser, type AdminRevealedSender } from '../../../src/actions.js'

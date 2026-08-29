@@ -863,3 +863,55 @@ Items 1–8 are behaviour; 9–11 are the build-enforced half, in the shape week
 tripwire established. The suite must be green **and** the container build must
 succeed before anything is deployed, and the master re-runs both rather than
 accepting a report of either.
+
+### §8.2.1 Amendment, 2026-08-29, during integration
+
+§8.2 enumerated six CSS variables for the static style block and `--danger` was
+not among them, so the implementer read the omission as deliberate and coloured
+the error line with `--accent`. It was an oversight, not a decision:
+`app/globals.css` defines `--danger: #c25a5a` and styles `.error` with it, and
+the reveal route's error line is the operator's only failure surface. The
+variable is added and the block now carries seven. This is recorded rather than
+quietly changed because the implementer's reasoning was correct given what the
+spec said, and the spec is what was wrong.
+
+### §8.4.1 Amendment, 2026-08-29, from running the tests: `action` is two
+different things
+
+§8.6 item 9 said "walk every file under `app/admin/`", which is broader than
+§8.4's own scope sentence ("inside any file under `app/admin/` that produces
+HTML through `html`"). The test author followed item 9, correctly, and the URL
+attribute guard went red on `app/admin/login/page.tsx`:
+
+```
+<form action={adminLoginAction} className="card">
+```
+
+**That file is not defective.** In hand-built HTML a form's `action` is a URL
+string and interpolating into it is exactly what §8.4 rule 2 exists to stop. In
+JSX, `action={fn}` is React's server action form: the value is a function
+reference that never reaches the document as a URL at all. One attribute name,
+two unrelated meanings, and the spec conflated them.
+
+**The resolution, and why it is a correction and not a loosening.** The broad
+walk over every file under `app/admin/` is kept, because JSX is not a safe
+context for a URL — React does not sanitise `javascript:` in an `href` — and
+narrowing the guard to only the `html`-producing files would have thrown that
+coverage away to fix a false positive. Instead `action` is removed from the JSX
+pattern only, and stays in the template-literal pattern. `href`, `src`,
+`formaction`, `srcset`, `poster` and `cite` remain in both.
+
+The guard was then mutation-checked rather than trusted: `href={EVIL}` injected
+into `app/admin/page.tsx` turns it red, and the source restored turns it green.
+
+### §8.6.1 Amendment, 2026-08-29: the package name is banned from the prose too
+
+Item 11's guard greps `app/` and `src/` for the banned renderer's package name
+in any form. Both new files named it **in a comment**, explaining why it is not
+imported, and the guard fired. Same fork as §3.3.1, and the same answer: the
+comments changed, the guard did not. A text-match guard that cannot tell an
+import from a comment catches import forms nobody has thought of yet, and that
+is worth more than the convenience of naming the package in prose. The comments
+now say what they mean without the literal string, and say why.
+
+Mutation-checked: reintroducing the literal into `html.ts` turns item 11 red.

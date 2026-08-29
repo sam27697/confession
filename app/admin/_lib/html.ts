@@ -1,8 +1,14 @@
 // The whole of the escaping surface for admin HTML (spec §8.2). The reveal
 // route builds its response through this file and nothing else, because
-// react-dom/server cannot be imported from app/** (spec §7, §8.0) and a
-// hand-built HTML response needs its own proven escaper rather than a
-// template string that happens to look right.
+// React's standalone server renderer cannot be imported from anywhere under
+// app/** -- Next refuses to build it (spec §7, §8.0) -- and a hand-built
+// HTML response needs its own proven escaper rather than a template string
+// that happens to look right.
+//
+// The package name is deliberately not written anywhere in this file or in
+// the reveal route: test/17 item 11 greps the source for it, and a guard
+// that cannot tell an import from a comment is worth more than the
+// convenience of naming the thing (the same trade as spec §3.3.1).
 //
 // html() returns a branded SafeHtml value, not a string. htmlResponse() only
 // accepts that brand, so a concatenated string is a type error at the call
