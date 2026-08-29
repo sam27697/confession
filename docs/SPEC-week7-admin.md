@@ -915,3 +915,160 @@ is worth more than the convenience of naming the package in prose. The comments
 now say what they mean without the literal string, and say why.
 
 Mutation-checked: reintroducing the literal into `html.ts` turns item 11 red.
+
+---
+
+## §9 Two defects found by deploying it, 2026-08-29, frozen before any repair
+
+*Written by the session master after measuring both on the running staging
+stack. Neither was found by a test, by a review or by reading the code. Both
+were found by putting the thing on the server and using it over the public
+internet, which is the reason that step is not optional.*
+
+### §9.0 What was measured
+
+**Defect 1: the deploy refuses to run once an admin is configured.**
+`ADMIN_BOOTSTRAP_PASSWORD_HASH` was appended to `/srv/apps/confession/.env`
+in the format §2.2 specifies, `scrypt$16384$8$1$<salt>$<key>`, and the next
+`./repo/deploy.sh` died on its own third line with, verbatim:
+
+```
+./.env: line 10: $1: unbound variable
+```
+
+`deploy.sh` reads the stack's configuration with `set -a; . ./.env; set +a`
+under `set -euo pipefail`. Sourcing is not parsing: bash expands the right hand
+side of every assignment in that file. The scrypt format is `$`-separated by
+design, so `$16384`, `$8` and `$1` were expanded as positional parameters,
+`set -u` saw `$1` unset, and the script exited before it built anything. The
+deploy failed closed, which is the only good thing about it.
+
+**The narrow reading of this defect is a quoting problem in one file on one
+server. The wide reading is the one that matters:** `. ./.env` gives every
+value in that file the full power of the shell. A `POSTGRES_PASSWORD`
+containing a backtick or `$(...)` would not be a syntax error, it would be
+command execution as `deploy` at deploy time, from a file whose entire purpose
+is to hold secrets that nobody reviews. Nothing in this project generates such
+a value today. The repair is not that it might.
+
+**Defect 2: `POST /admin/logout` sends the operator to the container's own
+bind address.** Measured from outside, over the real certificate:
+
+```
+logout status=303
+location: https://0.0.0.0:3000/admin/login
+```
+
+`app/admin/logout/route.ts` builds the target with
+`new URL('/admin/login', request.url)`. Inside the container `request.url` is
+built from the process bind address, `HOSTNAME=0.0.0.0` and `PORT=3000`, not
+from the hostname the request was actually sent to. The `Set-Cookie` clearing
+`admin_sid` is correct and does arrive, so the session really does end, but a
+browser following that `Location` lands on a dead address. **The logout button
+works and looks broken**, which is the worst pairing of the two: the operator
+sees a failure page and has no way to tell that the session was destroyed.
+
+Every other redirect in the admin surface was re-checked and every one of them
+is relative (`location: /admin/login?error=invalid`, `location: /admin`). This
+route is the only one that constructs an absolute URL, because it is the only
+one that builds its response with `NextResponse.redirect`, which requires one.
+
+### §9.1 The repairs
+
+**Defect 1, in `deploy.sh`: stop sourcing the file, read the five keys it
+needs.** The script needs `STACK_NAME`, `HOST_PORT`, `APP_ORIGIN` and
+`ALLOW_DEV_LOGIN`, and nothing else. Every other value in `.env` is the
+container's business and reaches it through compose's `env_file`, which parses
+rather than executes. A new helper, `scripts/read-env-key.sh`, takes a file and
+a key and prints the value with no expansion of any kind, stripping one layer
+of matching single or double quotes if present. `deploy.sh` calls it four times
+and never sources anything.
+
+Rejected, in writing:
+
+- **Quote the value in `.env` and move on.** It unblocks tonight and leaves the
+  next person to find out the same way, with a worse value. It also does not
+  touch the execution problem at all. Rejected as a repair, used only as the
+  temporary unblock that let this session measure the rest of the slice, and
+  recorded here as such.
+- **`set +u` around the source.** Turns a loud failure into a silent one:
+  `$16384` would expand to empty and the hash would reach compose truncated.
+  The container would then refuse to start on a malformed hash (§2.4 rule 2),
+  which is at least fail-closed, but the operator would be debugging a hash
+  that was correct in the file. Rejected.
+- **`export $(grep -v '^#' .env | xargs)`.** The common recipe, and it is worse
+  than what is already there: `xargs` applies its own quote and backslash
+  rules, and word-splitting mangles any value with a space. Rejected.
+- **A `.env` parser in Node, called from `deploy.sh`.** Correct, and it puts a
+  Node process and a second parsing implementation into the one script that
+  has to work when the application does not. Rejected on that.
+
+**Defect 2, in `app/admin/logout/route.ts`: build the target from
+`env.appOrigin`,** the value the stack is already configured with, already
+validated by `loadEnv`, and already the source of truth for absolute URLs in
+the share card (week 6). The route keeps its 303 and keeps its cookie clear.
+
+Rejected, in writing:
+
+- **A hand-built `new Response` with a relative `Location`.** Valid per
+  RFC 7231 and it is what the login action already emits. Rejected because it
+  drops `NextResponse`'s cookie handling, and the cookie clear is the part of
+  this route that must not break while fixing the part that is cosmetic.
+- **Reading the forwarded host header.** Forbidden outright by §4.4, which does
+  not get an exception for convenience, and the week 6 tripwire would turn red.
+  It is also the wrong answer: the app knows its own origin from configuration
+  and does not need to be told by a request.
+
+### §9.2 What this says about the tests, and it is not comfortable
+
+Both defects sit in code that 149 passing tests walked straight past, and the
+reason is the same in both cases: **every test in this repository exercises the
+application in-process, and neither defect exists in-process.** `request.url` is
+whatever the test constructs, and `deploy.sh` is never executed by anything.
+`test/13-deploy-pairing.test.ts` runs `check-deploy-pairing.sh` as a real
+subprocess and proves the pattern is available; nothing extended it to the
+script that calls it.
+
+That is the gap §9.3 closes. It does not close the general form of it. The
+honest statement is that this project's suite proves the domain layer and
+proves the HTML, and that the deploy path and anything derived from a real
+request's transport are covered by deploying and looking, which is a slower
+loop with a human in it.
+
+### §9.3 The tests, written by a different agent from this document
+
+Appended to `test/13-deploy-pairing.test.ts` for the deploy half and to
+`test/17-admin-html.test.ts` for the route half. The author does not read the
+repair.
+
+1. **`read-env-key.sh` does not expand.** A file containing
+   `K=scrypt$16384$8$1$abc$def` yields that string byte for byte on stdout.
+2. **It does not execute.** A file containing `K=$(touch /tmp/pwned-<unique>)`
+   and a second containing a backtick form both yield the literal text, and the
+   file the substitution would have created does not exist afterwards.
+3. **It strips exactly one layer of matching quotes.** `K='v'` and `K="v"` both
+   yield `v`; `K=''v''` yields `'v'`; `K='v` yields `'v` unchanged, because the
+   quotes do not match.
+4. **It is exact about keys.** With `KEY=a` and `OTHER_KEY=b` in one file,
+   asking for `KEY` yields `a`, never `b` and never both. A `#` comment line
+   whose text contains the key is not matched. A missing key yields empty
+   output and exit 0, because absent and empty are the same thing to
+   `deploy.sh`'s existing `:?` checks, which stay where they are.
+5. **The last assignment wins**, matching what sourcing did, so replacing the
+   mechanism does not silently change which value a duplicated key resolves to.
+6. **`deploy.sh` no longer sources `.env`.** The file's text contains no
+   `. ./.env` and no `source` of it, and does contain a call to the helper.
+   A blunt text guard, and it is the one that would have caught this defect
+   before the server did.
+7. **`app/admin/logout/route.ts` does not build its target from the request.**
+   The file's text contains no `request.url`, and the redirect target is
+   derived from the configured origin. Same blunt shape as item 6, same reason.
+
+### §9.4 Deploy, restated for the rest of this session
+
+Staging is redeployed on the repaired tree and `POST /admin/logout` is measured
+again from outside: the `Location` must be the public hostname. Production is
+then deployed **twice on purpose**: first with no admin variables in its `.env`,
+to demonstrate §3.0's kill switch as a 404 on a build that has the routes, and
+then with a **different** username and password from staging's. Both hostnames
+carry the same code and different credentials, which is the whole point of §5.
