@@ -74,12 +74,12 @@ export function htmlResponse(document: SafeHtml, status: number): Response {
 }
 
 // Wraps a body fragment in the full document. A route handler's response
-// does not pass through app/layout.tsx, so it gets no stylesheet from
-// globals.css -- this block is the same palette and font stack, copied in
-// because it has to be, not linked, since an external stylesheet URL is
-// exactly the kind of interpolation-free static asset that still needs no
-// network round trip here. Static means literally constant: no `${` inside
-// the <style> block below (spec §8.4 rule 4).
+// does not pass through app/layout.tsx, so nothing links globals.css for it
+// and the page would render unstyled. The palette and font stack below are
+// copied from globals.css rather than linked, because Next hashes the
+// stylesheet's filename at build time and this file has no way to know it.
+// The block is literally constant -- no `${` anywhere inside it, which is
+// what spec §8.4 rule 4 requires.
 export function revealDocument(title: string, body: SafeHtml): SafeHtml {
   return html`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -96,6 +96,7 @@ export function revealDocument(title: string, body: SafeHtml): SafeHtml {
   --text: #ece8f5;
   --muted: #a79fc0;
   --accent: #d98a4a;
+  --danger: #c25a5a;
 }
 * { box-sizing: border-box; }
 html { direction: rtl; }
@@ -118,7 +119,7 @@ a { color: var(--accent); }
   margin: 0 0 16px;
 }
 .muted { color: var(--muted); font-size: 14px; }
-.error { color: var(--accent); font-size: 15px; }
+.error { color: var(--danger); font-size: 15px; }
 .pre { white-space: pre-line; }
 </style>
 </head>
