@@ -615,3 +615,251 @@ difference.
 
 So the next session should expect two build problems, not one, and should not
 read a green typecheck as evidence about either.
+
+---
+
+## §8 The repair, frozen 2026-08-29 before any code
+
+*Written by the session master after re-measuring §7 and §7.1, not by the agent
+that implements it. §8.6 is the test list that a different agent, working in a
+separate worktree, writes from this document without reading the
+implementation.*
+
+### §8.0 What was re-measured first
+
+Both claims in §7 were reproduced by hand on `week7/admin-surface` at `3a58e75`
+before any decision was taken.
+
+1. **§7 stands.** `npx next build` fails on
+   `app/admin/reveal/route.tsx:9`, verbatim: *"You're importing a component that
+   imports react-dom/server."* One file, one line, and the build stops there.
+2. **§7.1 does not stand, and this is the useful half.** The prediction was two
+   build problems. `app/admin/reveal/route.tsx` was temporarily replaced with a
+   handler that keeps every direct `src/*` and `app/_lib/domain/*` import and
+   drops only the JSX, and the build then **succeeded**, emitting all twenty
+   routes including `/admin`, `/admin/login`, `/admin/logout`, `/admin/reports`
+   and `/admin/reveal`. So webpack resolves `app/admin/**` → `src/*` exactly as
+   `tsc` does, the `extensionAlias` in `next.config.mjs` covers it, and **no
+   re-export wrappers under `app/_lib/domain/` are needed or will be added.**
+   The probe was reverted; the tree was clean before and after.
+
+There is one problem, not two. §7.1's worry is closed by measurement rather than
+by being designed around, and the cost of not measuring it would have been a
+wrapper layer built for a resolution failure that does not happen.
+
+### §8.1 The decision, and why the other four lost
+
+**Option 1 of §7 is taken: the reveal response is built by an escaping tagged
+template, in `app/admin/_lib/html.ts`.** §7 called this "about fifteen lines of
+new, unproven code" and refused to write it at the end of a budget with no
+independent proof. That objection was about the *proof*, not about the
+mechanism, and this session has the budget the last one did not: the escaper is
+written by one agent and attacked by another, from this document, in separate
+worktrees.
+
+The rest of §8 exists to make "hand-rolled escaping" a claim the build checks
+rather than a thing an implementer got right. Two properties do that work:
+
+- **The escaper cannot be bypassed by accident, because of the type system.**
+  `html` returns a branded `SafeHtml` value, not a `string`, and the only
+  function in the codebase that builds an HTML response for an admin route
+  accepts `SafeHtml` and nothing else. A concatenated string is a type error at
+  the point of use, not a review finding.
+- **The contexts the escaper does not cover are forbidden, not trusted.** A
+  five-character replacement set is complete for HTML text and for
+  double-quoted attribute values, and is *not* complete inside `<script>`,
+  inside `<style>`, in a URL-bearing attribute, in an event-handler attribute,
+  or in a tag or attribute name. §8.4 bans every one of those in admin
+  HTML-producing code and §8.6 item 9 fails the build if one appears.
+
+**Option 2 — a Server Action into `useActionState` — stays rejected**, on §7's
+own reasoning: it puts the revealed identity into the RSC payload and into a
+client component's state, where it survives client-side navigation. §4.2 says
+the identity exists only in the response to the write.
+
+**Option 3 — a GET page keyed on a single-use reveal id — is rejected, and it is
+worse than §7 estimated.** §7 called it "the most likely answer". Re-argued
+here, it fails on three counts and the third is new:
+
+1. It needs a second table holding, however briefly, a row that pairs a
+   confession with a revealed identity — the exact shape the schema has avoided
+   since week 2.
+2. §4.2 says in terms that there is no GET that renders the identity. Option 3
+   is that GET. Single-use narrows the window; it does not change the sentence.
+3. **§3.3.1 makes it leak.** The reveal URL would be the `Referer` of every
+   same-origin navigation off that page, starting with the link back to
+   `/admin` that the page is required to carry — and the `Referrer-Policy`
+   header that would contain it was *withdrawn* in §3.3.1, because its own name
+   trips week 6's request-metadata tripwire. So option 3 would put a
+   reveal-bearing URL into browser history and into request headers, on a
+   surface whose entire purpose is that a look is recorded exactly once and
+   rendered exactly once.
+
+**Option 4 — `text/plain` — is rejected, and it is recorded because it is the
+strongest option on security alone.** A plain-text response cannot be injected
+into at all; escaping stops being a question by construction. It loses on the
+product side: the operator is on a phone (his instruction «للموبايل بس»), and a
+text/plain response has no link back to `/admin`, no legibility, and no RTL. The
+gap between option 4 and a *proven* option 1 is small enough that the usable
+surface wins; had §8.6 been unaffordable this session, option 4 and not option 1
+would have been the honest fallback.
+
+**Option 5 — importing `react-dom/server.edge` or `react-dom/server.node` to get
+past the check, or hiding the import behind a dynamic `await import()` — is
+rejected on principle and is not to be attempted.** Next's rule is a deliberate
+guard; routing around a guard so that new code can pass is the same move as
+loosening a test's regex, which §3.3.1 already refused once in this document. It
+would also be undefined behaviour across any Next release.
+
+### §8.2 `app/admin/_lib/html.ts` — the whole of the escaping surface
+
+```ts
+export type SafeHtml = { readonly __safeHtml: string }
+
+export function html(strings: TemplateStringsArray, ...values: unknown[]): SafeHtml
+export function htmlResponse(document: SafeHtml, status: number): Response
+export function revealDocument(title: string, body: SafeHtml): SafeHtml
+```
+
+**`html`** interleaves the literal chunks of the template — which are trusted,
+because they are source text — with the interpolated values, which are not. For
+each value:
+
+- `null` and `undefined` produce the empty string. **`false` also produces the
+  empty string**, so that `cond && html\`...\`` is a legal fragment.
+- A `SafeHtml` is inserted verbatim and **is not escaped again**. This is what
+  makes nesting work and it is the one place the type brand is load-bearing.
+- An array is mapped element-wise by these same rules and joined with `''`.
+- Anything else is `String(value)` and then escaped.
+
+**The escape function replaces exactly five characters and nothing else:**
+
+| in | out |
+|----|-----|
+| `&` | `&amp;` |
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `"` | `&quot;` |
+| `'` | `&#39;` |
+
+`&` is replaced first, or every other replacement is double-escaped. No other
+codepoint is touched: Arabic text, emoji and astral-plane characters pass
+through byte-for-byte, because the document is served as UTF-8 and mangling a
+display name is its own kind of wrong answer.
+
+**`htmlResponse`** takes a `SafeHtml` — never a `string`, and this is the
+enforcement point — and returns a `Response` with
+`Content-Type: text/html; charset=utf-8` and `Cache-Control: no-store`. It
+throws a `TypeError` on a value that is not a `SafeHtml` at runtime as well, so
+a caller that reaches it through `any` still fails.
+
+**`revealDocument`** wraps a body fragment in the full document: `<!DOCTYPE
+html>`, `<html lang="ar" dir="rtl">`, charset and viewport meta, an escaped
+`<title>`, and a **static** `<style>` block. Static means literally constant:
+§8.4 forbids interpolation inside `<style>`, and a constant block is not
+interpolation. The style block carries the same palette as `app/globals.css`
+(`--bg: #14121a`, `--panel: #1e1b26`, `--border: #322d3d`, `--text: #ece8f5`,
+`--muted: #a79fc0`, `--accent: #d98a4a`) and the same system font stack, because
+a route handler's response does not pass through `app/layout.tsx` and therefore
+gets no stylesheet. No `@import`, no external URL, no `<script>` anywhere.
+
+### §8.3 `app/admin/reveal/route.tsx` becomes `route.ts`
+
+The file is renamed — there is no JSX in it any more, and a `.tsx` extension
+with no JSX is a lie about the file. Its behaviour is **unchanged from §3.3 and
+must not be re-litigated here**: the 404 on `env.adminEnabled === false`, the
+`requireAdminUserId` redirect, the `reason.trim().length < 8` re-render that
+writes nothing, the single-transaction `adminRevealByAdminUser`, and the three
+rendered outcomes (reason too short → 400, reveal failed → 400, revealed → 200)
+all stay exactly as they are. Only the rendering mechanism changes.
+
+The Arabic copy of the three outcomes is carried over verbatim from the current
+file. The success page still shows the display name, the account id, the reason
+just recorded, and a link to `/admin`, in that order.
+
+### §8.4 The rules the escaper does not cover, and which are therefore banned
+
+Inside any file under `app/admin/` that produces HTML through `html`:
+
+1. **Every attribute value is double-quoted.** Single-quoted and unquoted
+   attribute values are forbidden, because `&#39;` and the space-terminated
+   unquoted form respectively make the five-character set incomplete.
+2. **No interpolation into a URL-bearing attribute** — `href`, `src`, `action`,
+   `formaction`, `srcset`, `poster`, `data`, `cite`. The reveal page's only link
+   is the literal `/admin`. Escaping does not stop `javascript:`.
+3. **No `<script>` element and no event-handler attribute** (`on*`), with or
+   without interpolation.
+4. **No interpolation inside `<style>`**, and no interpolation of a tag name, an
+   attribute name, or a `<!--` comment.
+5. **No `dangerouslySetInnerHTML`** anywhere under `app/admin/`.
+
+These are not style preferences. Each one names a context in which the five
+replacements of §8.2 are provably insufficient, and §8.6 item 9 enforces the
+list against the source.
+
+### §8.5 What does not change
+
+`src/`, `drizzle/`, `scripts/`, the six existing admin files other than the
+reveal route, and every test from 01 to 16 are untouched. If a change to any of
+them looks necessary, that is a finding to report, not a change to make: the 106
+pre-existing tests and the 20 §6 items are the proof that week 7's behaviour
+survived this repair, and editing them to accommodate it would destroy the only
+evidence that it did.
+
+### §8.6 The test list — `test/17-admin-html.test.ts`
+
+Written from this document by an agent that has not read `app/admin/_lib/html.ts`
+or the rewritten route, in its own worktree.
+
+1. **Character sweep.** For every codepoint from 0 to 0x2FF, and for the set
+   `{U+0600 Arabic block sample, U+1F600, U+10FFE}`: the output of
+   `` html`${c}` `` equals the input character verbatim **unless** it is one of
+   the five, and equals exactly the mapped entity when it is. Nothing else is
+   altered, and the length of the output for a non-special character is the
+   length of the input.
+2. **Ordering.** `` html`${'<'}` `` is `&lt;`, not `&amp;lt;`. `` html`${'&lt;'}` ``
+   is `&amp;lt;`. Escaping the already-escaped is visible, not silent.
+3. **Payloads.** `<script>alert(1)</script>`, `"><script>alert(1)</script>`,
+   `'><img src=x onerror=alert(1)>`, `</title><script>`, `</textarea>`,
+   `" onmouseover="alert(1)`, `javascript:alert(1)` as a text value, and a
+   500-character name: for each, the output contains no `<` and no `"` that did
+   not come from a literal chunk of the template, and the payload is present in
+   escaped form.
+4. **The brand.** A `SafeHtml` interpolated into another `html` template is
+   inserted verbatim; the equivalent plain `string` with the same content is
+   escaped. An object shaped like `{ __safeHtml: '<script>' }` that was not
+   produced by `html`… is out of scope: the brand is a compile-time guarantee,
+   and the test asserts the runtime behaviour that `html` produces, not that
+   forgery is impossible.
+5. **Value kinds.** `null`, `undefined` and `false` render empty; `0` renders
+   `0` and not empty; an array of `SafeHtml` joins with no separator; a nested
+   array is handled or rejected, and whichever it is, it is asserted.
+6. **`htmlResponse` refuses a string.** Called through `as any` with `'<b>'`, it
+   throws a `TypeError` and does not return a `Response`. Called with a
+   `SafeHtml`, it returns 200/400 as given, `Content-Type: text/html;
+   charset=utf-8`, and `Cache-Control: no-store`.
+7. **The type is the enforcement.** A source-level assertion over
+   `app/admin/_lib/html.ts` that `htmlResponse`'s first parameter is typed
+   `SafeHtml` and not `string`.
+8. **The document.** `revealDocument` with a title and body containing
+   `<script>alert(1)</script>` as a *value*: the result starts with
+   `<!DOCTYPE html>`, contains `lang="ar"`, `dir="rtl"`, `charset`, exactly one
+   `<title>`, and **no `<script`** substring at all. The escaped payload is
+   present as `&lt;script&gt;`.
+9. **§8.4 enforced against the source.** Walk every file under `app/admin/`:
+   none contains `dangerouslySetInnerHTML`; none contains a `<script`; none
+   contains an `on[a-z]+=` event-handler attribute; none interpolates into a
+   URL-bearing attribute (`(href|src|action|formaction|srcset|poster|cite)="\$\{`
+   or the JSX `={` equivalent with a non-literal); no `<style>` block in
+   `_lib/html.ts` contains `${`. Each violation names the file and the rule.
+10. **`text/html` has one origin.** No file under `app/admin/` other than
+    `_lib/html.ts` contains the string `text/html`.
+11. **Nothing was renamed away.** `app/admin/reveal/route.tsx` no longer exists
+    and `app/admin/reveal/route.ts` does; no file under `app/` or `src/`
+    imports `react-dom/server` in any form, including `server.edge`,
+    `server.node`, `server.browser`, and a dynamic `import(`.
+
+Items 1–8 are behaviour; 9–11 are the build-enforced half, in the shape week 6's
+tripwire established. The suite must be green **and** the container build must
+succeed before anything is deployed, and the master re-runs both rather than
+accepting a report of either.
