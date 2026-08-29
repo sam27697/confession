@@ -75,6 +75,42 @@ export async function adminReveal(
   })
 }
 
+// The admin-user counterpart to adminReveal above (spec §3.3), NEW and
+// alongside it -- adminReveal is retained unchanged and unused by any
+// route, as the path for the day an administrator is a Facebook account.
+// Same shape: one transaction, insert the log row first, then read the
+// identity, so a failure to record the look rolls back the look.
+export async function adminRevealByAdminUser(
+  db: Db,
+  { adminUserId, confessionId, reason }: { adminUserId: string; confessionId: string; reason: string },
+): Promise<AdminRevealedSender> {
+  return db.transaction(async (tx) => {
+    await tx.insert(adminRevealLog).values({
+      adminUserId,
+      confessionId,
+      reason,
+    })
+
+    const [row] = await tx
+      .select({
+        senderAccountId: accounts.id,
+        senderDisplayName: accounts.displayName,
+      })
+      .from(confessions)
+      .innerJoin(accounts, eq(accounts.id, confessions.senderAccountId))
+      .where(eq(confessions.id, confessionId))
+      .limit(1)
+
+    if (!row) throw new Error(`no confession ${confessionId}`)
+
+    return {
+      confessionId,
+      senderAccountId: row.senderAccountId,
+      senderDisplayName: row.senderDisplayName,
+    }
+  })
+}
+
 export type SendConfessionResult = { confessionId: string }
 
 // Checks, in order (spec §2): link exists and enabled; sender not blocked

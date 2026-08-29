@@ -32,8 +32,15 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# shellcheck disable=SC1091
-set -a; . ./.env; set +a
+# Read only what this script needs, one key at a time, through a helper
+# that never expands or executes what it reads (spec §9.1). Everything
+# else in .env -- SESSION_SECRET, POSTGRES_PASSWORD, the admin hash and so
+# on -- is the container's business and reaches it through compose's
+# env_file, which parses rather than executes.
+STACK_NAME="$("$REPO_DIR/scripts/read-env-key.sh" .env STACK_NAME)"
+HOST_PORT="$("$REPO_DIR/scripts/read-env-key.sh" .env HOST_PORT)"
+APP_ORIGIN="$("$REPO_DIR/scripts/read-env-key.sh" .env APP_ORIGIN)"
+ALLOW_DEV_LOGIN="$("$REPO_DIR/scripts/read-env-key.sh" .env ALLOW_DEV_LOGIN)"
 
 : "${HOST_PORT:?HOST_PORT is not set in .env -- 8182 staging, 8082 production}"
 : "${STACK_NAME:?STACK_NAME is not set in .env -- confession for staging, confession-prod for production}"
