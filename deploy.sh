@@ -47,9 +47,12 @@ ALLOW_DEV_LOGIN="$("$REPO_DIR/scripts/read-env-key.sh" .env ALLOW_DEV_LOGIN)"
 
 # The pairing guard runs before the build (spec §1.2): a deploy that is
 # going to be refused should be refused before it spends four minutes
-# compiling, not after.
-echo "deploy: checking STACK_NAME/HOST_PORT/APP_ORIGIN/ALLOW_DEV_LOGIN/APP_DIR pairing"
-"$REPO_DIR/scripts/check-deploy-pairing.sh" "$STACK_NAME" "$HOST_PORT" "${APP_ORIGIN:-}" "${ALLOW_DEV_LOGIN:-}" "$APP_DIR"
+# compiling, not after. .env is passed as the sixth argument (week 9 spec
+# §3) so the same run also refuses a $-bearing value that Compose's
+# env_file interpolation would silently truncate (spec §0.3) -- before the
+# build, same as everything else this guard catches.
+echo "deploy: checking STACK_NAME/HOST_PORT/APP_ORIGIN/ALLOW_DEV_LOGIN/APP_DIR pairing and .env quoting"
+"$REPO_DIR/scripts/check-deploy-pairing.sh" "$STACK_NAME" "$HOST_PORT" "${APP_ORIGIN:-}" "${ALLOW_DEV_LOGIN:-}" "$APP_DIR" ".env"
 
 # The repo is transferred to the box as files, not cloned: this account holds
 # no GitHub credential and the repository is private, so there is nothing here

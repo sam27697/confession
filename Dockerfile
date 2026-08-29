@@ -38,6 +38,7 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/drizzle ./drizzle
+COPY --from=build /app/scripts/check-env.mjs ./check-env.mjs
 COPY --from=build /app/scripts/migrate.mjs ./migrate.mjs
 COPY --from=build /app/scripts/bootstrap-admin.mjs ./bootstrap-admin.mjs
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

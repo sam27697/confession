@@ -15,7 +15,7 @@ export function createAdminSessionCookieValue(adminUserId: string): string {
   return signAdminSession(env.sessionSecret, { adminUserId })
 }
 
-export function verifyAdminSessionCookieValue(value: string): { adminUserId: string } | null {
+export function verifyAdminSessionCookieValue(value: string): { adminUserId: string; issuedAtMs: number } | null {
   return verifyAdminSession(env.sessionSecret, value)
 }
 

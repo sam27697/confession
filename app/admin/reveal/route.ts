@@ -14,6 +14,17 @@ import { env } from '../../_lib/domain/env.js'
 import { adminRevealByAdminUser, type AdminRevealedSender } from '../../../src/actions.js'
 import { requireAdminUserId } from '../_lib/auth.js'
 import { html, htmlResponse, revealDocument } from '../_lib/html.js'
+import { adminMethodNotAllowed } from '../_lib/method-guard.js'
+
+// Week 9 spec §2.1: the other five methods all delegate to the shared
+// guard so a hidden route no longer names the method it accepts. HEAD is
+// not exported -- Next derives it from GET, and GET here already answers
+// 404/405 with no body.
+export const GET = adminMethodNotAllowed
+export const PUT = adminMethodNotAllowed
+export const PATCH = adminMethodNotAllowed
+export const DELETE = adminMethodNotAllowed
+export const OPTIONS = adminMethodNotAllowed
 
 export async function POST(request: Request) {
   if (!env.adminEnabled) {
