@@ -4,43 +4,15 @@
 // renders it again, and a refresh re-posts the form and writes a new audit
 // row, which is correct -- a second look is a second look.
 //
-// renderToStaticMarkup does the escaping here, not a template string, so
-// nothing in this file builds HTML by concatenating strings.
-import { renderToStaticMarkup } from 'react-dom/server'
+// html() does the escaping here, not renderToStaticMarkup: react-dom/server
+// cannot be imported anywhere under app/** (spec §7, §8.0), so this file
+// builds its response through the hand-rolled, separately-tested escaper in
+// ../_lib/html.js instead of JSX.
 import { getDb } from '../../_lib/domain/db.js'
 import { env } from '../../_lib/domain/env.js'
 import { adminRevealByAdminUser, type AdminRevealedSender } from '../../../src/actions.js'
 import { requireAdminUserId } from '../_lib/auth.js'
-
-function renderPage(title: string, body: React.ReactNode): string {
-  return (
-    '<!DOCTYPE html>' +
-    renderToStaticMarkup(
-      <html lang="ar" dir="rtl">
-        <head>
-          <meta charSet="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>{title}</title>
-        </head>
-        <body>
-          <main>{body}</main>
-        </body>
-      </html>,
-    )
-  )
-}
-
-function htmlResponse(markup: string, status: number): Response {
-  return new Response(markup, {
-    status,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      // The revealed identity must not be cacheable anywhere between here
-      // and the browser (spec §3.3).
-      'Cache-Control': 'no-store',
-    },
-  })
-}
+import { html, htmlResponse, revealDocument } from '../_lib/html.js'
 
 export async function POST(request: Request) {
   if (!env.adminEnabled) {
@@ -61,13 +33,13 @@ export async function POST(request: Request) {
   // this re-renders with an error and writes nothing.
   if (reason.length < 8) {
     return htmlResponse(
-      renderPage(
+      revealDocument(
         'ما انكتب سبب كافي',
-        <div>
+        html`<div>
           <h1>ما انكتب سبب كافي</h1>
-          <p className="error">لازم السبب يكون ٨ حروف عالأقل.</p>
+          <p class="error">لازم السبب يكون ٨ حروف عالأقل.</p>
           <a href="/admin">رجوع</a>
-        </div>,
+        </div>`,
       ),
       400,
     )
@@ -78,33 +50,33 @@ export async function POST(request: Request) {
     revealed = await adminRevealByAdminUser(db, { adminUserId, confessionId, reason })
   } catch {
     return htmlResponse(
-      renderPage(
+      revealDocument(
         'صار خطأ',
-        <div>
+        html`<div>
           <h1>صار خطأ</h1>
-          <p className="error">ما قدرنا نكشف هالرسالة.</p>
+          <p class="error">ما قدرنا نكشف هالرسالة.</p>
           <a href="/admin">رجوع</a>
-        </div>,
+        </div>`,
       ),
       400,
     )
   }
 
   return htmlResponse(
-    renderPage(
+    revealDocument(
       'هوية المرسل',
-      <div>
+      html`<div>
         <h1>هوية المرسل</h1>
-        <div className="card">
-          <p className="muted">الاسم</p>
-          <p>{revealed.senderDisplayName}</p>
-          <p className="muted">رقم الحساب</p>
-          <p className="pre">{revealed.senderAccountId}</p>
-          <p className="muted">سبب الكشف</p>
-          <p>{reason}</p>
+        <div class="card">
+          <p class="muted">الاسم</p>
+          <p>${revealed.senderDisplayName}</p>
+          <p class="muted">رقم الحساب</p>
+          <p class="pre">${revealed.senderAccountId}</p>
+          <p class="muted">سبب الكشف</p>
+          <p>${reason}</p>
         </div>
         <a href="/admin">رجوع</a>
-      </div>,
+      </div>`,
     ),
     200,
   )
