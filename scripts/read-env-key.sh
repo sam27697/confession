@@ -12,10 +12,13 @@
 #
 # Matching is exact on the key name up to the first '=', and a line whose
 # first non-blank character is '#' is a comment, not a candidate, even if
-# the key text appears inside it. If the key is assigned more than once
-# the last assignment wins, matching what sourcing did. A missing key
-# prints nothing and exits 0, because absent and empty are the same thing
-# to deploy.sh's `:?` checks.
+# the key text appears inside it. Leading whitespace before the key is
+# tolerated -- the comment check and the key match both look at the same
+# whitespace-trimmed line, so an indented assignment is read the same way
+# sourcing would have read it, not silently missed. If the key is assigned
+# more than once the last assignment wins, matching what sourcing did. A
+# missing key prints nothing and exits 0, because absent and empty are the
+# same thing to deploy.sh's `:?` checks.
 #
 # One layer of matching quotes is stripped if the value both starts and
 # ends with the same quote character: K='v' and K="v" both yield v,
@@ -48,9 +51,9 @@ while IFS= read -r line || [ -n "$line" ]; do
     ''|'#'*) continue ;;
   esac
 
-  case "$line" in
+  case "$trimmed" in
     "$key"=*)
-      value="${line#"$key"=}"
+      value="${trimmed#"$key"=}"
       found=1
       ;;
   esac
