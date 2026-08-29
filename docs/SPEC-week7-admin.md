@@ -1072,3 +1072,114 @@ then deployed **twice on purpose**: first with no admin variables in its `.env`,
 to demonstrate §3.0's kill switch as a 404 on a build that has the routes, and
 then with a **different** username and password from staging's. Both hostnames
 carry the same code and different credentials, which is the whole point of §5.
+
+---
+
+## §10 Two findings from deploying the repair, 2026-08-29, frozen before any repair
+
+*Both were found the same way §9's pair were: by putting the thing on the
+server and driving it over the public internet. Neither is a regression from
+§9's repair, and neither is repaired in this session. Writing a fix for either
+at the end of a budget, with no independent test, is the defect class this
+project reviews for, so both are frozen here instead.*
+
+### §10.0 Finding 1: logout clears the cookie and revokes nothing
+
+`app/admin/_lib/session.ts` holds no session store. `admin_sid` is a signed
+token over `{ adminUserId }`, verified by `verifyAdminSession` against a key
+derived from `SESSION_SECRET`, and nothing else is consulted. So
+`POST /admin/logout`, which §3.5 specifies as "clear the cookie, 303 to the
+login page", does exactly that and no more: the token itself stays valid for
+the whole of `ADMIN_SESSION_MAX_AGE_MS`.
+
+Measured on staging, from outside, with a control:
+
+```
+captured an admin_sid of 143 chars
+A. logout with the cookie jar updated:  GET /admin = 307   (a browser is fine)
+B. the token captured BEFORE logout:    GET /admin = 200   (still valid)
+C. the same token with one byte changed: GET /admin = 307  (the probe is real)
+```
+
+C is the part that makes B a finding rather than noise: a tampered token is
+rejected, so B's 200 is a genuine signature check and not a surface that
+answers 200 to anything.
+
+**This is not a §3.5 violation.** §3.5 asked for a cookie clear and got one.
+It is an undocumented property of the surface that reveals identities, and the
+gap is that nobody wrote down what logout is worth. Stated plainly: a copy of
+the cookie taken before logout — from a shared machine, a proxy, a backup, a
+browser profile — is an admin session until it expires.
+
+Candidate repairs, none chosen tonight:
+
+- **A `logged_out_before` timestamp on `admin_users`**, set by logout, checked
+  on every verify. One column, one index-free lookup already being made, and
+  it revokes every outstanding token for that operator at once. Costs a
+  database read on each admin request, which the admin surface can afford and
+  the public surface could not.
+- **A server-side session table.** Complete, and it puts a per-request write
+  path next to the one surface whose whole design principle is that it reads
+  identities only under audit. More moving parts than the problem needs.
+- **Shorten `ADMIN_SESSION_MAX_AGE_MS`.** Reduces the window, does not close
+  it, and trades an operator's session length for a property it does not
+  actually buy. Rejected as a repair; it is a mitigation at best.
+
+Whichever is chosen, the test is the three-request probe above, run against a
+deployed stack, because it does not exist in-process — the same lesson §9.2
+already recorded.
+
+### §10.1 Finding 2: the kill switch leaks route existence through the method
+
+§3.0 requires that with `env.adminEnabled` false, "every route under `/admin`
+returns HTTP 404" and that the stack be "indistinguishable from a build that
+has no admin surface at all". Measured on production, deployed from the
+admin-carrying build with no admin variables in its `.env`:
+
+```
+POST /admin/reveal        404      <- the handler runs and the kill switch works
+POST /admin/logout        404
+GET  /admin               404
+GET  /admin/login         404
+GET  /admin/reveal        405      <- and this is the leak
+GET  /admin/logout        405
+GET  /admin/nosuchthing   404      <- what an absent route answers
+```
+
+`reveal` and `logout` are `route.ts` files exporting only `POST`. Next answers
+a `GET` to them with 405 before any handler runs, so `env.adminEnabled` is
+never consulted. A build with no admin surface would answer 404 to that same
+request. The method dimension therefore tells an unauthenticated stranger that
+this deployment contains an admin surface.
+
+**Severity, stated honestly and not inflated:** it exposes no data, grants no
+access, and does not bypass the kill switch — the method those routes actually
+accept answers 404. What it costs is the indistinguishability §3.0 asked for
+in its own words.
+
+Candidate repairs, none chosen tonight:
+
+- **Export the other methods from both route files**, each returning 404 when
+  disabled. Explicit, local, and it duplicates the same guard in more places.
+- **A `middleware.ts` matching `/admin/:path*`** that returns 404 when the
+  admin variables are absent. One place, catches every current and future
+  admin route including ones nobody remembers to guard, and it is the only
+  option that makes the guard structural rather than per-file. It needs care:
+  middleware runs on the edge runtime and must not read a request header for
+  any purpose, which §4.4 forbids and week 6's tripwire enforces.
+- **Leave it and amend §3.0.** Rejected. The sentence in §3.0 is the control
+  Sam's privacy contract leans on; weakening the spec to match the code is
+  backwards, and this project has a rule against it.
+
+The test is the probe table above, from outside, on a stack with admin
+disabled, with `GET /admin/nosuchthing` kept as the control row.
+
+### §10.2 One more thing the deploy found, and it was repaired
+
+`deploy.sh` was stored `100644` in git while both §5 and its own header
+document invoking it as `./repo/deploy.sh`. Every transfer that unpacks a
+clean `git archive` landed it non-executable, so the documented line failed
+with `Permission denied` and only ever worked because somebody had chmod'd it
+on the server by hand after an earlier upload. The mode is now carried in git.
+Small, and it is the kind of thing that only shows up the first time somebody
+deploys from a clean tree rather than editing the one already on the box.
