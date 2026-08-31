@@ -1,0 +1,11 @@
+-- 0003_admin_logout.sql
+--
+-- Hand-written, like 0001_constraints.sql and 0002_admin.sql (spec §1.4
+-- item 1): scripts/migrate.mjs runs the whole file in one transaction. One
+-- statement.
+--
+-- Nullable, no default: null means "this operator has never logged out",
+-- which is the correct state for every existing row and for every new one
+-- (week 9 spec §1.4 item 1). POST /admin/logout sets it; every admin
+-- request compares a session token's iat against it (spec §1.1, §1.3).
+ALTER TABLE admin_users ADD COLUMN logged_out_before timestamptz;

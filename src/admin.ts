@@ -10,18 +10,28 @@ import type { Db } from './db.js'
 import { adminUsers, confessions, reports } from './schema.js'
 import { hashAdminPassword, verifyAdminPassword } from './admin-auth.js'
 
-export type AdminUser = { id: string; username: string; disabledAt: Date | null }
+export type AdminUser = {
+  id: string
+  username: string
+  disabledAt: Date | null
+  // Week 9 spec §1.4 item 4: null means this operator has never logged out.
+  loggedOutBefore: Date | null
+}
 
 export async function findAdminUserByUsername(
   db: Db,
   { username }: { username: string },
-): Promise<{ id: string; username: string; passwordHash: string; disabledAt: Date | null } | null> {
+): Promise<
+  | { id: string; username: string; passwordHash: string; disabledAt: Date | null; loggedOutBefore: Date | null }
+  | null
+> {
   const [row] = await db
     .select({
       id: adminUsers.id,
       username: adminUsers.username,
       passwordHash: adminUsers.passwordHash,
       disabledAt: adminUsers.disabledAt,
+      loggedOutBefore: adminUsers.loggedOutBefore,
     })
     .from(adminUsers)
     .where(eq(adminUsers.username, username))
@@ -34,8 +44,16 @@ export async function getAdminUserById(
   db: Db,
   { adminUserId }: { adminUserId: string },
 ): Promise<AdminUser | null> {
+  // loggedOutBefore is one more field on a select that is already being
+  // issued on every protected admin request -- the repair costs zero
+  // additional round trips (week 9 spec §1.1).
   const [row] = await db
-    .select({ id: adminUsers.id, username: adminUsers.username, disabledAt: adminUsers.disabledAt })
+    .select({
+      id: adminUsers.id,
+      username: adminUsers.username,
+      disabledAt: adminUsers.disabledAt,
+      loggedOutBefore: adminUsers.loggedOutBefore,
+    })
     .from(adminUsers)
     .where(eq(adminUsers.id, adminUserId))
     .limit(1)
@@ -46,6 +64,18 @@ export async function getAdminUserById(
   // §2.3).
   if (!row || row.disabledAt !== null) return null
   return row
+}
+
+// Sets logged_out_before to the given instant for one administrator (week 9
+// spec §1.4 item 4). Takes `at` as an argument rather than calling
+// `new Date()` itself, so the caller's clock -- the application clock, not
+// Postgres's -- is the one and only clock in play (spec §1.2), and so a
+// test can pin the instant.
+export async function revokeAdminSessions(
+  db: Db,
+  { adminUserId, at }: { adminUserId: string; at: Date },
+): Promise<void> {
+  await db.update(adminUsers).set({ loggedOutBefore: at }).where(eq(adminUsers.id, adminUserId))
 }
 
 // Computed once, at module load, at the same cost as a real stored hash and
@@ -68,7 +98,7 @@ export async function authenticateAdmin(
 
   if (!row || !passwordOk || row.disabledAt !== null) return null
 
-  return { id: row.id, username: row.username, disabledAt: row.disabledAt }
+  return { id: row.id, username: row.username, disabledAt: row.disabledAt, loggedOutBefore: row.loggedOutBefore }
 }
 
 // ---------------------------------------------------------------------------

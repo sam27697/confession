@@ -104,6 +104,11 @@ export const adminUsers = pgTable('admin_users', {
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   disabledAt: timestamp('disabled_at', { withTimezone: true }),
+  // Nullable, null means "never logged out" (week 9 spec §1.1, §1.4 item 2).
+  // Set by POST /admin/logout via revokeAdminSessions; every admin request
+  // refuses a token whose iat is at or before this instant. Added in
+  // drizzle/0003_admin_logout.sql.
+  loggedOutBefore: timestamp('logged_out_before', { withTimezone: true }),
   // CHECK admin_users_username_nonblank, CHECK admin_users_password_hash_is_scrypt
   // - both in the hand-written migration drizzle/0002_admin.sql.
 })

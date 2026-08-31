@@ -25,6 +25,7 @@ export function adminSessionKey(sessionSecret: string): string {
 }
 
 export type AdminSessionPayload = { adminUserId: string }
+export type VerifiedAdminSession = { adminUserId: string; issuedAtMs: number }
 
 // Reuses signPayload from src/session.ts rather than a second HMAC
 // implementation -- week 4 already paid for the version of this project
@@ -37,18 +38,34 @@ export function signAdminSession(sessionSecret: string, payload: AdminSessionPay
 // signature mismatch, an iat in the future, an iat older than
 // ADMIN_SESSION_MAX_AGE_MS, or a payload whose adminUserId is not a
 // non-empty string -- without distinguishing which.
+//
+// Returns the token's issuedAtMs (week 9 spec §1.4 item 3) alongside the
+// adminUserId: verifyPayload already returns T & { iat: number }, and every
+// existing caller destructures only adminUserId and is unaffected by the
+// extra field.
 export function verifyAdminSession(
   sessionSecret: string,
   token: string,
   nowMs?: number,
-): AdminSessionPayload | null {
+): VerifiedAdminSession | null {
   const result = verifyPayload<AdminSessionPayload>(adminSessionKey(sessionSecret), token, {
     maxAgeMs: ADMIN_SESSION_MAX_AGE_MS,
     nowMs,
   })
   if (!result) return null
   if (typeof result.adminUserId !== 'string' || result.adminUserId.length === 0) return null
-  return { adminUserId: result.adminUserId }
+  return { adminUserId: result.adminUserId, issuedAtMs: result.iat }
+}
+
+// Pure, exported and importable with no next/headers in the require chain
+// (week 9 spec §5 item 4): the revocation decision app/admin/_lib/auth.ts
+// makes on every protected admin request, over the two raw instants alone.
+// Refused when loggedOutBefore is not null and issuedAtMs <= loggedOutBefore
+// -- <= rather than < so a token issued in the same millisecond as a logout
+// is refused rather than honoured (spec §1.3).
+export function isAdminSessionRevoked(issuedAtMs: number, loggedOutBefore: Date | null): boolean {
+  if (loggedOutBefore === null) return false
+  return issuedAtMs <= loggedOutBefore.getTime()
 }
 
 // ---------------------------------------------------------------------------

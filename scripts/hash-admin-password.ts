@@ -36,6 +36,13 @@ async function main(): Promise<void> {
   }
 
   console.log(hashAdminPassword(password))
+
+  // stderr, never stdout, which is piped by every existing $(...) use of
+  // this script (spec week 9 §3, item 3): the hash contains '$' by format,
+  // and Docker Compose interpolates $NAME in env_file values, so this value
+  // must be wrapped in single quotes in .env or it reaches the container
+  // truncated (spec §0.3).
+  console.error('hash-admin-password: wrap this value in single quotes in .env -- it contains $ and Compose interpolates unquoted $NAME references')
 }
 
 main()

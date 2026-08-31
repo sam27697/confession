@@ -20,12 +20,22 @@
 # app_dir closes that gap by checking the directory the deploy actually ran
 # from against the directory the matched row says it must run from.
 #
+# env_file is a sixth, optional field, added by week 9 spec §3 (Finding C):
+# the path to the .env file to run the $-quoting check against (see the
+# loop near the bottom of this file). Omitted entirely, the five-argument
+# call behaves exactly as it always has -- this script itself never opened a
+# .env file before week 9; deploy.sh read the five fields above out of it
+# one key at a time through scripts/read-env-key.sh and passed the parsed
+# values in as arguments. deploy.sh now also passes .env itself as this
+# sixth argument, so the file the pairing guard receives is exactly the
+# file the build is about to ship.
+#
 # Usage:
-#   check-deploy-pairing.sh <stack_name> <host_port> <app_origin> <allow_dev_login> <app_dir>
+#   check-deploy-pairing.sh <stack_name> <host_port> <app_origin> <allow_dev_login> <app_dir> [env_file]
 set -euo pipefail
 
-if [ "$#" -ne 5 ]; then
-  echo "check-deploy-pairing: expected 5 arguments (stack_name host_port app_origin allow_dev_login app_dir), got $#" >&2
+if [ "$#" -lt 5 ] || [ "$#" -gt 6 ]; then
+  echo "check-deploy-pairing: expected 5 or 6 arguments (stack_name host_port app_origin allow_dev_login app_dir [env_file]), got $#" >&2
   exit 1
 fi
 
@@ -34,6 +44,7 @@ host_port=$2
 app_origin=$3
 allow_dev_login=$4
 app_dir=$5
+env_file=${6:-}
 
 # stack_name, host_port, app_origin and app_dir must always be present. Only
 # ALLOW_DEV_LOGIN may legitimately be empty, and only on the rows below
@@ -104,5 +115,55 @@ case "${matched_index}:${allow_dev_login}" in
     exit 1
     ;;
 esac
+
+# ---------------------------------------------------------------------
+# The sixth check (spec §3 Finding C): Docker Compose interpolates $NAME
+# in env_file values, so any value containing a '$' that is not wrapped in
+# single quotes reaches the container silently truncated -- this is what
+# turned an 83-byte scrypt hash into 16 bytes and put staging into a 503
+# loop (spec §0.3). The rule is about Compose's own behaviour, not about
+# one variable: it is checked for every key, not just
+# ADMIN_BOOTSTRAP_PASSWORD_HASH (spec §5 item 17).
+#
+# Only when env_file is given (the sixth argument) -- a bare five-argument
+# call skips this entirely, unchanged from before week 9.
+# ---------------------------------------------------------------------
+if [ -n "$env_file" ]; then
+  if [ ! -f "$env_file" ]; then
+    echo "check-deploy-pairing: env_file '$env_file' does not exist" >&2
+    exit 1
+  fi
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    leading="${line%%[![:space:]]*}"
+    trimmed="${line#"$leading"}"
+    case "$trimmed" in
+      ''|'#'*) continue ;;
+    esac
+
+    case "$trimmed" in
+      *=*)
+        key="${trimmed%%=*}"
+        value="${trimmed#*=}"
+        ;;
+      *)
+        continue
+        ;;
+    esac
+
+    case "$value" in
+      *'$'*)
+        len=${#value}
+        first="${value:0:1}"
+        last="${value: -1}"
+        if [ "$len" -ge 2 ] && [ "$first" = "'" ] && [ "$last" = "'" ]; then
+          continue
+        fi
+        echo "check-deploy-pairing: $key contains '\$' and is not single-quoted. Docker Compose interpolates \$NAME in env_file values, so this value will reach the container truncated. Wrap it in single quotes." >&2
+        exit 1
+        ;;
+    esac
+  done < "$env_file"
+fi
 
 exit 0

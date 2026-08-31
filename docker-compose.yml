@@ -71,6 +71,14 @@ services:
     ports:
       - "127.0.0.1:${HOST_PORT:?HOST_PORT is not set -- 8182 staging, 8082 production}:3000"
 
+    # Compose interpolates $NAME inside env_file values. A scrypt hash is
+    # scrypt$N$r$p$salt$key -- the letter-led $<salt> and $<key> fields read
+    # as references to undefined variables and are silently replaced with
+    # nothing, truncating the value the container receives (spec week 9
+    # §0.3). Any value in .env containing a literal '$' must be wrapped in
+    # single quotes to suppress this. scripts/check-deploy-pairing.sh
+    # refuses a deploy whose .env violates this, before the build
+    # (spec week 9 §3).
     env_file:
       - .env
 
