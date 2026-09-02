@@ -426,3 +426,116 @@ The repair was made by the reviewer, not by the author of the implementation.
   deploy path is one missing file, the private key `bin/asam.sh` reads from a
   path that only ever existed under the old containerised layout. Both
   hostnames answer **200 from outside** right now, on week 9's build.
+
+---
+
+## §8 Three findings from the adversary pass, frozen 2026-09-02
+
+*Found by an agent whose only job was to attack the finished slice, then
+re-measured by the reviewer rather than taken on report. The acceptance list of
+§6 was green on all 32 items when these were found: every one of them is a gap
+the list does not look at. They are specified here, before any repair, and the
+proof for each is written by a different author than the repair.*
+
+### §8.1 `acceptTermsAction` is an authenticated mutation with no active check
+
+`app/onboarding/actions.ts` calls `getViewerAccountId()` and nothing else. It
+then writes, through `recordTermsReacceptance`, when the account's stored terms
+version is older than `TERMS_VERSION`.
+
+§4.3 says every authenticated surface uses `requireActiveViewerAccountId`, and
+§6 item 29 only ever inspects `page.tsx` files. A Next server action is an
+independent POST endpoint: it is reachable without the page that renders its
+form ever being loaded, so gating the page gates nothing.
+
+**Why this fires in practice rather than in theory.** This slice bumps
+`TERMS_VERSION` to `'2026-08-31.1'`, so every account that predates the deploy
+has a stale version and takes the write branch. The delete action clears the
+`sid` cookie on the device that deleted, and only there; a second device's
+cookie stays until `requireActiveViewerAccountId` refuses it. That cookie
+reaching this action is the case.
+
+The `accounts_tombstone_is_final` trigger does refuse the write, which is §2.4
+item 3 doing exactly its job and is why this is a crash and not a corruption.
+But there is no `try`/`catch`, so the exception propagates instead of the clean
+redirect every other authenticated surface gives a deleted user.
+
+**Required:** `acceptTermsAction` takes `requireActiveViewerAccountId(db)` on
+its session branch, exactly as `app/onboarding/page.tsx` does, and for the same
+reason: the pending-identity branch below it is the signup path and must not be
+touched. Repairing only this one action is not enough on its own — the audit is
+every `'use server'` file in `app/`.
+
+### §8.2 The tombstone CHECK does not bind `provider_user_id` to the row's own id
+
+`accounts_deleted_tombstone_check` requires `provider_user_id LIKE 'deleted:%'`.
+§2.2 fixes the value as `'deleted:' || A.id::text`, and the constraint does not
+say so, so any string with that prefix satisfies it.
+
+Demonstrated against a real Postgres: with a row already holding
+`provider_user_id = 'deleted:<victim uuid>'`, `deleteAccount(victim)` fails on
+the `unique(provider, provider_user_id)` index, the victim's row keeps its real
+`display_name`, and the delete surface shows the generic try-again-later error
+**permanently**, because nothing ever frees the collision. That is clause 6
+false for that user.
+
+**Not exploitable today, stated plainly rather than dressed up.**
+`provider_user_id` is only ever written from a Facebook numeric id
+(`app/auth/facebook/callback/route.ts`) or a server-generated `devlogin:<hex>`
+(`app/auth/dev/route.ts`), and neither can be steered to the literal string.
+Planting the collision needs raw database write access, and an attacker with
+that does not need the trick.
+
+It is specified for repair anyway, on this project's own stated principle: the
+guarantee should be legible in `information_schema` and `pg_constraint`, not
+resting on "only `deleteAccount` ever writes this shape". Migration 0004 has
+never run against any real database, so the constraint is strengthened in place
+rather than in a 0005.
+
+**Required:** the CHECK asserts `provider_user_id = 'deleted:' || id::text`.
+The converse stays unasserted, for the §2.2 reason that is unchanged.
+
+### §8.3 `/` trusts the cookie alone and loops with `/inbox`
+
+`app/page.tsx` calls `getViewerAccountId()` and redirects to `/inbox` whenever
+any account id is present, without touching the database. `/inbox` calls
+`requireActiveViewerAccountId`, which sends a deleted account back to `/`.
+
+For a deleted account whose cookie is still live on another device, that is
+`/ → /inbox → / → /inbox`, which a browser ends as "too many redirects". The
+surface most likely to receive a stray post-deletion cookie is the one surface
+with no defence, and the failure it produces is the least legible one available.
+
+**Required:** `/` resolves the session against the database before redirecting.
+A cookie whose account is missing, disabled or deleted renders the landing page
+rather than bouncing, and `?deleted=1` keeps working. `getViewerAccountId` is
+not edited: nine surfaces depend on its exact behaviour, and §4.3 already
+established the pattern of adding a second decision beside a trusted one.
+
+### §8.4 Acceptance items for §8
+
+Written from this section by an author that does not read the repair.
+
+33. Every `'use server'` file under `app/` that reaches a database write from a
+    session either calls `requireActiveViewerAccountId`, or is named here with
+    the reason it cannot. The list is enumerated from the filesystem, not
+    hardcoded, so a file added later is covered.
+34. `acceptTermsAction` specifically calls `requireActiveViewerAccountId`.
+35. `app/onboarding/actions.ts`'s pending-identity branch is unchanged: a
+    signup with a valid pending-identity cookie and no session still creates an
+    account.
+36. The `accounts` CHECK rejects `deleted_at` set with
+    `provider_user_id = 'deleted:' || <some other row's uuid>`, and accepts it
+    with the row's own uuid.
+37. `deleteAccount` still succeeds end to end under the strengthened CHECK, and
+    items 11 through 17 still pass.
+38. `app/page.tsx` resolves the session against the database, and does not
+    redirect an account that is missing, disabled or deleted.
+39. The decision behind item 38 is reachable without `next/headers`, so it can
+    be asserted directly.
+
+### §8.5 What is deliberately NOT repaired here
+
+Nothing. All three are in scope for the same session that found them, because
+each is small and each has an independent proof. If any one of them is left
+unrepaired, this section says so with the reason before the branch is offered.
