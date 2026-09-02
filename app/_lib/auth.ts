@@ -58,3 +58,24 @@ export async function requireActiveViewerAccountId(db: Db): Promise<string> {
 
   return accountId
 }
+
+// The decision '/' uses instead of requireActiveViewerAccountId (spec
+// §8.3). requireActiveViewerAccountId cannot serve here as it stands,
+// because it redirects home on an inactive account and '/' is the home
+// page: it must render the landing content in that case, not bounce. This
+// is a second, small function placed beside requireActiveViewerAccountId
+// rather than a rewrite of it or of requireViewerAccountId above, using the
+// same cookie-then-database resolution, but it returns the account id, or
+// null, and leaves the redirect decision to the caller.
+//
+// The decision it is built on is the same isAccountActive predicate that
+// backs requireActiveViewerAccountId, already exported with no
+// next/headers in its chain, so it can be asserted directly against a
+// plain account object (spec §8.4 item 39).
+export async function resolveActiveViewerAccountId(db: Db): Promise<string | null> {
+  const accountId = await getViewerAccountId()
+  if (!accountId) return null
+
+  const account = await getAccountById(db, { accountId })
+  return isAccountActive(account) ? accountId : null
+}

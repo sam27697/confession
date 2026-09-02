@@ -539,3 +539,35 @@ Written from this section by an author that does not read the repair.
 Nothing. All three are in scope for the same session that found them, because
 each is small and each has an independent proof. If any one of them is left
 unrepaired, this section says so with the reason before the branch is offered.
+
+### §8.6 Item 38 is RED at the end of this session, on purpose
+
+Stated first: **`test/20-section8-hardening.test.ts` item 38 fails, and it is
+being left failing rather than edited.** 217 of 218 tests pass; that one is the
+218th.
+
+**The behaviour §8.3 requires is implemented.** `app/page.tsx` now calls
+`resolveActiveViewerAccountId(db)`, which is `getViewerAccountId()` followed by
+`getAccountById` and `isAccountActive`, and redirects to `/inbox` only when that
+returns an id. A missing, disabled or deleted account renders the landing page.
+`getViewerAccountId` and `requireActiveViewerAccountId` are both untouched, as
+§8.3 required.
+
+**Item 38's assertion cannot see that.** It reads the source text of
+`app/page.tsx` between `getViewerAccountId(` and `redirect('/inbox')` and
+requires `getAccountById(` or `isAccountActive(` to appear inside that span. The
+repair puts both one call deeper, in `app/_lib/auth.ts`, and `app/page.tsx` no
+longer names `getViewerAccountId` at all, so the span the item looks for does
+not exist.
+
+**Why it is not edited tonight.** The rule this project runs on is that the hand
+that writes a thing does not write the proof of that thing, and by the time this
+was measured the reviewer had read the repair. Rewriting the assertion from that
+position is how a test quietly becomes a description of whatever the code
+happens to do. The item is left red, with this paragraph as its reason, for an
+author who has not read `app/_lib/auth.ts` to re-aim at the behaviour rather
+than at the text.
+
+**What must NOT happen to it:** it must not be deleted, skipped, or loosened
+into something that passes. If a later session cannot make it assert the
+behaviour, it says so here.

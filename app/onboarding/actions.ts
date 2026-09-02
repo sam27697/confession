@@ -2,7 +2,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getDb } from '../_lib/domain/db.js'
-import { getViewerAccountId } from '../_lib/auth.js'
+import { getViewerAccountId, requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getAccountById, createAccountWithTerms, recordTermsReacceptance } from '../_lib/domain/accounts.js'
 import { TERMS_VERSION } from '../_lib/domain/terms.js'
 import {
@@ -25,10 +25,11 @@ export async function acceptTermsAction(formData: FormData) {
 
   const sessionAccountId = await getViewerAccountId()
   if (sessionAccountId) {
-    const account = await getAccountById(db, { accountId: sessionAccountId })
+    const accountId = await requireActiveViewerAccountId(db)
+    const account = await getAccountById(db, { accountId })
     if (!account) redirect('/')
     if (account.termsVersion < TERMS_VERSION) {
-      await recordTermsReacceptance(db, { accountId: sessionAccountId, termsVersion: TERMS_VERSION, locale: 'ar' })
+      await recordTermsReacceptance(db, { accountId, termsVersion: TERMS_VERSION, locale: 'ar' })
     }
     redirect('/inbox')
   }

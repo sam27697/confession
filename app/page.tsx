@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { getViewerAccountId } from './_lib/auth.js'
+import { resolveActiveViewerAccountId } from './_lib/auth.js'
+import { getDb } from './_lib/domain/db.js'
 import { env } from './_lib/domain/env.js'
 
 export default async function HomePage({
@@ -7,7 +8,12 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ deleted?: string }>
 }) {
-  const accountId = await getViewerAccountId()
+  // Resolved against the database, not the cookie alone (spec §8.3): a
+  // cookie whose account is missing, disabled or deleted renders the
+  // landing page below instead of bouncing to /inbox, which is what sent a
+  // stray post-deletion cookie into a redirect loop before this repair.
+  const db = getDb()
+  const accountId = await resolveActiveViewerAccountId(db)
   if (accountId) {
     redirect('/inbox')
   }

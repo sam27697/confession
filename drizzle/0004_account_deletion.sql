@@ -23,14 +23,16 @@ ALTER TABLE "links" ADD COLUMN "deleted_at" timestamptz;
 -- ---------------------------------------------------------------------
 -- A half-finished deletion cannot be committed (spec §2.4 item 1): if
 -- deleted_at is set, display_name and provider_user_id must already carry
--- the tombstone values. The converse is deliberately NOT asserted, because
--- a real user could be named '[deleted]' before ever being deleted, and a
--- rule keyed on the string being present would be wrong about a live person
--- (spec §2.2).
+-- the tombstone values, and provider_user_id must be bound to the row's own
+-- id rather than merely carrying the 'deleted:' prefix, so no other string
+-- with that prefix can satisfy the check (spec §8.2). The converse is
+-- deliberately NOT asserted, because a real user could be named '[deleted]'
+-- before ever being deleted, and a rule keyed on the string being present
+-- would be wrong about a live person (spec §2.2).
 -- ---------------------------------------------------------------------
 ALTER TABLE "accounts"
   ADD CONSTRAINT "accounts_deleted_tombstone_check"
-  CHECK (deleted_at IS NULL OR (display_name = '[deleted]' AND provider_user_id LIKE 'deleted:%'));
+  CHECK (deleted_at IS NULL OR (display_name = '[deleted]' AND provider_user_id = 'deleted:' || id::text));
 --> statement-breakpoint
 
 -- ---------------------------------------------------------------------
