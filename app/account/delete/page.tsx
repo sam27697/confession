@@ -1,0 +1,52 @@
+import { requireActiveViewerAccountId } from '../../_lib/auth.js'
+import { getDb } from '../../_lib/domain/db.js'
+import { deleteAccountAction } from './actions.js'
+
+const ERROR_COPY: Record<string, string> = {
+  required: 'لازم تحط إشارة عالمربع تحت قبل ما تأكد الحذف.',
+  generic: 'صار في مشكلة، جرب لاحقاً.',
+}
+
+export default async function DeleteAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const db = getDb()
+  await requireActiveViewerAccountId(db)
+  const { error } = await searchParams
+
+  return (
+    <div>
+      <h1>حذف الحساب</h1>
+
+      <div className="card">
+        <p className="muted">شو رح ينمحي</p>
+        <p>اسمك، وربط حسابك بفيسبوك، وقدرتك إنك ترجع تفوت على نفس الحساب، ورابطك، يلي بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.</p>
+      </div>
+
+      <div className="card">
+        <p className="muted">شو بيضل</p>
+        <p>
+          الرسائل يلي بعتها بتضل عند الإدارة، مربوطة برقم حساب بلا اسم. الرسائل يلي وصلتك بتضل كمان. وجوابك بأي
+          مصارحة متبادلة ما منقدر نشيله.
+        </p>
+      </div>
+
+      <p className="error">حذف الحساب نهائي وما فيك ترجع عنه.</p>
+
+      {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
+
+      <form action={deleteAccountAction}>
+        <label>
+          <input type="checkbox" name="confirm" required /> فهمت شو رح ينمحي وشو بيضل، وبدي احذف حسابي نهائياً
+        </label>
+        <button type="submit" className="danger">احذف حسابي</button>
+      </form>
+
+      <p className="muted">
+        <a href="/inbox">رجوع بلا حذف</a>
+      </p>
+    </div>
+  )
+}

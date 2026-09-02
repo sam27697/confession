@@ -1,4 +1,4 @@
-import { requireViewerAccountId } from '../../_lib/auth.js'
+import { requireActiveViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { getPendingOfferForSender } from '../../_lib/domain/views.js'
 import { NotYourConfessionError, OfferNotPendingError, RevealOfferNotFoundError } from '../../_lib/domain/errors.js'
@@ -16,10 +16,10 @@ export default async function OfferPage({
   params: Promise<{ offerId: string }>
   searchParams: Promise<{ error?: string }>
 }) {
-  const senderAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const senderAccountId = await requireActiveViewerAccountId(db)
   const { offerId } = await params
   const { error } = await searchParams
-  const db = getDb()
 
   let offer
   try {
