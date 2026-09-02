@@ -33,7 +33,7 @@ export type TermsText = {
 export const TERMS_TEXT_AR: TermsText = {
   intro: 'قبل ما تبلّش، لازم توافق على هالشروط:',
   clauses: [
-    'الرسائل يلي بتوصلك ما بتشوف مين باعتها — هوية المُرسِل مخفية عنك. بس لازم تعرف: إدارة التطبيق بتقدر تشوف حساب المُرسِل، ومنستخدم هالشي فقط لمنع الإساءة أو إذا اضطرينا قانونياً.',
+    'الرسائل يلي بتوصلك ما بتشوف مين باعتها. هوية المُرسِل مخفية عنك. بس لازم تعرف: إدارة التطبيق بتقدر تشوف حساب المُرسِل، ومنستخدم هالشي فقط لمنع الإساءة أو إذا اضطرينا قانونياً.',
     'لتبعت رسالة لازم تكون مسجّل دخول. الرسالة بتوصل بدون اسمك للمستلم، بس مربوطة بحسابك عندنا.',
     'أي إساءة أو تهديد أو تحرّش أو نشر معلومات شخصية عن غيرك ممنوع، وهي مسؤوليتك الكاملة كمُستخدِم.',
     'منقدر نوقف حسابك أو رابطك بدون إنذار إذا انكسرت هالقواعد.',
@@ -46,7 +46,7 @@ export const TERMS_TEXT_AR: TermsText = {
 export const TERMS_TEXT_EN: TermsText = {
   intro: 'Before you start, you must agree to these terms:',
   clauses: [
-    "You will not see who sent the messages you receive — the sender's identity is hidden **from you**. But you should know: the app's administrators can see the sender's account, and we use that only to prevent abuse or where we are legally required to.",
+    "You will not see who sent the messages you receive. The sender's identity is hidden **from you**. But you should know: the app's administrators can see the sender's account, and we use that only to prevent abuse or where we are legally required to.",
     'You must be signed in to send a message. Your message reaches the recipient without your name, but it is linked to your account on our side.',
     "Abuse, threats, harassment, and posting other people's personal information are forbidden and are entirely your responsibility as a user.",
     'We may disable your account or your link without notice if these rules are broken.',
