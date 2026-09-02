@@ -39,7 +39,7 @@ export default async function OnboardingPage({
   return (
     <div>
       <h1>الشروط والأحكام</h1>
-      <p className="muted">أهلا {displayName} — لازم توافق على هالشروط قبل ما تبلش.</p>
+      <p className="muted">أهلا {displayName}، لازم توافق على هالشروط قبل ما تبلش.</p>
 
       <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
       <hr />
