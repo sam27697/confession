@@ -362,6 +362,43 @@ its own worktree. Numbered so a report can name what failed.
 
 ---
 
+## §6.1 Amendment to item 27, 2026-09-02, with its reason
+
+*Recorded the way week 6 §6.1 was recorded: the document is amended and the
+reason is written down, rather than an assertion being bent to match the code.*
+
+Item 27 above quotes the English half of the old sentence as **"delete your
+account at any time"**. That quotation is too loose, and as written the item is
+**unsatisfiable together with item 26**, for any implementation whatsoever:
+
+- Item 26 requires English clause 6 to be byte-identical to the approved
+  `BRIEF.md` copy, which reads *"You can switch your link off at any time, and
+  you can **delete your account at any time**. Deleting is permanent and cannot
+  be undone: …"*.
+- Item 27, read literally, forbids any clause containing that same substring.
+
+No wording of `TERMS_TEXT_EN.clauses[5]` can pass both. The Arabic half of the
+item never had the problem: it quotes «أو تحذف حسابك بأي وقت», and the «أو»
+("or") is exactly what the rewritten clause replaces with «وفيك», so the Arabic
+discriminator is specific to the pre-week-10 form and the English one was not.
+
+**Amended:** item 27's English discriminator is **"off or delete your account at
+any time"**, the same discriminator as the Arabic. It is still a substring
+rather than the whole sentence, so it still catches the old wording embedded in
+a longer clause, which is the failure the item exists to catch.
+
+**The implementation was not changed to suit this.** The clause text is the copy
+Sam approved and it is carried verbatim from `work/confession-app/BRIEF.md`, as
+§5 requires; rewording live product copy to dodge a substring check would have
+been the tail wagging the dog. **Verified by mutation rather than by argument:**
+the real pre-week-10 clause 6 was pasted back into `src/terms.ts`, item 27 went
+red, and `src/terms.ts` was then restored byte for byte and the suite re-run
+green.
+
+The repair was made by the reviewer, not by the author of the implementation.
+
+---
+
 ## §7 Out of scope, named so it is not mistaken for an oversight
 
 - **No retention window and no scheduler** (§1.3). Sam's call.
@@ -376,3 +413,16 @@ its own worktree. Numbered so a report can name what failed.
   session because `/secrets-deploy/asam_prod01` does not exist in this
   container. That is a host-side mount, this account has no sudo, and it is
   reported rather than worked around.
+
+  **Correction, 2026-09-02, re-measured rather than inherited.** The sentence
+  above says "in this container". There is no container: this session runs
+  natively on `asam-prod-01` itself, as the unprivileged user `asam`. The
+  blocker is real and is narrower than that framing. Measured tonight:
+  `/secrets-deploy` does not exist at all (`ls: cannot access '/secrets-deploy':
+  No such file or directory`); `~/.ssh` holds a `known_hosts` and no private
+  key; and the Docker socket refuses this account
+  (`permission denied while trying to connect to the docker API at
+  unix:///var/run/docker.sock`), because `asam` is in no docker group. So the
+  deploy path is one missing file, the private key `bin/asam.sh` reads from a
+  path that only ever existed under the old containerised layout. Both
+  hostnames answer **200 from outside** right now, on week 9's build.
