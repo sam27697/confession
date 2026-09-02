@@ -1,4 +1,4 @@
-import { requireViewerAccountId } from '../_lib/auth.js'
+import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
 import { getSentForSender } from '../_lib/domain/views.js'
 import type { SentConfession } from '../_lib/domain/views.js'
@@ -33,8 +33,8 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
 }
 
 export default async function SentPage() {
-  const senderAccountId = await requireViewerAccountId()
   const db = getDb()
+  const senderAccountId = await requireActiveViewerAccountId(db)
   const messages = await getSentForSender(db, { senderAccountId })
 
   return (

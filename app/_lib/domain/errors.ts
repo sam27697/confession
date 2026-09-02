@@ -13,4 +13,6 @@ export {
   ConfessionNotFoundError,
   NotYourConfessionError,
   OfferNotPendingError,
+  AccountNotFoundError,
+  AccountAlreadyDeletedError,
 } from '../../../src/errors.js'

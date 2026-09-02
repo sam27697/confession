@@ -5,4 +5,5 @@ export {
   createAccountWithTerms,
   recordTermsReacceptance,
   getAccountById,
+  isAccountActive,
 } from '../../../src/accounts.js'
