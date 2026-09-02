@@ -87,7 +87,7 @@ export default async function SendPage({
       {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
 
       {isOwner ? (
-        <p className="muted">ما فيك تصارح حالك — هيدا رابطك إنت.</p>
+        <p className="muted">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
       ) : viewerAccountId ? (
         <form action={action}>
           <textarea name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />

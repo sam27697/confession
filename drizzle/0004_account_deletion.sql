@@ -7,7 +7,7 @@
 --
 -- Account deletion (docs/SPEC-week10-account-deletion.md §1, §2): an
 -- immediate, irreversible tombstone of the accounts row, not a hard delete
--- and not ON DELETE CASCADE — see spec §1.1-§1.4 for the four shapes this
+-- and not ON DELETE CASCADE. See spec §1.1-§1.4 for the four shapes this
 -- was rejected in favour of. Every guarantee below is a constraint or a
 -- trigger, not a code-review convention, per this project's standing rule.
 
@@ -23,9 +23,9 @@ ALTER TABLE "links" ADD COLUMN "deleted_at" timestamptz;
 -- ---------------------------------------------------------------------
 -- A half-finished deletion cannot be committed (spec §2.4 item 1): if
 -- deleted_at is set, display_name and provider_user_id must already carry
--- the tombstone values. The converse is deliberately NOT asserted — a real
--- user could be named '[deleted]' before ever being deleted, and a rule
--- keyed on the string being present would be wrong about a live person
+-- the tombstone values. The converse is deliberately NOT asserted, because
+-- a real user could be named '[deleted]' before ever being deleted, and a
+-- rule keyed on the string being present would be wrong about a live person
 -- (spec §2.2).
 -- ---------------------------------------------------------------------
 ALTER TABLE "accounts"
