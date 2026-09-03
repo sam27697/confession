@@ -20,12 +20,19 @@ export type Account = {
   displayName: string
   termsVersion: string
   disabledAt: Date | null
+  deletedAt: Date | null
 }
 
+// Untouched by week 10 (spec §3.2): a deleted account's provider_user_id is
+// already rewritten to 'deleted:<uuid>' by deleteAccount, so this query
+// cannot match the caller's original provider id against a tombstone — no
+// deleted_at filter needed here, and none added. The return type omits
+// deletedAt rather than the query selecting a column this function has no
+// use for; getAccountById is the one that returns it (spec §3.2, item 17).
 export async function findAccountByProvider(
   db: Db,
   { provider, providerUserId }: { provider: Provider; providerUserId: string },
-): Promise<Account | null> {
+): Promise<Omit<Account, 'deletedAt'> | null> {
   const [row] = await db
     .select({
       id: accounts.id,
@@ -47,12 +54,24 @@ export async function getAccountById(db: Db, { accountId }: { accountId: string 
       displayName: accounts.displayName,
       termsVersion: accounts.termsVersion,
       disabledAt: accounts.disabledAt,
+      deletedAt: accounts.deletedAt,
     })
     .from(accounts)
     .where(eq(accounts.id, accountId))
     .limit(1)
 
   return row ?? null
+}
+
+// Pure predicate over an account row (spec §4.3): true when the account is
+// still allowed to use an authenticated surface — exists, is not disabled
+// (terms clause 4), and is not deleted (terms clause 6). Exported so
+// requireActiveViewerAccountId (app/_lib/auth.ts) is a decision a test can
+// call directly with a plain object, with no next/headers in the require
+// chain — the same split as isAdminSessionRevoked in src/admin-auth.ts.
+export function isAccountActive(account: Pick<Account, 'disabledAt' | 'deletedAt'> | null): boolean {
+  if (!account) return false
+  return account.disabledAt === null && account.deletedAt === null
 }
 
 // A slug collision is astronomically unlikely at 31^12 possibilities, but

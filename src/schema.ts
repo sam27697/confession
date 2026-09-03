@@ -59,6 +59,11 @@ export const accounts = pgTable('accounts', {
   ageAttested18: boolean('age_attested_18').notNull(),
   disabledAt: timestamp('disabled_at', { withTimezone: true }), // terms clause 4
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // terms clause 6, week 10: set once, by deleteAccount, and never cleared —
+  // accounts_tombstone_is_final (drizzle/0004_account_deletion.sql) makes
+  // that true even for a direct UPDATE. See src/account-deletion.ts for the
+  // full tombstone this accompanies.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, (table) => [
   unique('accounts_provider_provider_user_id_key').on(table.provider, table.providerUserId),
 ])
@@ -78,6 +83,11 @@ export const links = pgTable('links', {
   slug: text('slug').notNull().unique(),
   enabled: boolean('enabled').notNull().default(true), // terms clause 6, the off-switch
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Set once, by deleteAccount, when the owning account is deleted (spec
+  // §2.3, week 10). The slug is retired, not rotated or freed — see the
+  // comment on deleteAccount in src/account-deletion.ts for why a stranger
+  // must never be able to claim it back.
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 })
 
 export const confessions = pgTable('confessions', {

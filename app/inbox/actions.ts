@@ -4,7 +4,7 @@
 // from a form field (spec §5.3). Errors carry the error class only, never
 // .message, which can embed a confession id or a link slug (spec §1 rule 3).
 import { redirect } from 'next/navigation'
-import { requireViewerAccountId } from '../_lib/auth.js'
+import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
 import { setLinkEnabled } from '../_lib/domain/links.js'
 import {
@@ -16,11 +16,11 @@ import {
 import { ViewerNotLinkOwnerError, NotYourConfessionError } from '../_lib/domain/errors.js'
 
 export async function setLinkEnabledAction(formData: FormData) {
-  const ownerAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const ownerAccountId = await requireActiveViewerAccountId(db)
   const linkId = String(formData.get('linkId') ?? '')
   const enabled = formData.get('enabled') === '1'
 
-  const db = getDb()
   try {
     await setLinkEnabled(db, { ownerAccountId, linkId, enabled })
   } catch (err) {
@@ -35,7 +35,8 @@ export async function setLinkEnabledAction(formData: FormData) {
 }
 
 export async function openRevealOfferAction(formData: FormData) {
-  const recipientAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const recipientAccountId = await requireActiveViewerAccountId(db)
   const confessionId = String(formData.get('confessionId') ?? '')
   const questionForSender = String(formData.get('questionForSender') ?? '').trim()
   const stakePrompt = String(formData.get('stakePrompt') ?? '').trim()
@@ -45,7 +46,6 @@ export async function openRevealOfferAction(formData: FormData) {
     redirect('/inbox?error=short')
   }
 
-  const db = getDb()
   try {
     await openRevealOffer(db, {
       recipientAccountId,
@@ -66,10 +66,10 @@ export async function openRevealOfferAction(formData: FormData) {
 }
 
 export async function blockSenderAction(formData: FormData) {
-  const recipientAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const recipientAccountId = await requireActiveViewerAccountId(db)
   const confessionId = String(formData.get('confessionId') ?? '')
 
-  const db = getDb()
   try {
     await blockSenderOfConfession(db, { recipientAccountId, confessionId })
   } catch (err) {
@@ -84,7 +84,8 @@ export async function blockSenderAction(formData: FormData) {
 }
 
 export async function reportConfessionAction(formData: FormData) {
-  const reporterAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const reporterAccountId = await requireActiveViewerAccountId(db)
   const confessionId = String(formData.get('confessionId') ?? '')
   const reason = String(formData.get('reason') ?? '').trim()
 
@@ -92,7 +93,6 @@ export async function reportConfessionAction(formData: FormData) {
     redirect('/inbox?error=short')
   }
 
-  const db = getDb()
   try {
     await reportConfession(db, { reporterAccountId, confessionId, reason })
   } catch (err) {
@@ -107,10 +107,10 @@ export async function reportConfessionAction(formData: FormData) {
 }
 
 export async function hideConfessionAction(formData: FormData) {
-  const recipientAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const recipientAccountId = await requireActiveViewerAccountId(db)
   const confessionId = String(formData.get('confessionId') ?? '')
 
-  const db = getDb()
   try {
     await hideConfession(db, { recipientAccountId, confessionId })
   } catch (err) {

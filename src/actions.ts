@@ -144,13 +144,19 @@ export async function sendConfession(
   }
 
   const [sender] = await db
-    .select({ disabledAt: accounts.disabledAt })
+    .select({ disabledAt: accounts.disabledAt, deletedAt: accounts.deletedAt })
     .from(accounts)
     .where(eq(accounts.id, senderAccountId))
     .limit(1)
 
   if (!sender) throw new Error(`no account ${senderAccountId}`)
-  if (sender.disabledAt !== null) throw new SenderAccountDisabledError()
+  // A deleted sender reuses SenderAccountDisabledError rather than a new
+  // class (spec §3.3): to the sender, a deleted account and a disabled one
+  // are the same fact — sending is refused, full stop — and deleteAccount
+  // already stamps disabled_at alongside deleted_at (spec §2.2), so this
+  // check is explicit rather than relying on that as an accident of the
+  // tombstone shape.
+  if (sender.disabledAt !== null || sender.deletedAt !== null) throw new SenderAccountDisabledError()
 
   return db.transaction(async (tx) => {
     // Widening Db to the driver-agnostic PgDatabase type (spec §4.1) means

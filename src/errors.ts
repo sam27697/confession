@@ -89,3 +89,19 @@ export class AgeAttestationRequiredError extends Error {
     this.name = 'AgeAttestationRequiredError'
   }
 }
+
+// Week 10 account deletion (SPEC-week10-account-deletion.md §3.1). Thrown by
+// deleteAccount before anything is written.
+export class AccountNotFoundError extends Error {
+  constructor(accountId: string) {
+    super(`no account ${accountId}`)
+    this.name = 'AccountNotFoundError'
+  }
+}
+
+export class AccountAlreadyDeletedError extends Error {
+  constructor() {
+    super('account is already deleted — terms clause 6, deletion cannot be undone')
+    this.name = 'AccountAlreadyDeletedError'
+  }
+}

@@ -3,13 +3,14 @@
 // domain layer re-check that the offer belongs to his confession — no
 // ownership decision is made from a form field (spec §5.3).
 import { redirect } from 'next/navigation'
-import { requireViewerAccountId } from '../../_lib/auth.js'
+import { requireActiveViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { acceptRevealOffer, declineRevealOffer } from '../../_lib/domain/actions.js'
 import { NotYourConfessionError, OfferNotPendingError, RevealOfferNotFoundError } from '../../_lib/domain/errors.js'
 
 export async function acceptOfferAction(formData: FormData) {
-  const senderAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const senderAccountId = await requireActiveViewerAccountId(db)
   const offerId = String(formData.get('offerId') ?? '')
   const senderAnswer = String(formData.get('senderAnswer') ?? '').trim()
 
@@ -17,7 +18,6 @@ export async function acceptOfferAction(formData: FormData) {
     redirect(`/offer/${offerId}?error=short`)
   }
 
-  const db = getDb()
   try {
     await acceptRevealOffer(db, { senderAccountId, offerId, senderAnswer })
   } catch (err) {
@@ -39,10 +39,10 @@ export async function acceptOfferAction(formData: FormData) {
 }
 
 export async function declineOfferAction(formData: FormData) {
-  const senderAccountId = await requireViewerAccountId()
+  const db = getDb()
+  const senderAccountId = await requireActiveViewerAccountId(db)
   const offerId = String(formData.get('offerId') ?? '')
 
-  const db = getDb()
   try {
     await declineRevealOffer(db, { senderAccountId, offerId })
   } catch (err) {

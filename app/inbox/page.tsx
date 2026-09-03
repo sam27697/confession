@@ -1,4 +1,4 @@
-import { requireViewerAccountId } from '../_lib/auth.js'
+import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
 import { getLinkForOwner } from '../_lib/domain/links.js'
 import { getInboxForRecipient } from '../_lib/domain/views.js'
@@ -137,9 +137,9 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<{ error?: string }>
 }) {
-  const viewerAccountId = await requireViewerAccountId()
-  const { error } = await searchParams
   const db = getDb()
+  const viewerAccountId = await requireActiveViewerAccountId(db)
+  const { error } = await searchParams
 
   const link = await getLinkForOwner(db, { ownerAccountId: viewerAccountId })
   if (!link) {
@@ -199,6 +199,10 @@ export default async function InboxPage({
           </div>
         </div>
       ))}
+
+      <p className="muted">
+        <a href="/account/delete">حذف الحساب</a>
+      </p>
     </div>
   )
 }
