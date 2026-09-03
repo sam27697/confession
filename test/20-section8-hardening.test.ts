@@ -36,6 +36,7 @@ import path from 'node:path'
 import { freshDb } from './harness.js'
 import { createAccount } from './fixtures.js'
 import { deleteAccount } from '../src/account-deletion.js'
+import { getAccountById } from '../src/accounts.js'
 import type { Db } from '../src/db.js'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -404,36 +405,55 @@ test('item 37: deleteAccount still succeeds end to end under the strengthened ac
 
 const HOME_PAGE = path.resolve(APP_DIR, 'page.tsx')
 
-test('item 38: app/page.tsx resolves the session against the database before redirecting to /inbox, rather than trusting the cookie alone (spec section 8.4 item 38)', () => {
+test('item 38: the redirect to /inbox is gated on an account resolved from the database, so a missing, disabled or deleted account is not redirected (spec section 8.4 item 38)', async () => {
   const src = readIfExists(HOME_PAGE)
   assert.ok(src, `app/page.tsx must exist; looked at ${HOME_PAGE}`)
-
-  const viewerCallIdx = src!.indexOf('getViewerAccountId(')
-  assert.notEqual(viewerCallIdx, -1, 'app/page.tsx must still read the session cookie via getViewerAccountId')
 
   const inboxRedirectIdx = src!.indexOf("redirect('/inbox')")
   assert.notEqual(inboxRedirectIdx, -1, 'app/page.tsx must still redirect to /inbox for a usable session')
 
-  const between = src!.slice(viewerCallIdx, inboxRedirectIdx)
-  assert.match(
-    between,
-    /getAccountById\(|isAccountActive\(/,
-    'app/page.tsx must resolve the account against the database (getAccountById or isAccountActive) between reading ' +
-      'the cookie and redirecting to /inbox, not redirect on the cookie\'s presence alone (spec section 8.3: "/ trusts ' +
-      'the cookie alone and loops with /inbox")',
+  // Structure, but only as far as item 38 actually states it: the redirect is
+  // taken on a value the page awaited from a resolver it HANDED SOMETHING --
+  // the database. Where that resolver keeps getAccountById / isAccountActive
+  // is its own business. The first version of this item asserted that those
+  // names appeared in the span between the cookie read and the redirect, and
+  // so it failed against a correct repair that moved them one call deeper
+  // (section 8.6). Re-aimed here at the decision instead of at the text.
+  const head = src!.slice(0, inboxRedirectIdx)
+  const resolved = [...head.matchAll(/const\s+(\w+)\s*=\s*await\s+([\w.]+)\s*\(([^)]*)\)/g)]
+  const gate = resolved.find(
+    (m) =>
+      m[3].trim().length > 0 &&
+      new RegExp(`if\\s*\\(\\s*${m[1]}\\s*\\)`).test(src!.slice(m.index ?? 0, inboxRedirectIdx + 40)),
   )
-  assert.match(
-    between,
-    /disabledAt|isAccountActive\(/,
-    'the database-derived decision reached before redirecting must account for a disabled account, not only a ' +
-      'missing one (spec section 8.3 required fix: "missing, disabled or deleted")',
+  assert.ok(
+    gate,
+    'app/page.tsx must reach redirect(\'/inbox\') only inside `if (<x>)`, where <x> was awaited from a resolver ' +
+      'called WITH an argument -- the database handle. Redirecting on a zero-argument cookie read is exactly the ' +
+      'loop spec section 8.3 describes ("/ trusts the cookie alone and loops with /inbox").',
   )
-  assert.match(
-    between,
-    /deletedAt|isAccountActive\(/,
-    'the database-derived decision reached before redirecting must account for a deleted account, not only a ' +
-      'missing one (spec section 8.3 required fix: "missing, disabled or deleted")',
+
+  // Behaviour, proven against real rows rather than source text. This is the
+  // half of item 38 that matters: an account that is missing or deleted is
+  // decided un-redirectable by the same predicate the page's resolver uses.
+  const found = await loadActiveAccountPredicate()
+  assert.ok(found, 'item 39 must find the predicate before item 38 can assert what it decides')
+  if (!found) return
+
+  const { id } = await createAccount(sharedDb, { displayName: 'item38 real name', providerUserId: 'item38-fb-id' })
+  const live = await getAccountById(sharedDb, { accountId: id })
+  assert.ok(live, 'a freshly created account must be readable back')
+  assert.equal(found.fn(live as never), true, 'an active account resolves, so / redirects it to /inbox')
+
+  await deleteAccount(sharedDb, { accountId: id })
+  const tombstoned = await getAccountById(sharedDb, { accountId: id })
+  assert.equal(
+    found.fn((tombstoned ?? null) as never),
+    false,
+    'a deleted account must not resolve, so / renders the landing page instead of bouncing to /inbox',
   )
+
+  assert.equal(found.fn(null as never), false, 'a missing account must not resolve')
 })
 
 // ---------------------------------------------------------------------------
