@@ -577,22 +577,23 @@ behaviour, it says so here.
 Re-aimed by a hand that had not written the §8.3 repair, as §8.6 asked for, and
 at the behaviour rather than at the text.
 
-The old assertion read the source span between \ and
-\ and demanded \ or inside it. That is a description of one particular shape of the code, and the
+The old assertion read the source span between `getViewerAccountId(` and
+`redirect('/inbox')` and demanded `getAccountById(` or `isAccountActive(`
+inside it. That is a description of one particular shape of the code, and the
 repair — which is correct — put both one call deeper and stopped naming
-\ in the page at all.
+`getViewerAccountId` in the page at all.
 
 What it asserts now, in two halves:
 
-1. **Structure, only as far as item 38 states it.** \ must be
-   reached inside \ where \ was awaited from a resolver called
+1. **Structure, only as far as item 38 states it.** `redirect('/inbox')` must be
+   reached inside `if (<x>)`, where `<x>` was awaited from a resolver called
    **with an argument** — the database handle. Redirecting on a zero-argument
-   cookie read is exactly the loop §8.3 describes. Where the resolver keeps
-   \ / \ is its own business.
+   cookie read is exactly the loop §8.3 describes. Where that resolver keeps
+   `getAccountById` / `isAccountActive` is its own business.
 2. **Behaviour, against real rows.** An account is created and read back: the
    predicate item 39 finds decides it resolvable. The same account is then
-   deleted through \, and the predicate decides the tombstoned
-   row — and a missing row — unresolvable. That is the property item 38 is for:
-   a missing, disabled or deleted account is not redirected.
+   deleted through `deleteAccount`, and the predicate decides the tombstoned
+   row — and a missing row — unresolvable. That is the property item 38 exists
+   for: a missing, disabled or deleted account is not redirected.
 
 It was not deleted, skipped, or loosened. **218 tests, 218 pass, 0 fail.**
