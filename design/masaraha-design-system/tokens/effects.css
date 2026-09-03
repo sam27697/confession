@@ -1,0 +1,26 @@
+/* مصارحة — depth, glow, veils. All CSS: no images, no filters that need an
+   asset. The veil is the recurring background motif — a single top-down
+   coloured wash over the ground, never a full-page multi-hue gradient. */
+:root{
+  --shadow-card:0 1px 0 rgba(245,239,233,.03) inset,0 8px 24px -12px rgba(13,9,8,.9);
+  --shadow-raised:0 2px 2px -1px rgba(13,9,8,.6),0 18px 40px -20px rgba(13,9,8,1);
+  --shadow-sheet:0 -8px 40px -8px rgba(13,9,8,.95);
+  --shadow-press:0 1px 0 rgba(13,9,8,.5) inset;
+
+  --glow-citron:0 0 0 1px var(--citron-700),0 10px 30px -12px var(--citron-glow);
+  --glow-rose:0 0 0 1px var(--rose-700),0 12px 36px -12px var(--rose-glow);
+  --glow-danger:0 0 0 1px var(--danger-700),0 10px 30px -14px rgba(255,92,77,.3);
+
+  --ring-focus:0 0 0 2px var(--ground),0 0 0 4px var(--citron-500);
+
+  /* veils — apply to a hero block or a full screen */
+  --veil-citron:radial-gradient(120% 80% at 50% -10%,var(--citron-wash) 0%,rgba(214,242,91,0) 62%);
+  --veil-rose:radial-gradient(120% 80% at 50% -10%,var(--rose-wash) 0%,rgba(227,155,168,0) 62%);
+  --veil-deep:linear-gradient(180deg,var(--ground-deep) 0%,var(--ground) 42%);
+  --veil-fade-bottom:linear-gradient(180deg,rgba(21,15,14,0) 0%,var(--ground) 88%);
+
+  /* glass — used sparingly: sticky headers and bottom bars only */
+  --glass-bg:rgba(30,23,21,.72);
+  --glass-blur:saturate(140%) blur(14px); /* @kind other */
+  --hairline-top:inset 0 1px 0 rgba(245,239,233,.05); /* @kind shadow */
+}

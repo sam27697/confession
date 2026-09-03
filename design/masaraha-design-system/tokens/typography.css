@@ -1,0 +1,48 @@
+/* مصارحة — type. Hard rule: NO web fonts, no CDN. The whole hierarchy has
+   to survive a plain system Arabic face, so weight, size and line-height do
+   the work. Never letter-space Arabic — it breaks letter joining. */
+:root{
+  /* System Arabic only — the product ships no webfont, by rule (privacy + supply chain).
+     Deliberately names no OS-specific family: system-ui resolves to the platform's own
+     Arabic face, with Tahoma/Arial as the last-resort Arabic-capable fallbacks. */
+  --font-ar:system-ui,-apple-system,Tahoma,Arial,sans-serif;
+  --font-latin:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace; /* slugs & ids only */
+
+  /* size scale — mobile-first, 390px design width */
+  --size-display-xl:44px;   /* the payoff screen, the share card */
+  --size-display:34px;      /* screen hero */
+  --size-title:26px;        /* screen title */
+  --size-subtitle:20px;     /* card heading, message body when it is the hero */
+  --size-body:17px;         /* default */
+  --size-body-sm:15px;      /* secondary prose, legal */
+  --size-caption:13px;      /* labels, chips */
+  --size-micro:12px;        /* hour stamp, meta */
+
+  /* line-height — Arabic needs air; display gets less */
+  --lh-display:1.24; /* @kind other */
+  --lh-title:1.34; /* @kind other */
+  --lh-body:1.75; /* @kind other */
+  --lh-tight:1.5; /* @kind other */
+
+  /* weight — the only real differentiator on a system face */
+  --weight-regular:400; /* @kind other */
+  --weight-medium:500; /* @kind other */
+  --weight-bold:700; /* @kind other */
+  --weight-black:800; /* @kind other */
+
+  --tracking-ar:0; /* @kind other */ /* always zero for Arabic */
+  --tracking-latin:.02em; /* @kind other */ /* slugs, latin meta only */
+
+  /* semantic aliases */
+  --type-display-xl:var(--weight-black) var(--size-display-xl)/var(--lh-display) var(--font-ar);
+  --type-display:var(--weight-black) var(--size-display)/var(--lh-display) var(--font-ar);
+  --type-title:var(--weight-bold) var(--size-title)/var(--lh-title) var(--font-ar);
+  --type-subtitle:var(--weight-bold) var(--size-subtitle)/var(--lh-tight) var(--font-ar);
+  --type-body:var(--weight-regular) var(--size-body)/var(--lh-body) var(--font-ar);
+  --type-body-strong:var(--weight-medium) var(--size-body)/var(--lh-body) var(--font-ar);
+  --type-body-sm:var(--weight-regular) var(--size-body-sm)/var(--lh-body) var(--font-ar);
+  --type-caption:var(--weight-medium) var(--size-caption)/var(--lh-tight) var(--font-ar);
+  --type-micro:var(--weight-medium) var(--size-micro)/1.4 var(--font-ar);
+  --type-slug:var(--weight-medium) var(--size-body)/1.4 var(--font-mono);
+}

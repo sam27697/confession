@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="700x400" name="App — link block, message card, reveal" subtitle="The three surfaces that carry the product" -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;padding:18px;background:var(--ground)}.g{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}</style>
+</head><body><div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { LinkBlock, MessageCard, RevealPanel, Button, AppHeader, EmptyState } = window.MasarahaDesignSystem_b05309
+function Sheet(){
+  const [on,setOn]=React.useState(true)
+  const [copied,setCopied]=React.useState(false)
+  return <>
+    <AppHeader active="inbox" style={{margin:'-18px -18px 18px'}} />
+    <div className="g">
+      <LinkBlock enabled={on} onToggle={setOn} copied={copied} onCopy={()=>{setCopied(true);setTimeout(()=>setCopied(false),1200)}} />
+      <div style={{display:'flex',flexDirection:'column',gap:'14px'}}>
+        <MessageCard body="كنت دايماً أحسن مني بهاد الشي وما قلتلك ولا مرة." day="اليوم" hour={2} meridiem="ص"
+          actions={<><Button variant="reveal" size="sm">صارحني بدورك</Button><Button variant="secondary" size="sm">خبيها</Button><Button variant="ghost" size="sm">بلغ</Button></>} />
+        <MessageCard body="ما بعرف كيف قلك، بس صار في شي بينا تغيّر من هداك اليوم." day="أمس" hour={11} meridiem="م" status="reported" offerState="pending" />
+        <RevealPanel state="resolved" senderName="سامر" question="شو يلي خلاك تبعتلي هالرسالة هلق؟" stake="رح قلك شو كان رأيي فيك أول ما تعرفنا." senderAnswer="لأني ما بقيت أقدر أسكت." recipientAnswer="حسيتك بعيد وما عرفت ليش." />
+        <EmptyState title="صندوقك لسا فاضي" body="حط رابطك بستوري وخلي الناس تحكي بصراحة." action={<Button variant="primary" size="md">شارك رابطك</Button>} />
+      </div>
+    </div>
+  </>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Sheet/>)
+</script></body></html>

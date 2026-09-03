@@ -1,0 +1,21 @@
+/* مصارحة — radii. The signature is the NOTCH: one corner cut back to 6px
+   so a card reads as a spoken bubble without drawing a tail. In RTL the
+   notch sits bottom-left (the side speech leaves from). */
+:root{
+  --radius-xs:6px;
+  --radius-sm:10px;
+  --radius-md:14px;
+  --radius-lg:22px;
+  --radius-xl:28px;
+  --radius-pill:999px;
+
+  --radius-notch:6px;
+  /* message bubble, RTL: top-right, top-left, bottom-left(notch), bottom-right */
+  --radius-bubble:var(--radius-lg) var(--radius-lg) var(--radius-notch) var(--radius-lg);
+  --radius-bubble-out:var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-notch);
+
+  --radius-card:var(--radius-lg);
+  --radius-field:var(--radius-md);
+  --radius-button:var(--radius-pill);
+  --radius-chip:var(--radius-pill);
+}

@@ -1,0 +1,28 @@
+/* مصارحة — spacing & layout. 4px base. Mobile-first at 390×844;
+   desktop caps content at 640px, matching the app's own `main`. */
+:root{
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-8:32px;
+  --space-10:40px;
+  --space-12:48px;
+  --space-16:64px;
+  --space-20:80px;
+
+  --gutter:20px;              /* page side padding, mobile */
+  --gutter-desktop:24px;
+  --content-max:640px;        /* desktop content cap */
+  --stack-card:14px;          /* gap between stacked cards */
+  --stack-field:10px;         /* label → field */
+  --card-pad:18px;
+  --card-pad-lg:22px;
+
+  --tap-min:48px;             /* never smaller */
+  --control-h:52px;           /* primary button, input */
+  --control-h-sm:40px;        /* inline / ghost action */
+  --safe-bottom:28px;         /* room above a phone home bar */
+}

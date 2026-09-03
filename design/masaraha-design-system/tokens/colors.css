@@ -1,0 +1,73 @@
+/* مصارحة — colour system. Dark is the default and only theme.
+   Warm charcoal-brown ground, acid-citron primary, dusty-rose reveal.
+   No external assets: every surface below is a colour or a CSS gradient. */
+:root{
+  color-scheme:dark;
+
+  /* ── ground & surfaces ─────────────────────────────────────── */
+  --ground-deep:#0D0908;      /* behind everything, edges & scrims */
+  --ground:#150F0E;            /* page background */
+  --surface-1:#1E1715;         /* card, panel */
+  --surface-2:#272020;         /* raised card, input, hover */
+  --surface-3:#332A28;         /* pressed, selected row */
+  --surface-inset:#100B0A;     /* wells: code, slug, textarea */
+
+  /* ── hairlines ─────────────────────────────────────────────── */
+  --line:#382E2B;              /* default 1px border */
+  --line-strong:#4C3F3B;       /* border on raised / focused */
+  --line-faint:#241D1B;        /* dividers inside a card */
+
+  /* ── text ──────────────────────────────────────────────────── */
+  --text-1:#F5EFE9;            /* body & headings */
+  --text-2:#B5A69E;            /* muted, labels, captions */
+  --text-3:#7D6E68;            /* disabled, placeholder, hour stamp */
+  --text-on-accent:#1A1F06;    /* on citron */
+  --text-on-reveal:#2A1014;    /* on rose */
+
+  /* ── primary: acid citron ──────────────────────────────────── */
+  --citron-100:#F2FBC8;
+  --citron-300:#E4F78F;
+  --citron-500:#D6F25B;        /* the brand primary */
+  --citron-700:#A8C233;
+  --citron-900:#5E6E1C;
+  --citron-glow:rgba(214,242,91,.22);
+  --citron-wash:rgba(214,242,91,.10);
+
+  /* ── the reveal: dusty rose. Reserved for صارحني بدورك. ────── */
+  --rose-100:#F8DDE2;
+  --rose-300:#EFBCC5;
+  --rose-500:#E39BA8;
+  --rose-700:#B06A78;
+  --rose-900:#5E3038;
+  --rose-glow:rgba(227,155,168,.24);
+  --rose-wash:rgba(227,155,168,.10);
+
+  /* ── semantic ──────────────────────────────────────────────── */
+  --danger-500:#FF5C4D;        /* delete, block, admin reveal */
+  --danger-700:#B93A2F;
+  --danger-wash:rgba(255,92,77,.12);
+  --pending-500:#F0B95B;       /* waiting on the other side */
+  --pending-wash:rgba(240,185,91,.12);
+  --hidden-500:#8E7F79;        /* hidden by me — deliberately dull */
+  --hidden-wash:rgba(142,127,121,.12);
+
+  /* ── semantic aliases (use these in components) ────────────── */
+  --bg-page:var(--ground);
+  --bg-card:var(--surface-1);
+  --bg-card-raised:var(--surface-2);
+  --bg-field:var(--surface-inset);
+  --bg-scrim:rgba(13,9,8,.72);
+  --border-card:var(--line);
+  --border-field:var(--line);
+  --border-field-focus:var(--citron-500);
+  --text-body:var(--text-1);
+  --text-muted:var(--text-2);
+  --text-faint:var(--text-3);
+  --action-primary:var(--citron-500);
+  --action-primary-press:var(--citron-700);
+  --action-reveal:var(--rose-500);
+  --action-danger:var(--danger-500);
+  --link:var(--citron-300);
+  --link-hover:var(--citron-100);
+  --focus-ring:var(--citron-500);
+}
