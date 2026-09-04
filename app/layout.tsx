@@ -36,18 +36,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="ar" dir="rtl">
       <body>
         <header className="site">
-          <a href="/"><strong>مصارحة</strong></a>
-          <nav>
+          <a className="brand" href="/">
+            <span className="brand__mark">م</span>
+            <span className="brand__word">مصارحة</span>
+          </a>
+          <nav className="nav">
             {accountId ? (
               <>
-                <a href="/inbox">صندوقك</a>
-                <a href="/sent">يلي بعتها</a>
-                <form className="inline" action="/auth/logout" method="post">
-                  <button type="submit" className="secondary">تسجيل خروج</button>
+                <a className="nav__item" href="/inbox">صندوقك</a>
+                <a className="nav__item" href="/sent">يلي بعتها</a>
+                <form action="/auth/logout" method="post">
+                  <button type="submit" className="btn btn--secondary btn--sm">تسجيل خروج</button>
                 </form>
               </>
             ) : (
-              <a href="/">تسجيل دخول</a>
+              <a className="nav__item" href="/">تسجيل دخول</a>
             )}
           </nav>
         </header>

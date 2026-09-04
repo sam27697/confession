@@ -21,32 +21,34 @@ export default async function HomePage({
   const { deleted } = await searchParams
 
   return (
-    <div>
-      {deleted === '1' && <p className="muted">تم حذف حسابك نهائياً.</p>}
-
-      <p className="pre">
+    <div className="veil">
+      <p>
         تطبيق مصارحة سرية.{'\n'}
         الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.{'\n'}
         سجل دخول تبلش.
       </p>
 
-      <div className="card">
+      {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
+
+      <div className="card card--citron">
         {env.facebookAppId ? (
-          <a className="btn" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
+          <a className="btn btn--primary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
         ) : (
-          <p className="muted">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
+          <p className="hint">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
         )}
 
         {env.allowDevLogin && (
           <form action="/auth/dev" method="post">
-            <label htmlFor="displayName">اسم تجريبي (وضع تجربة فقط)</label>
-            <input id="displayName" type="text" name="displayName" required minLength={1} maxLength={80} />
-            <button type="submit" className="secondary">دخول تجريبي</button>
+            <div className="field-row">
+              <label className="field" htmlFor="displayName">اسم تجريبي (وضع تجربة فقط)</label>
+              <input className="input" id="displayName" type="text" name="displayName" required minLength={1} maxLength={80} />
+            </div>
+            <button type="submit" className="btn btn--secondary btn--block">دخول تجريبي</button>
           </form>
         )}
       </div>
 
-      <p className="muted">
+      <p className="hint">
         <a href="/terms">الشروط والأحكام</a> · <a href="/privacy">سياسة الخصوصية</a>
       </p>
     </div>

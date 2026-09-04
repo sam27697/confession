@@ -14,13 +14,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div>
-      <div className="actions">
-        <a href="/admin">لوحة الإدارة</a>
-        <a href="/admin/reports">البلاغات</a>
-        <form className="inline" action="/admin/logout" method="post">
-          <button type="submit" className="secondary">تسجيل خروج</button>
-        </form>
-      </div>
+      <header className="site site--plain">
+        <a className="brand" href="/admin">
+          <span className="brand__mark">م</span>
+        </a>
+        <nav className="nav">
+          <a className="nav__item" href="/admin">لوحة الإدارة</a>
+          <a className="nav__item" href="/admin/reports">البلاغات</a>
+          <form action="/admin/logout" method="post">
+            <button type="submit" className="btn btn--secondary btn--sm">تسجيل خروج</button>
+          </form>
+        </nav>
+      </header>
       {children}
     </div>
   )

@@ -26,41 +26,43 @@ export default async function OfferPage({
     offer = await getPendingOfferForSender(db, { offerId, senderAccountId })
   } catch (err) {
     if (err instanceof RevealOfferNotFoundError || err instanceof NotYourConfessionError) {
-      return <p className="error">ما لقينا هالعرض.</p>
+      return <p className="notice notice--danger">ما لقينا هالعرض.</p>
     }
     if (err instanceof OfferNotPendingError) {
-      return <p className="muted">هالعرض خلص، ما بقي فيه شي تعمله.</p>
+      return <p className="hint">هالعرض خلص، ما بقي فيه شي تعمله.</p>
     }
     throw err
   }
 
   return (
-    <div>
+    <div className="veil veil--rose">
       <h1>وصلك عرض مصارحة</h1>
-      <p className="notice">
+      <p className="notice notice--rose">
         الشخص يلي بعتلو الرسالة بدو يعرف منك شي، وبالمقابل رح يحكيلك شي عن حالو. إذا وافقت، اسمك رح ينكشف إلو، وبس
         إلو، وبس على هالرسالة.
       </p>
 
-      <div className="card">
-        <p className="muted">شو بدها تعرف</p>
+      <div className="reveal">
+        <p className="hint">شو بدها تعرف</p>
         <p>{offer.questionForSender}</p>
-        <p className="muted">شو رح تحكيلك عن حالها</p>
+        <p className="hint">شو رح تحكيلك عن حالها</p>
         <p>{offer.stakePrompt}</p>
       </div>
 
-      {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
+      {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
       <form action={acceptOfferAction}>
         <input type="hidden" name="offerId" value={offer.offerId} />
-        <label htmlFor="senderAnswer">جوابك</label>
-        <textarea id="senderAnswer" name="senderAnswer" required minLength={2} maxLength={4000} rows={4} />
-        <button type="submit">وافق وجاوب</button>
+        <div className="field-row">
+          <label className="field" htmlFor="senderAnswer">جوابك</label>
+          <textarea className="textarea" id="senderAnswer" name="senderAnswer" required minLength={2} maxLength={4000} rows={4} />
+        </div>
+        <button type="submit" className="btn btn--reveal btn--block">وافق وجاوب</button>
       </form>
 
       <form action={declineOfferAction}>
         <input type="hidden" name="offerId" value={offer.offerId} />
-        <button type="submit" className="secondary">لأ، مو هلق</button>
+        <button type="submit" className="btn btn--secondary btn--block">لأ، مو هلق</button>
       </form>
     </div>
   )
