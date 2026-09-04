@@ -520,3 +520,20 @@ which files carry `.reveal--resolved` or `.veil--rose` (item 9 only checks
 `.btn--reveal`'s file set and the absence of the literal token strings in
 `.tsx`), so this is a design judgement call, recorded rather than asserted
 as the only possible reading.
+
+- **§8.6** Acceptance item 18 as written could not pass. `**from you**`
+  occurs three times in `main`'s `src/terms.ts`: twice in the header comment
+  that quotes the clause while explaining why the markup was kept, once in the
+  clause itself. The test's first-occurrence `String.replace` therefore built
+  its `expected` by editing the comment, so the only file that could have
+  passed it is one where the comment is corrupted and the clause still bold --
+  the opposite of the item. The assertion now anchors on the single-line
+  clause and asserts that anchor is unique.
+- **§8.7** Acceptance item 16 as written could not pass either. It scans
+  the whole of `src/hourstamp.ts`, comments included, for `process.`, and that
+  module's header comment states in prose that it uses no `process.env`. The
+  check now runs on the file with comments stripped. In both cases the
+  implementation was correct and the test was repaired at the assertion; the
+  alternative -- rewording source comments so a string matcher passes -- is the
+  same defect §8 already records for `app/globals.css`, and it hides the
+  real fault rather than fixing it.

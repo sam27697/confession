@@ -604,12 +604,23 @@ test('item 18: src/terms.ts differs from main in exactly the four asterisk chara
   const newSrc = readIfExists(path.join(REPO_ROOT, relPath))
   assert.ok(newSrc, `${relPath} must exist`)
 
-  assert.ok(
-    oldSrc!.includes('**from you**'),
-    'test setup: main\'s src/terms.ts must contain the literal characters **from you** for this test to mean anything',
+  // The four asterisks appear three times in main, not once: twice inside
+  // the header comment that quotes the clause while explaining why the
+  // markup was kept, and once in the clause the app actually renders. A
+  // first-occurrence replace() therefore rewrites the comment and leaves the
+  // clause alone, making `expected` a file that no correct implementation
+  // could ever produce. Anchor on the single-line clause form instead -- the
+  // comment wraps the same sentence across two `// ` lines, so this string
+  // occurs exactly once, and that is asserted rather than assumed.
+  const CLAUSE_BOLD = 'hidden **from you**. But you should know:'
+  const CLAUSE_PLAIN = 'hidden from you. But you should know:'
+  assert.equal(
+    oldSrc!.split(CLAUSE_BOLD).length - 1,
+    1,
+    `test setup: main's src/terms.ts must contain "${CLAUSE_BOLD}" exactly once for this test to mean anything`,
   )
 
-  const expected = oldSrc!.replace('**from you**', 'from you')
+  const expected = oldSrc!.replace(CLAUSE_BOLD, CLAUSE_PLAIN)
 
   assert.notEqual(
     newSrc,

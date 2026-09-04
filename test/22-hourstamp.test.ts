@@ -253,6 +253,19 @@ test('item 16: src/hourstamp.ts imports nothing from next, from the database, or
     `src/hourstamp.ts must not import from next, the database layer, or process: ${JSON.stringify(offenders)}`,
   )
 
-  assert.ok(!src.includes('process.'), 'src/hourstamp.ts must not reference process. anywhere')
-  assert.ok(!src.includes('require('), 'src/hourstamp.ts must not use require(), which could bypass the static-import check above')
+  // Spec section 6 item 16 is about what the module depends on, which is a
+  // property of its code. A flat whole-file scan also reads the comments,
+  // and this module's header comment states in prose that it uses no
+  // process.env -- so the scan failed the file for documenting the very
+  // guarantee the item asks for. Strip comments first and the check means
+  // what it says; rewording the source to satisfy a string matcher would
+  // have been the wrong repair.
+  const code = src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map((line) => line.replace(/(^|[^:'"`])\/\/.*$/, '$1'))
+    .join('\n')
+
+  assert.ok(!code.includes('process.'), 'src/hourstamp.ts must not reference process. anywhere in its code')
+  assert.ok(!code.includes('require('), 'src/hourstamp.ts must not use require(), which could bypass the static-import check above')
 })
