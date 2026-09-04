@@ -5,7 +5,7 @@ export default function TermsPage() {
   return (
     <div>
       <h1>الشروط والأحكام</h1>
-      <p className="muted">نسخة {TERMS_VERSION}</p>
+      <p className="hint">نسخة {TERMS_VERSION}</p>
       <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
       <hr />
       <h2>Terms and Conditions</h2>

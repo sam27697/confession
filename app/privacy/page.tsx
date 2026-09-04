@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <div>
       <h1>سياسة الخصوصية</h1>
-      <div className="card">
+      <div className="legal" dir="rtl">
         <p>هيك منخزن معلومات عنك بالظبط:</p>
         <ul>
           <li>رقم حسابك واسمك من فيسبوك، لطرفي أي رسالة (المرسل والمستقبل).</li>
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
 
       <hr />
 
-      <div className="card">
+      <div className="legal" dir="ltr">
         <p>What we store, exactly:</p>
         <ul>
           <li>The Facebook account id and display name of both sides of a message (sender and recipient).</li>

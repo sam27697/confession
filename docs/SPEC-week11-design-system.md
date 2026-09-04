@@ -426,3 +426,97 @@ The class layer is expected to land around 500 to 700 lines. It is not
 minified, not sorted by a tool, and carries the comments that say which
 component each block came from. A stylesheet nobody can read is how a design
 system dies.
+
+---
+
+## §8. Findings from the build, recorded rather than silently reinterpreted
+
+### 8.1 `.nav__item--active` is not implemented
+
+§2.1 lists `.nav__item--active` among the classes the layer defines. It is
+not defined in `app/globals.css`, and it is not applied anywhere under
+`app/`. Reasoning:
+
+The app's nav lives in exactly two places, `app/layout.tsx` and
+`app/admin/layout.tsx`, both shared across every page beneath them. Neither
+component receives the current pathname: this app ships zero client
+JavaScript (`usePathname` is a client hook, ruled out by §0), there is no
+`middleware.ts` in this repository setting a path header for a Server
+Component to read, and adding one would be new infrastructure, not a class
+name -- exactly what §0 forbids for this slice. A `headers()` read that
+happened to smuggle in the current path would also cut against this
+project's standing privacy discipline of reading nothing from the request
+that does not have to be read.
+
+The alternative -- writing a conditional that references `nav__item--active`
+but can never actually evaluate true -- was rejected on purpose: that is
+dead code written to satisfy a mechanical class-coverage check, not a real
+feature, and it is the kind of thing this instruction set explicitly asks
+not to do. So the pill nav renders uniformly on every page; no tab is ever
+marked current. This is a real, if minor, gap against §2.1's letter, flagged
+here instead of gamed.
+
+### 8.2 `.counter` is not implemented
+
+§2.1 lists `.counter` for a live "typed/max" character count next to a
+field. Rendering it correctly needs to read the current length of whatever
+the user has typed, which needs client JavaScript this app does not ship
+(§0). A `.counter` that always reads `0/4000` regardless of what is actually
+in the field is worse than no counter -- it would be a small daily lie on
+every field in the app. This is the same reasoning §7.1 already gives for
+dropping the copy/share buttons on the link block, extended to this class:
+not built, for the same reason, recorded here rather than shipped wrong.
+
+### 8.3 `.msg--hidden` is defined but structurally unreachable today
+
+§2.1's `.msg` bullet requires a `.msg--hidden` modifier (opacity .62) for a
+hidden confession. The class is defined in `app/globals.css` and the inbox
+page computes it from `m.status`, but `InboxPage` filters
+`status === 'hidden_by_recipient'` out of `visible` before mapping over it
+-- exactly the behaviour that shipped before this slice, and §0 forbids
+changing it. So a message a recipient has hidden is never rendered at all,
+and `.msg--hidden` can never actually paint. The class stays defined and the
+conditional stays real (keyed off the genuine `m.status` field, not a
+fabricated always-false check) so that if a future slice changes the filter,
+the styling is already correct; it is flagged here as currently dead by
+construction of unchanged, pre-existing behaviour rather than a gap in this
+slice's own work.
+
+### 8.4 `app/admin/_lib/html.ts`'s `revealDocument` keeps its own inline styles
+
+`app/admin/reveal/route.ts` renders its confirmation page through
+`revealDocument()` in `app/admin/_lib/html.ts`, a hand-built HTML document
+with its own `<style>` block (the pre-week-11 palette). This slice's file
+list (task step B) names `.tsx` pages and `app/layout.tsx`; `html.ts` and
+`route.ts` are not page components, cannot import `globals.css` (Next hashes
+the stylesheet's built filename, which a raw `Response` has no way to
+learn), and are explicitly called out by that file's own comments as week 9
+hardening the reveal-audit surface. §3.9 says admin hardening "is not
+touched." Restyling it was judged out of scope and left alone rather than
+guessed at.
+
+### 8.5 Interpretation: where `.veil--rose` / `.reveal--resolved` are allowed to render
+
+§3.4 states `/offer/[offerId]` is "the only one carrying `--veil-rose` and
+`--glow-rose`," while §2.1 and §3.2 separately describe `.reveal--resolved`
+(which carries `--glow-rose`) as the normal styling for a *resolved* mutual
+reveal, and a resolved reveal is only ever shown to the two participants on
+`/inbox` and `/sent` -- never on `/offer/[offerId]`, which
+`getPendingOfferForSender` only ever renders in the `pending` state (an
+already-resolved offer throws `OfferNotPendingError` before this page can
+render it). Read completely literally, §3.4 and §3.2 cannot both hold.
+
+Resolved this build as: §3.4 is about page-level treatment (the *screen*
+allowed a full rose wash is the offer screen, via `.veil`/`.veil--rose` on
+its wrapper), and `.reveal--resolved`'s glow is a *component*-level state
+that appears wherever a resolved reveal is actually shown -- which, given
+the offer page's own state machine, is never the offer page itself. `/sent`
+keeps the explicit "no veil, no glow" of §3.5 by rendering its resolved
+reveal as `.card--rose` (tinted, no glow, no veil) rather than `.reveal`.
+`/inbox` uses `.reveal--resolved` for a resolved reveal, since §3.5's "no
+veil, no glow" rule is written for `/sent` specifically and inbox is never
+called a list the way `/sent` is. No acceptance item mechanically checks
+which files carry `.reveal--resolved` or `.veil--rose` (item 9 only checks
+`.btn--reveal`'s file set and the absence of the literal token strings in
+`.tsx`), so this is a design judgement call, recorded rather than asserted
+as the only possible reading.

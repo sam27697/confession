@@ -39,22 +39,28 @@ export default async function OnboardingPage({
   return (
     <div>
       <h1>الشروط والأحكام</h1>
-      <p className="muted">أهلا {displayName}، لازم توافق على هالشروط قبل ما تبلش.</p>
+      <p className="hint">أهلا {displayName}، لازم توافق على هالشروط قبل ما تبلش.</p>
 
-      <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
-      <hr />
-      <TermsBlock text={TERMS_TEXT_EN} dir="ltr" />
+      <div className="card card--inset">
+        <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
+        <hr />
+        <TermsBlock text={TERMS_TEXT_EN} dir="ltr" />
+      </div>
 
-      {error === 'required' && <p className="error">لازم توافق على الشروط وتأكد إنك فوق ١٨.</p>}
+      {error === 'required' && <p className="notice notice--danger">لازم توافق على الشروط وتأكد إنك فوق ١٨.</p>}
 
       <form action={acceptTermsAction}>
-        <label>
-          <input type="checkbox" name="agree" required /> موافق على الشروط والأحكام
+        <label className="checkrow" htmlFor="agree">
+          <input id="agree" type="checkbox" name="agree" required />
+          <span className="checkrow__box"></span>
+          <span>موافق على الشروط والأحكام</span>
         </label>
-        <label>
-          <input type="checkbox" name="age18" required /> بأكد إني فوق ١٨ سنة
+        <label className="checkrow" htmlFor="age18">
+          <input id="age18" type="checkbox" name="age18" required />
+          <span className="checkrow__box"></span>
+          <span>بأكد إني فوق ١٨ سنة</span>
         </label>
-        <button type="submit">موافق</button>
+        <button type="submit" className="btn btn--primary btn--block">موافق</button>
       </form>
     </div>
   )

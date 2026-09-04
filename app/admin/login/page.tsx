@@ -31,16 +31,20 @@ export default async function AdminLoginPage({
     <div>
       <h1>دخول الإدارة</h1>
 
-      {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
+      {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
       <form action={adminLoginAction} className="card">
-        <label htmlFor="admin-username">اسم المستخدم</label>
-        <input id="admin-username" type="text" name="username" required autoComplete="username" />
+        <div className="field-row">
+          <label className="field" htmlFor="admin-username">اسم المستخدم</label>
+          <input className="input" id="admin-username" type="text" name="username" required autoComplete="username" />
+        </div>
 
-        <label htmlFor="admin-password">كلمة السر</label>
-        <input id="admin-password" type="password" name="password" required autoComplete="current-password" />
+        <div className="field-row">
+          <label className="field" htmlFor="admin-password">كلمة السر</label>
+          <input className="input" id="admin-password" type="password" name="password" required autoComplete="current-password" />
+        </div>
 
-        <button type="submit">دخول</button>
+        <button type="submit" className="btn btn--primary btn--block">دخول</button>
       </form>
     </div>
   )

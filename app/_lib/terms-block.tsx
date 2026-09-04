@@ -5,7 +5,7 @@ import type { TermsText } from '../../src/terms.js'
 
 export function TermsBlock({ text, dir }: { text: TermsText; dir: 'rtl' | 'ltr' }) {
   return (
-    <div className="card" dir={dir}>
+    <div className="legal" dir={dir}>
       <p>{text.intro}</p>
       <ol>
         {text.clauses.map((clause, index) => (

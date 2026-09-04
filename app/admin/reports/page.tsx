@@ -20,36 +20,45 @@ export default async function AdminReportsPage() {
     <div>
       <h1>البلاغات</h1>
 
-      {rows.length === 0 && <p className="muted">ما في بلاغات هلق.</p>}
+      {rows.length === 0 && <p className="hint">ما في بلاغات هلق.</p>}
 
-      {rows.map((r) => (
-        <div className="card" key={r.reportId}>
-          <p className="muted">#{r.confessionId}</p>
+      {rows.map((r) => {
+        const isHidden = r.status === 'hidden_by_recipient'
+        const isReported = r.status === 'reported'
+        return (
+        <div className="card card--raised" key={r.reportId}>
+          <p className="hint">#{r.confessionId}</p>
           <p>{r.body}</p>
-          <p className="muted">{r.createdHour.toISOString()}</p>
-          <span className="tag">{STATUS_COPY[r.status] ?? r.status}</span>
+          <p className="hint">{r.createdHour.toISOString()}</p>
+          <span className={isHidden ? 'chip chip--hidden' : isReported ? 'chip chip--reported' : 'chip chip--delivered'}>
+            {STATUS_COPY[r.status] ?? r.status}
+          </span>
 
-          <p className="muted">سبب البلاغ</p>
+          <p className="hint">سبب البلاغ</p>
           <p>{r.reason}</p>
 
-          <details className="offer">
-            <summary>اكشف المرسل</summary>
+          <details>
+            <summary className="btn btn--danger btn--sm">اكشف المرسل</summary>
             <form action="/admin/reveal" method="post">
               <input type="hidden" name="confessionId" value={r.confessionId} />
-              <label htmlFor={`reason-${r.reportId}`}>ليش عم تكشفه؟</label>
-              <textarea
-                id={`reason-${r.reportId}`}
-                name="reason"
-                required
-                minLength={8}
-                maxLength={500}
-                rows={2}
-              />
-              <button type="submit" className="danger">اكشف</button>
+              <div className="field-row">
+                <label className="field" htmlFor={`reason-${r.reportId}`}>ليش عم تكشفه؟</label>
+                <textarea
+                  className="textarea"
+                  id={`reason-${r.reportId}`}
+                  name="reason"
+                  required
+                  minLength={8}
+                  maxLength={500}
+                  rows={2}
+                />
+              </div>
+              <button type="submit" className="btn btn--danger">اكشف</button>
             </form>
           </details>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

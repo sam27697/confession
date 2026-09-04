@@ -64,7 +64,7 @@ export default async function SendPage({
 
   if (!link.enabled) {
     return (
-      <div className="card">
+      <div className="notice">
         <p>هالرابط مطفي هلق.</p>
       </div>
     )
@@ -72,31 +72,35 @@ export default async function SendPage({
 
   const viewerAccountId = await getViewerAccountId()
   const isOwner = viewerAccountId === link.ownerAccountId
+  const isRateLimit = error === 'ratelimit'
 
   const action = sendConfessionAction.bind(null, slug)
 
   return (
-    <div>
+    <div className="veil">
       <h1>ابعتلـ {link.ownerDisplayName}</h1>
 
-      <p className="notice">
-        اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
-      </p>
-
-      {sent === '1' && <p className="muted">الرسالة وصلت.</p>}
-      {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
+      {sent === '1' && <p className="notice notice--citron">الرسالة وصلت.</p>}
+      {error && ERROR_COPY[error] && (
+        <p className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
+      )}
 
       {isOwner ? (
-        <p className="muted">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
+        <p className="hint">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
       ) : viewerAccountId ? (
         <form action={action}>
-          <textarea name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
-          <button type="submit">ابعت</button>
+          <div className="field-row">
+            <textarea className="textarea textarea--hero" name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
+          </div>
+          <p className="notice">
+            اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
+          </p>
+          <button type="submit" className="btn btn--primary btn--block">ابعت</button>
         </form>
       ) : (
         <div className="card">
-          <p className="muted">لازم تسجل دخول قبل ما تبعت.</p>
-          <a className="btn" href="/">سجل دخول</a>
+          <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
+          <a className="btn btn--primary" href="/">سجل دخول</a>
         </div>
       )}
     </div>

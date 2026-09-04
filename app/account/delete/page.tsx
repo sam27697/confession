@@ -20,33 +20,33 @@ export default async function DeleteAccountPage({
     <div>
       <h1>حذف الحساب</h1>
 
-      <div className="card">
-        <p className="muted">شو رح ينمحي</p>
+      <div className="notice notice--danger">
+        <p>شو رح ينمحي</p>
         <p>اسمك، وربط حسابك بفيسبوك، وقدرتك إنك ترجع تفوت على نفس الحساب، ورابطك، يلي بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.</p>
       </div>
 
-      <div className="card">
-        <p className="muted">شو بيضل</p>
+      <div className="notice notice--danger">
+        <p>شو بيضل</p>
         <p>
           الرسائل يلي بعتها بتضل عند الإدارة، مربوطة برقم حساب بلا اسم. الرسائل يلي وصلتك بتضل كمان. وجوابك بأي
           مصارحة متبادلة ما منقدر نشيله.
         </p>
       </div>
 
-      <p className="error">حذف الحساب نهائي وما فيك ترجع عنه.</p>
+      <p className="notice notice--danger">حذف الحساب نهائي وما فيك ترجع عنه.</p>
 
-      {error && ERROR_COPY[error] && <p className="error">{ERROR_COPY[error]}</p>}
+      {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
       <form action={deleteAccountAction}>
-        <label>
-          <input type="checkbox" name="confirm" required /> فهمت شو رح ينمحي وشو بيضل، وبدي احذف حسابي نهائياً
+        <label className="checkrow" htmlFor="confirm">
+          <input id="confirm" type="checkbox" name="confirm" required />
+          <span className="checkrow__box"></span>
+          <span>فهمت شو رح ينمحي وشو بيضل، وبدي احذف حسابي نهائياً</span>
         </label>
-        <button type="submit" className="danger">احذف حسابي</button>
+        <button type="submit" className="btn btn--danger-solid btn--block">احذف حسابي</button>
       </form>
 
-      <p className="muted">
-        <a href="/inbox">رجوع بلا حذف</a>
-      </p>
+      <a className="btn btn--ghost" href="/inbox">رجوع بلا حذف</a>
     </div>
   )
 }
