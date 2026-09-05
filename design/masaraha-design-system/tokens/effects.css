@@ -14,13 +14,13 @@
   --ring-focus:0 0 0 2px var(--ground),0 0 0 4px var(--citron-500);
 
   /* veils — apply to a hero block or a full screen */
-  --veil-citron:radial-gradient(120% 80% at 50% -10%,var(--citron-wash) 0%,rgba(214,242,91,0) 62%);
-  --veil-rose:radial-gradient(120% 80% at 50% -10%,var(--rose-wash) 0%,rgba(227,155,168,0) 62%);
+  --veil-citron:radial-gradient(circle at 15% 50%, rgba(214,242,91,0.2), transparent 50%), radial-gradient(circle at 85% 30%, rgba(227,155,168,0.15), transparent 50%), radial-gradient(circle at 50% 80%, rgba(214,242,91,0.1), transparent 50%);
+  --veil-rose:radial-gradient(circle at 15% 50%, rgba(227,155,168,0.25), transparent 50%), radial-gradient(circle at 85% 30%, rgba(214,242,91,0.15), transparent 50%), radial-gradient(circle at 50% 80%, rgba(227,155,168,0.1), transparent 50%);
   --veil-deep:linear-gradient(180deg,var(--ground-deep) 0%,var(--ground) 42%);
   --veil-fade-bottom:linear-gradient(180deg,rgba(21,15,14,0) 0%,var(--ground) 88%);
 
   /* glass — used sparingly: sticky headers and bottom bars only */
-  --glass-bg:rgba(30,23,21,.72);
-  --glass-blur:saturate(140%) blur(14px); /* @kind other */
-  --hairline-top:inset 0 1px 0 rgba(245,239,233,.05); /* @kind shadow */
+  --glass-bg:rgba(10,8,22,.42);
+  --glass-blur:saturate(200%) blur(20px); /* @kind other */
+  --hairline-top:inset 0 1px 0 rgba(255,255,255,.05); /* @kind shadow */
 }

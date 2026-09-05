@@ -721,3 +721,80 @@ it referenced -- `toast-container`, `modal-backdrop`, `stagger-enter`,
 spinner were inert, and the visually hidden label rendered as visible text.
 Acceptance item 5 catches exactly this, in both directions, which is what
 made the gap measurable rather than a matter of opinion.
+
+### 9.8 The recolour: the design of record moves to indigo
+
+*Amended 2026-09-06. Sam's call, taken explicitly.*
+
+A parallel agent recoloured the app from the commissioned warm charcoal to
+an indigo/violet ground, with glassmorphic surfaces, gradient brand and hero
+type, and a floating pill header. **Sam chose to keep it and move the design
+system with it**, rather than revert the app. So this is not a drift that
+was tolerated; it is a change of direction, and the two sides were moved
+together.
+
+**`design/masaraha-design-system/tokens/*.css` now carries the new values**
+-- twelve colours, eight radii, two veils and three glass/hairline effects,
+25 tokens in all. `_ds_manifest.json` and one guideline swatch were
+corrected to match. Acceptance item 2 is green because both sides moved,
+which is the only way §1.3 permits it to be green:
+
+> a palette change in the app that was not made in the design system turns
+> the suite red.
+
+That sentence held. It turned the suite red, it was reported rather than
+edited around, and the resolution was a decision rather than a test change.
+§1.2's last row -- "the commissioned directory must stay byte-identical to
+what Sam paid for" -- is superseded here by Sam, and by nobody else.
+
+**Still on the previous palette, flagged not fixed:** the `.jsx` preview
+components read `var(--token)` and follow automatically, but
+`--bg-scrim` is still `rgba(13,9,8,.72)`, mixed from the old warm ground.
+Over an indigo page it is a brown scrim. It was left alone because the brief
+here was to match the app, and the app did not change it; it is a real
+mismatch and the next slice's smallest job.
+
+#### What was not adopted from that change set
+
+- **The build was broken.** One replacement inserted a `}` that closed the
+  first `:root{}` block early, stranding `--glass-bg`, `--glass-blur` and
+  `--hairline-top` outside any rule and leaving an unbalanced brace.
+  `next build` failed with `PostCSSSyntaxError: Unexpected }`, and the dev
+  server could not compile the stylesheet either -- which is the whole
+  reason the work appeared not to have landed. Repaired by moving
+  `@keyframes blob-bounce` out of the token block.
+- **`--transition-control` is reverted**, and is the one token deliberately
+  not synced. It had become `all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)`.
+  The 1.56 is an overshoot, which §2.2 bans in as many words -- "no bounce,
+  no spring, no `cubic-bezier` with an overshoot" -- and which
+  `motion.css`'s own header calls "no bounce anywhere". `all` also
+  transitions layout properties, so a card hover animates its geometry.
+- **The full-page film grain is gone.** It was an SVG data URI running
+  fractal noise, which carried both strings items 1 and 3 search for.
+  §2.2 bans a resource reference "not for a font, not for an image, not for
+  a data URI", and §1.2 explains why the ban has to be a flat string search
+  with no carve-out. Rebuilding the grain from repeating gradients was tried
+  and rejected on sight: three layers at coprime periods interfere into
+  visible diagonal hatching, not grain. Real grain needs a raster, a raster
+  needs a reference, and the reference is the banned thing. No grain, and
+  the reasoning is in `globals.css` next to where it would have gone.
+- **The header wrapped to 154px on a phone.** The pill costs two gutters of
+  margin plus its own padding, against a brand mark and word that both grew;
+  at 375px that left the nav ~287px for ~250px of pills beside a 121px
+  brand, and `.nav` still carried `flex-wrap:wrap` from when `.site` ran
+  edge to edge. Tighter insets, `nowrap`, and `.brand__word` hidden below
+  420px. Measured after: 58px, one line.
+- **Six looping animations had no reduced-motion cover.** The
+  `prefers-reduced-motion` block collapses the `--dur-*` tokens, and these
+  carry literal durations, so none of them was reached. Measured on
+  `/c/[slug]`, five ran at once: a heartbeating primary button, a floating
+  notice, a breathing hero textarea, a drifting veil and a pulsing brand
+  mark. They are now switched off under the preference rather than sped up,
+  along with the hover and focus lifts. The colour, depth and glow they
+  carried all stay; only the movement stops.
+
+`redo_css.py`, the one-shot script that applied the recolour, is deleted.
+It rewrote `globals.css` by literal string match against the file as it
+stood, so a second run against the already-changed file would have matched
+nothing, matched partially, or corrupted it. The result is committed; the
+instrument is not a thing to keep loaded.

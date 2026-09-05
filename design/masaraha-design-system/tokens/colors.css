@@ -5,22 +5,22 @@
   color-scheme:dark;
 
   /* ── ground & surfaces ─────────────────────────────────────── */
-  --ground-deep:#0D0908;      /* behind everything, edges & scrims */
-  --ground:#150F0E;            /* page background */
-  --surface-1:#1E1715;         /* card, panel */
-  --surface-2:#272020;         /* raised card, input, hover */
-  --surface-3:#332A28;         /* pressed, selected row */
-  --surface-inset:#100B0A;     /* wells: code, slug, textarea */
+  --ground-deep:#030206;      /* behind everything, edges & scrims */
+  --ground:#070512;            /* page background */
+  --surface-1:#120E22;         /* card, panel */
+  --surface-2:#1A1530;         /* raised card, input, hover */
+  --surface-3:#231C42;         /* pressed, selected row */
+  --surface-inset:#05030A;     /* wells: code, slug, textarea */
 
   /* ── hairlines ─────────────────────────────────────────────── */
-  --line:#382E2B;              /* default 1px border */
-  --line-strong:#4C3F3B;       /* border on raised / focused */
-  --line-faint:#241D1B;        /* dividers inside a card */
+  --line:#282142;              /* default 1px border */
+  --line-strong:#3A315C;       /* border on raised / focused */
+  --line-faint:#1A142D;        /* dividers inside a card */
 
   /* ── text ──────────────────────────────────────────────────── */
-  --text-1:#F5EFE9;            /* body & headings */
-  --text-2:#B5A69E;            /* muted, labels, captions */
-  --text-3:#7D6E68;            /* disabled, placeholder, hour stamp */
+  --text-1:#F2EFFF;            /* body & headings */
+  --text-2:#AAA2C2;            /* muted, labels, captions */
+  --text-3:#6A6187;            /* disabled, placeholder, hour stamp */
   --text-on-accent:#1A1F06;    /* on citron */
   --text-on-reveal:#2A1014;    /* on rose */
 
