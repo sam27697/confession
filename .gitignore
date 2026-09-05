@@ -7,3 +7,6 @@ dist/
 # next
 .next/
 next-env.d.ts
+
+# local dev artefacts (a real session cookie was committed here once)
+cookies.txt

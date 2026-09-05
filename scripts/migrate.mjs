@@ -12,13 +12,24 @@
 // Exits non-zero on any failure. Each file is one transaction, so a file
 // that fails leaves nothing behind and can be re-run after the fix.
 
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import pg from 'pg'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const migrationsDir = path.join(here, 'drizzle')
+
+// Two layouts, one script. The Dockerfile flattens this file to /app and
+// copies drizzle/ to /app/drizzle, so the sibling path is the container's.
+// In the repository the file is scripts/migrate.mjs and drizzle/ is its
+// parent's sibling. Resolving both means `node scripts/migrate.mjs` works
+// locally against the same files the container applies -- which is the whole
+// premise of the comment above, and was not true before: the sibling lookup
+// alone found nothing outside the image, so local work reached for a second
+// migration runner and got a second implementation to drift from.
+const migrationsDir = [path.join(here, 'drizzle'), path.join(here, '..', 'drizzle')].find((dir) =>
+  existsSync(dir),
+) ?? path.join(here, 'drizzle')
 
 const url = process.env.DATABASE_URL
 if (!url) {
