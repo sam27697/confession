@@ -383,7 +383,16 @@ test('item 37: deleteAccount still succeeds end to end under the strengthened ac
   delete childEnv.NODE_TEST_CONTEXT
   const result = spawnSync(
     'node',
-    ['--import', 'tsx', '--test', '--test-name-pattern', '^item (11|12|13|14|15|16|17):', item19Path],
+    // --test-reporter=tap is pinned, not left to the default. Node's default
+    // reporter has changed across releases (spec on a TTY in 20/22, spec
+    // unconditionally by 24), and the "# pass 7" line this test reads back
+    // exists only in the tap output -- the spec reporter writes "i pass 7".
+    // Without the pin, this item fails on a Node version bump for a reason
+    // that has nothing to do with deleteAccount or the strengthened CHECK.
+    [
+      '--import', 'tsx', '--test', '--test-reporter=tap',
+      '--test-name-pattern', '^item (11|12|13|14|15|16|17):', item19Path,
+    ],
     { encoding: 'utf8', cwd: REPO_ROOT, env: childEnv },
   )
   assert.equal(

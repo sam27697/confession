@@ -28,9 +28,20 @@ test('§3.3 a tampered payload is rejected', () => {
 test('§3.3 a tampered signature is rejected', () => {
   const token = signPayload(SECRET_A, { accountId: 'abc-123' })
   const [body, signature] = token.split('.')
-  const lastChar = signature.at(-1)
-  const flippedChar = lastChar === 'A' ? 'B' : 'A'
-  const tamperedSignature = signature.slice(0, -1) + flippedChar
+
+  // Tamper with the decoded bytes, not with the encoded character. A
+  // 32-byte HMAC is 43 base64url characters and 43 * 6 = 258 bits, so the
+  // last character carries only 4 significant bits -- its low 2 bits are
+  // padding that base64url decoding discards. 'A' (index 0) and 'B' (index
+  // 1) therefore decode to identical bytes, and the previous version of
+  // this test, which rewrote the last character to 'B' whenever it was
+  // already 'A', tampered with nothing at all whenever the signature's
+  // final nibble happened to be zero: one run in sixteen, passing by luck
+  // the other fifteen. Flipping a byte outright is unambiguous.
+  const raw = Buffer.from(signature!, 'base64url')
+  raw[0] ^= 0xff
+  const tamperedSignature = raw.toString('base64url')
+  assert.notEqual(tamperedSignature, signature, 'the tamper must actually change the signature')
 
   const result = verifyPayload(SECRET_A, `${body}.${tamperedSignature}`, { maxAgeMs: ONE_MINUTE_MS })
   assert.equal(result, null)

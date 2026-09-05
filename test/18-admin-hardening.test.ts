@@ -33,10 +33,11 @@
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
+import { BASH } from './posix-shell.js'
 import { freshDb } from './harness.js'
 import { signAdminSession, verifyAdminSession, hashAdminPassword } from '../src/admin-auth.js'
 import { getAdminUserById } from '../src/admin.js'
@@ -306,7 +307,11 @@ function runMethodGuardProbe(envOverrides: Record<string, string>): { status: nu
     writeFileSync(
       probe,
       [
-        `import { adminMethodNotAllowed } from ${JSON.stringify(METHOD_GUARD_PATH)}`,
+        // A bare filesystem path is not a valid ESM specifier on Windows:
+        // the loader reads "C:\\..." as a URL with an unsupported 'c:'
+        // scheme and the probe dies before it can report a status. Hand it
+        // a file:// URL, which is correct on every platform.
+        `import { adminMethodNotAllowed } from ${JSON.stringify(pathToFileURL(METHOD_GUARD_PATH).href)}`,
         "const request = new Request('https://stg.confession.fayad.app/admin/reveal')",
         'const response = await adminMethodNotAllowed(request, {})',
         "console.log(JSON.stringify({ status: response.status }))",
@@ -417,7 +422,7 @@ const STAGING_ROW = {
 }
 
 function runCheckDeployPairing(args: string[]): { status: number | null; stderr: string } {
-  const result = spawnSync('bash', [CHECK_DEPLOY_PAIRING_SCRIPT, ...args], { encoding: 'utf8' })
+  const result = spawnSync(BASH, [CHECK_DEPLOY_PAIRING_SCRIPT, ...args], { encoding: 'utf8' })
   return { status: result.status, stderr: result.stderr ?? '' }
 }
 

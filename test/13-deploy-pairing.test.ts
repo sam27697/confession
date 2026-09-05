@@ -5,13 +5,14 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import os from 'node:os'
+import { BASH } from './posix-shell.js'
 
 // Resolved relative to this file so the test works from any cwd, per §2:
 // "A standalone script, because it has to be testable off the box."
 const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../scripts/check-deploy-pairing.sh')
 
 function run(args: string[]): { status: number | null; stderr: string } {
-  const result = spawnSync('bash', [SCRIPT, ...args], { encoding: 'utf8' })
+  const result = spawnSync(BASH, [SCRIPT, ...args], { encoding: 'utf8' })
   return { status: result.status, stderr: result.stderr ?? '' }
 }
 
@@ -194,7 +195,7 @@ const READ_ENV_KEY_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.
 const DEPLOY_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../deploy.sh')
 
 function runReadEnvKey(file: string, key: string): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync('bash', [READ_ENV_KEY_SCRIPT, file, key], { encoding: 'utf8' })
+  const result = spawnSync(BASH, [READ_ENV_KEY_SCRIPT, file, key], { encoding: 'utf8' })
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
 }
 

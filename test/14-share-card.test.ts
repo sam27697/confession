@@ -350,13 +350,20 @@ const HEADER_READ_INDICATORS =
 test('§6.9 / §2.4 the header-read tripwire: app/ and src/ contain no request-header read beyond the two known allowed matches', () => {
   const files = [...listSourceFiles(path.join(REPO_ROOT, 'app')), ...listSourceFiles(path.join(REPO_ROOT, 'src'))]
 
+  // path.relative yields backslashes on Windows, and the two allowances
+  // below are written with forward slashes. Left unnormalised, neither
+  // allowance ever matches there and the tripwire reports its own two known
+  // -good lines as violations -- a tripwire that cries wolf on every run is
+  // one nobody reads, which is the opposite of what §2.4 wants from it.
+  const relPosix = (file: string) => path.relative(REPO_ROOT, file).split(path.sep).join('/')
+
   const matches: { file: string; line: number; text: string }[] = []
   for (const file of files) {
     const content = readFileSync(file, 'utf8')
-    const lines = content.split('\n')
+    const lines = content.split(/\r?\n/)
     for (let i = 0; i < lines.length; i++) {
       if (HEADER_READ_INDICATORS.test(lines[i]!)) {
-        matches.push({ file: path.relative(REPO_ROOT, file), line: i + 1, text: lines[i]!.trim() })
+        matches.push({ file: relPosix(file), line: i + 1, text: lines[i]!.trim() })
       }
     }
   }

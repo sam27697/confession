@@ -260,9 +260,16 @@ test('item 16: src/hourstamp.ts imports nothing from next, from the database, or
   // guarantee the item asks for. Strip comments first and the check means
   // what it says; rewording the source to satisfy a string matcher would
   // have been the wrong repair.
+  //
+  // Split on /\r?\n/, not on '\n'. On a CRLF checkout the latter leaves a
+  // trailing \r on every line, and JavaScript's `.` excludes \r as a line
+  // terminator -- so `.*$` can never reach the end of the line and the
+  // stripper silently matches nothing. The comments then survive, and this
+  // item fails on Windows while passing on CI, which is how the source
+  // comment came to be reworded instead of the test being fixed.
   const code = src
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
+    .split(/\r?\n/)
     .map((line) => line.replace(/(^|[^:'"`])\/\/.*$/, '$1'))
     .join('\n')
 
