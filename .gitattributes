@@ -1,0 +1,36 @@
+# Line endings.
+#
+# Everything in this repository that runs, runs on Linux. deploy.sh is
+# extracted from a `git archive` tarball straight onto the server and
+# executed; docker-entrypoint.sh is the container's ENTRYPOINT; the two
+# scripts/*.sh are spawned by both deploy.sh and the test suite.
+#
+# A CRLF line ending on any of them is not cosmetic. The kernel reads the
+# shebang literally, so `#!/usr/bin/env bash\r` sends it looking for an
+# interpreter named "bash\r" and the script dies before its first line:
+#
+#     env: 'bash\r': No such file or directory
+#
+# That is exactly what happened on the first deploy attempted from a Windows
+# checkout. The repository stores LF, but core.autocrlf hands CRLF to the
+# working tree -- and `git archive` inherits that conversion, so the tarball
+# uploaded to the box carried CRLF scripts even though the committed blobs
+# were clean. The container's ENTRYPOINT would have failed the same way, so
+# this was one step away from a stack that builds and never starts.
+#
+# eol=lf makes the working tree, the repository and every archive agree, on
+# every platform, which is the only arrangement in which "what runs on the
+# box is what the tests ran" is actually true.
+* text=auto eol=lf
+
+# Binary, never converted or diffed as text.
+*.ttf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.gz binary
+*.tar binary
