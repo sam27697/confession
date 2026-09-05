@@ -550,14 +550,19 @@ says so explicitly.*
 
 ### 9.1 The decision
 
-**Three client components exist, they live in `app/_components/`, and they
+**Four client components exist, they live in `app/_components/`, and they
 are the whole of this app's client JavaScript.**
+
+*The fourth, `StoryCard.tsx`, was added by the §9.7 pass; the three above it
+are the original island. Item 10b holds the list mechanically, so a fifth is
+a spec edit before it is a file.*
 
 | Component | What it is for |
 |---|---|
-| `ToastProvider.tsx` | An `aria-live` region at the root of every page, and the `toast()` the other two call. Two tones, citron and danger, borrowed from `.notice`. |
+| `ToastProvider.tsx` | An `aria-live` region at the root of every page, and the `toast()` the others call. Two tones, citron and danger, borrowed from `.notice`. |
 | `SubmitButton.tsx` | Replaces `<button type="submit">` inside a **Server Action** form. Disables itself and shows a pending ring while the action is in flight. |
 | `CopyLink.tsx` | The «انسخ الرابط» button `LinkBlock.jsx` always carried and §7.1 declined to build. |
+| `StoryCard.tsx` | §9.7. Draws the owner's link as a 1080x1920 story card on a `<canvas>` and hands it to the share sheet or to a download. |
 
 No route, no Server Action, no form `action=`, no field `name=`, no
 validation attribute and no query changed to make room for them. §0's rule
@@ -615,9 +620,11 @@ fail to run — it would publish the module's source to every visitor.
 
 - **§2.1** gains seven classes: `.sr-only`, `.toasts`, `.toast`,
   `.toast--citron`, `.toast--danger`, `.toast--leaving`, `.btn__spinner`.
-  They introduce no new colour, easing or duration; every value is a token
-  already declared. Acceptance item 5 continues to enforce coverage in both
-  directions over the enlarged list.
+  §9.7 adds eight more: `.enter`, `.modal-backdrop`, `.modal-sheet`,
+  `.modal__head`, `.story-prompts`, `.prompt-pill`, `.prompt-pill--active`,
+  `.story-preview`. None introduces a new colour, easing or duration; every
+  value is a token already declared. Acceptance item 5 continues to enforce
+  coverage in both directions over the enlarged list.
 - **§7.1** is superseded for the copy button only. **«شارك» / `navigator.share`
   remains unbuilt** — it is a different capability with a different fallback
   story, and nothing in this slice needed it.
@@ -663,3 +670,54 @@ without running. Those scripts are the ones week 5 added after `deploy.sh`
 deployed the wrong stack and exited 0, and they are the last ones that should
 be silently unrun on a developer's own machine. All four are fixed in the
 tests; no assertion was weakened to do it.
+
+### 9.7 The polish pass, and the work it recovers
+
+*Amended 2026-09-06, after Sam reported the UI work missing from
+production and was right.*
+
+A parallel agent produced a large UI/UX change set on 2026-09-05 that was
+never committed. The §9 pass above took three components out of it and left
+the rest, which reduced a broad visual reworking to a copy button. That was
+too narrow a reading. This section restores the parts of it that are real,
+in the app's own language and on the app's own tokens.
+
+**Restored:**
+
+- **Entrance.** A screen's direct children rise in turn rather than all at
+  once. The original carried a `--stagger-delay` custom property set inline
+  on roughly twenty elements across five files; this is one `.enter` class
+  on the wrapper each page already has, with the delays on `:nth-child`.
+  Same effect, no presentation in the JSX, and nothing to keep in step by
+  hand when an element moves.
+- **The story card.** `StoryCard.tsx`, from the original's
+  `StoryCanvasModal`. Three things changed. It reads every colour from the
+  design tokens on `:root` at draw time rather than carrying nine hex
+  literals that happened to match; it builds the drawn link from
+  `window.location.origin` rather than the hardcoded production domain, which
+  had the staging card advertising production; and it is a real dialog --
+  Escape closes it, focus moves to the sheet and returns to the trigger,
+  the page behind does not scroll, and `roundRect` has a fallback for the
+  Safari versions that lack it.
+- **Depth.** `.msg` and `.linkblock` acknowledge a cursor, on pointer
+  devices only, at the `--hover-lift` the tokens already define: -1px. A
+  chip crossfades between state colours instead of cutting.
+
+**Not restored, and why:**
+
+| Dropped | Reason |
+|---|---|
+| Fabricated streak and view counters | `Math.floor(Math.random() * 10 + 5)` presented to the owner as their own numbers, re-rolling on every render. Already recorded in §9.4; restated here because it is the one item most likely to be asked for again. |
+| The reworded anonymity line on `/c/[slug]` | It claimed less admin visibility than the app actually has. §3.3 requires that sentence verbatim, and it is the sentence Sam approved. |
+| English UI copy and emoji on `/inbox` | The app is `lang="ar" dir="rtl"`. The original left one screen in English while every other screen stayed Arabic. Acceptance item 7 bans the emoji outright. |
+| The clue chip | A new field on the send form, which §0 forbids -- and it hands the recipient a new signal about who the sender is, which the anonymity model would have to be re-argued to permit. In the original it was wired to `onSelect={() => {}}` and reached the form never. |
+| `SearchParamsToast` | It toasted `?sent=1` on a screen that already renders a `.notice` for it. Two confirmations of one event. |
+| `next/link` throughout | Still a separate decision with its own prefetch and privacy questions, per §9.4. |
+
+**On why the original could not simply be replayed.** Sixteen of the classes
+it referenced -- `toast-container`, `modal-backdrop`, `stagger-enter`,
+`sr-only`, `clue-chip` and the rest -- had no rule anywhere in
+`app/globals.css`. The toasts, the modal, every entrance animation and the
+spinner were inert, and the visually hidden label rendered as visible text.
+Acceptance item 5 catches exactly this, in both directions, which is what
+made the gap measurable rather than a matter of opinion.

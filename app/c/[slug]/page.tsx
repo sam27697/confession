@@ -78,7 +78,7 @@ export default async function SendPage({
   const action = sendConfessionAction.bind(null, slug)
 
   return (
-    <div className="veil">
+    <div className="veil enter">
       <h1>ابعتلـ {link.ownerDisplayName}</h1>
 
       {sent === '1' && <p className="notice notice--citron">الرسالة وصلت.</p>}

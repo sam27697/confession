@@ -21,7 +21,7 @@ export default async function HomePage({
   const { deleted } = await searchParams
 
   return (
-    <div className="veil">
+    <div className="veil enter">
       <p>
         تطبيق مصارحة سرية.{'\n'}
         الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.{'\n'}

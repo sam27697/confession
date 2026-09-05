@@ -13,6 +13,7 @@ import {
   hideConfessionAction,
 } from './actions.js'
 import { CopyLink } from '../_components/CopyLink.js'
+import { StoryCard } from '../_components/StoryCard.js'
 import { SubmitButton } from '../_components/SubmitButton.js'
 
 const ERROR_COPY: Record<string, string> = {
@@ -178,7 +179,7 @@ export default async function InboxPage({
   const now = new Date()
 
   return (
-    <div>
+    <div className="enter">
       <h1>صندوقك</h1>
 
       <div className="linkblock">
@@ -197,6 +198,10 @@ export default async function InboxPage({
               slug above stays the guaranteed route to the link and this is
               an accelerator on top of it. */}
           <CopyLink url={`${env.appOrigin}/c/${link.slug}`} />
+          {/* Spec §9.7. The card is the same link as a 1080x1920 image,
+              because the slug's whole job is to reach a story, and asking
+              someone to retype it there is where the funnel leaks. */}
+          <StoryCard url={`${env.appOrigin}/c/${link.slug}`} slug={link.slug} />
           <form action={setLinkEnabledAction}>
             <input type="hidden" name="linkId" value={link.linkId} />
             <input type="hidden" name="enabled" value={link.enabled ? '0' : '1'} />

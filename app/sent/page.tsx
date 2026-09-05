@@ -39,7 +39,7 @@ export default async function SentPage() {
   const now = new Date()
 
   return (
-    <div>
+    <div className="enter">
       <h1>يلي بعتها</h1>
 
       {messages.length === 0 && <p className="hint">لسا ما بعتّ شي.</p>}

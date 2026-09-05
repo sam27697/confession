@@ -870,3 +870,130 @@ main{
 @media (prefers-reduced-motion:reduce){
   .btn__spinner{animation:none}
 }
+/* ============================================================
+   ENTRANCE, DEPTH AND THE STORY CARD -- spec section 9.7
+   ============================================================
+   The visual polish of the week-12 pass. Same rule as the block above:
+   no new colour, no new easing, no new duration. Every value here is a
+   token already declared at the top of this file. */
+
+/* Entrance. A screen's direct children rise in turn rather than all at
+   once, which gives the eye an order to read them in. The delays live on
+   :nth-child rather than on a --stagger-delay set inline per element,
+   so a page gains the effect by adding one class to the wrapper it
+   already has, and nothing in the JSX has to carry presentation. */
+.enter > *{animation:enter-rise var(--dur-slow) var(--ease-out) both}
+.enter > *:nth-child(1){animation-delay:0ms}
+.enter > *:nth-child(2){animation-delay:60ms}
+.enter > *:nth-child(3){animation-delay:120ms}
+.enter > *:nth-child(4){animation-delay:180ms}
+.enter > *:nth-child(5){animation-delay:240ms}
+.enter > *:nth-child(6){animation-delay:300ms}
+.enter > *:nth-child(7){animation-delay:360ms}
+/* Past the seventh the reader has the rhythm; holding the delay flat
+   keeps a long inbox from taking two seconds to finish arriving. */
+.enter > *:nth-child(n+8){animation-delay:420ms}
+@keyframes enter-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Depth on hover, pointer devices only. --hover-lift is -1px: this is a
+   card acknowledging the cursor, not a card jumping at it. */
+@media (hover:hover){
+  .msg{transition:transform var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),border-color var(--dur-base) var(--ease-out)}
+  .msg:hover{transform:translateY(var(--hover-lift));box-shadow:var(--shadow-raised);border-color:var(--line-strong)}
+  .linkblock{transition:box-shadow var(--dur-base) var(--ease-out)}
+  .linkblock:hover{box-shadow:var(--shadow-raised)}
+}
+
+/* A chip changes state when a message is hidden or reported. Crossfading
+   the colour pair makes that read as the same chip changing rather than
+   a different chip appearing. */
+.chip{transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out)}
+
+/* The story-card sheet. Bottom-anchored: it is opened by a thumb on the
+   growth screen, and the bottom of the phone is where the thumb is. */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:60;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding:var(--gutter);
+  background:var(--bg-scrim);
+  animation:scrim-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes scrim-in{from{opacity:0}to{opacity:1}}
+
+.modal-sheet{
+  width:100%;
+  max-width:var(--content-max);
+  max-height:88vh;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-4);
+  padding:var(--card-pad-lg);
+  padding-bottom:calc(var(--card-pad-lg) + var(--safe-bottom));
+  background:var(--surface-1);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-sheet);
+  animation:sheet-rise var(--dur-slow) var(--ease-out) both;
+}
+@keyframes sheet-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+.modal__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-3);
+  font:var(--type-caption);
+  color:var(--citron-300);
+}
+
+.story-prompts{display:flex;flex-direction:column;gap:var(--space-2)}
+
+.prompt-pill{
+  min-height:var(--tap-min);
+  padding:12px 14px;
+  text-align:start;
+  background:var(--bg-field);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  color:var(--text-2);
+  font:var(--type-body-sm);
+  letter-spacing:var(--tracking-ar);
+  cursor:pointer;
+  transition:var(--transition-control);
+}
+.prompt-pill:hover{border-color:var(--line-strong);color:var(--text-1)}
+.prompt-pill--active{background:var(--citron-wash);border-color:rgba(214,242,91,.32);color:var(--citron-100)}
+
+.story-preview{
+  display:flex;
+  justify-content:center;
+  padding:var(--space-3);
+  background:var(--ground-deep);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+}
+.story-preview canvas{
+  display:block;
+  width:100%;
+  max-width:210px;
+  height:auto;
+  border-radius:var(--radius-md);
+}
+
+/* The reduced-motion block near the top collapses every --dur-* token to
+   1ms, which handles the durations. The delays are literal milliseconds
+   and are not covered by it, so a reader who asked for less motion would
+   still watch a long inbox arrive in sequence. Zero them, and drop the
+   entrance and the sheet animation entirely rather than running them
+   fast: the point of the preference is no movement, not brief movement. */
+@media (prefers-reduced-motion:reduce){
+  .enter > *{animation:none}
+  .modal-backdrop,.modal-sheet{animation:none}
+  .msg{transition:none}
+  .msg:hover{transform:none}
+}

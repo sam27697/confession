@@ -542,11 +542,16 @@ test('item 10a: no page, layout or route file under app/ carries a use-client di
   )
 })
 
-test('item 10b: every client component under app/ lives in app/_components and is one of the three spec section 9 authorises', () => {
+test('item 10b: every client component under app/ lives in app/_components and is one of those spec section 9 authorises', () => {
   // The allow-list is the spec's, transcribed. A fourth client component is
   // not a bug this test can judge -- it is a decision that belongs in the
   // spec first, which is the whole point of listing them by name here.
-  const AUTHORISED = ['app/_components/CopyLink.tsx', 'app/_components/SubmitButton.tsx', 'app/_components/ToastProvider.tsx']
+  const AUTHORISED = [
+    'app/_components/CopyLink.tsx',
+    'app/_components/StoryCard.tsx',
+    'app/_components/SubmitButton.tsx',
+    'app/_components/ToastProvider.tsx',
+  ]
 
   const clientFiles = listAppFiles((name) => name.endsWith('.tsx'))
     .filter((f) => hasUseClientDirective(readFileSync(f, 'utf8')))
@@ -556,7 +561,7 @@ test('item 10b: every client component under app/ lives in app/_components and i
   assert.deepEqual(
     clientFiles,
     AUTHORISED,
-    'the client island is exactly the three components spec section 9 names; anything else here was added without ' +
+    'the client island is exactly the components spec section 9 names; anything else here was added without ' +
       `the spec change that would authorise it: ${JSON.stringify(clientFiles)}`,
   )
 })
