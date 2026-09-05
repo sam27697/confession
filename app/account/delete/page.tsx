@@ -1,6 +1,7 @@
 import { requireActiveViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { deleteAccountAction } from './actions.js'
+import { SubmitButton } from '../../_components/SubmitButton.js'
 
 const ERROR_COPY: Record<string, string> = {
   required: 'لازم تحط إشارة عالمربع تحت قبل ما تأكد الحذف.',
@@ -43,7 +44,11 @@ export default async function DeleteAccountPage({
           <span className="checkrow__box"></span>
           <span>فهمت شو رح ينمحي وشو بيضل، وبدي احذف حسابي نهائياً</span>
         </label>
-        <button type="submit" className="btn btn--danger-solid btn--block">احذف حسابي</button>
+        {/* The one irreversible action in the app. Disabling the button for
+            the duration of the transaction is the point here, not the
+            spinner: a second click on a slow connection is a second
+            deleteAccount call. */}
+        <SubmitButton className="btn btn--danger-solid btn--block" loadingText="عم ينحذف...">احذف حسابي</SubmitButton>
       </form>
 
       <a className="btn btn--ghost" href="/inbox">رجوع بلا حذف</a>

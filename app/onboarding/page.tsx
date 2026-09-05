@@ -7,6 +7,7 @@ import { TERMS_VERSION, TERMS_TEXT_AR, TERMS_TEXT_EN } from '../_lib/domain/term
 import { PENDING_IDENTITY_COOKIE, verifyPendingIdentityCookieValue } from '../_lib/session.js'
 import { TermsBlock } from '../_lib/terms-block.js'
 import { acceptTermsAction } from './actions.js'
+import { SubmitButton } from '../_components/SubmitButton.js'
 
 export default async function OnboardingPage({
   searchParams,
@@ -60,7 +61,7 @@ export default async function OnboardingPage({
           <span className="checkrow__box"></span>
           <span>بأكد إني فوق ١٨ سنة</span>
         </label>
-        <button type="submit" className="btn btn--primary btn--block">موافق</button>
+        <SubmitButton className="btn btn--primary btn--block">موافق</SubmitButton>
       </form>
     </div>
   )

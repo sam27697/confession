@@ -6,6 +6,7 @@ import { getLinkBySlug } from '../../_lib/domain/links.js'
 import { env } from '../../_lib/domain/env.js'
 import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
+import { SubmitButton } from '../../_components/SubmitButton.js'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
 // disabled link or a missing slug gets the generic card. Returning {} here
@@ -90,12 +91,18 @@ export default async function SendPage({
       ) : viewerAccountId ? (
         <form action={action}>
           <div className="field-row">
-            <textarea className="textarea textarea--hero" name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
+            {/* The field had a placeholder and no label, so a screen reader
+                announced it as an unnamed text area. The label is visually
+                hidden rather than shown because the h1 above already names
+                the screen; nothing about the field's name or validation
+                changes (spec §0, acceptance item 17). */}
+            <label className="sr-only" htmlFor="body">رسالتك</label>
+            <textarea id="body" className="textarea textarea--hero" name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
           </div>
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>
-          <button type="submit" className="btn btn--primary btn--block">ابعت</button>
+          <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت</SubmitButton>
         </form>
       ) : (
         <div className="card">

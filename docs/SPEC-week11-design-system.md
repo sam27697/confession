@@ -537,3 +537,129 @@ as the only possible reading.
   alternative -- rewording source comments so a string matcher passes -- is the
   same defect §8 already records for `app/globals.css`, and it hides the
   real fault rather than fixing it.
+
+---
+
+## §9. The client island — §7.1's deferred decision, taken
+
+*Amended 2026-09-05, after the slice shipped. §7.1 sent one question to the
+week log: whether to take the first `'use client'` island in this app for a
+copy button. This section answers it. Everything above stays as frozen; where
+this section and an earlier one disagree, this one is the later ruling and
+says so explicitly.*
+
+### 9.1 The decision
+
+**Three client components exist, they live in `app/_components/`, and they
+are the whole of this app's client JavaScript.**
+
+| Component | What it is for |
+|---|---|
+| `ToastProvider.tsx` | An `aria-live` region at the root of every page, and the `toast()` the other two call. Two tones, citron and danger, borrowed from `.notice`. |
+| `SubmitButton.tsx` | Replaces `<button type="submit">` inside a **Server Action** form. Disables itself and shows a pending ring while the action is in flight. |
+| `CopyLink.tsx` | The «انسخ الرابط» button `LinkBlock.jsx` always carried and §7.1 declined to build. |
+
+No route, no Server Action, no form `action=`, no field `name=`, no
+validation attribute and no query changed to make room for them. §0's rule
+still governs; this section widens what may be *added*, not what may be
+altered.
+
+### 9.2 Why the ban was worth having, and why it goes now
+
+§7.1's reasoning was never "client JavaScript is bad". It was that a button
+which does nothing is worse than no button, and that taking the first island
+is a real decision with a real cost that should not be made at the end of a
+session already replacing every screen. Both halves still hold. The second
+half is now satisfied — this is a decision taken on its own, with the cost
+written down. The first half is satisfied by construction:
+
+- `CopyLink` renders **nothing at all** until it has mounted *and*
+  `navigator.clipboard.writeText` is confirmed to exist. With JavaScript off,
+  or on an insecure origin where the Clipboard API is absent, there is no
+  button — not a dead one. The slug stays selectable text above it either
+  way, so the link is always obtainable by hand and this is only ever an
+  accelerator.
+- `SubmitButton` degrades to precisely what it replaced: a real submit
+  button that posts its form. Without JavaScript it simply does not spin.
+- `ToastProvider` renders an empty live region and nothing else.
+
+### 9.3 The cost, stated rather than glossed
+
+This app now ships a React client runtime on every page, which it did not
+before. That is the price, and it is not small: it is bytes on a phone
+connection, and it is a second execution environment where a future mistake
+could put something on the client that should have stayed on the server.
+
+What it does **not** cost is the privacy property. The island reads no
+request header, holds no session, and receives no data the page was not
+already rendering into HTML for the same viewer. §2.4's promise — "no
+request-header read anywhere in `app/`" — is unchanged and still enforced
+by `test/14-share-card.test.ts`. Acceptance item 10c makes the new half of
+that explicit: **no client component may import the database, the domain
+layer, `next/headers` or `next/cookies`.** A `'use client'` module's imports
+are compiled into the browser bundle, so such an import would not merely
+fail to run — it would publish the module's source to every visitor.
+
+### 9.4 Rejected, in writing
+
+| Option | Why it lost |
+|---|---|
+| **Keep §7.1 as frozen: no island, no copy button** | Defensible, and it was the standing position for a reason. It lost because the slug is a 20-character string a user is expected to transcribe onto a story, on a phone, and «انسخ الرابط» is copy the design system itself ships in `LinkBlock.jsx`. The growth screen's one job is getting that link into circulation. |
+| **A copy button with no feedback** | `navigator.clipboard.writeText` resolves silently. A button that reports nothing on success is indistinguishable from one that failed, so the toast is not decoration — it is the button's only output. That is why `ToastProvider` is in scope and not deferred. |
+| **`next/link` throughout, for client-side navigation** | Rejected. It is a real improvement and it is not this decision. Every `<a href>` in the app stays an `<a href>`; a navigation change is its own slice with its own prefetch and privacy questions. |
+| **A story-card generator (`<canvas>`, share sheet, prompt picker)** | Rejected as out of scope, at ~230 lines and a second share surface with its own copy, its own image output and its own origin handling. It is a product feature, not a skin, and it belongs in a spec of its own. |
+| **A "clue" chip the sender attaches to a confession** | Rejected on §0. A clue is a new field on the send form, which changes what the form submits and what the recipient's inbox parses — a behaviour change, and one that hands the recipient a new signal about who the sender is, which the anonymity model would have to be re-argued to permit. |
+| **Fabricated engagement counters (streak, view count) on the inbox** | Rejected outright, and recorded here so the idea is not retried. The numbers proposed were `Math.random()`: an invented figure presented to a user as their own data, re-rolling on every render. An app whose entire promise is that it tells the truth about who can see what cannot open its main screen with a fake number. |
+
+### 9.5 What this changes above
+
+- **§2.1** gains seven classes: `.sr-only`, `.toasts`, `.toast`,
+  `.toast--citron`, `.toast--danger`, `.toast--leaving`, `.btn__spinner`.
+  They introduce no new colour, easing or duration; every value is a token
+  already declared. Acceptance item 5 continues to enforce coverage in both
+  directions over the enlarged list.
+- **§7.1** is superseded for the copy button only. **«شارك» / `navigator.share`
+  remains unbuilt** — it is a different capability with a different fallback
+  story, and nothing in this slice needed it.
+- **§8.2** is unaffected. `.counter` is still not implemented: the island is
+  three named components, not a general licence, and a live character count
+  is not one of them.
+- **Acceptance item 10** as frozen ("no `.tsx` file under `app/` contains
+  `'use client'`") no longer describes the app and is retired. It is replaced
+  by **10a, 10b and 10c**, which are collectively stricter, not looser:
+  shells stay server-rendered; the client files are exactly the three named
+  above; and none of them may import server-side code.
+
+  The weaker replacement — "pages and layouts carry no directive", which is
+  all that is needed to make the tree pass — was written first and rejected.
+  It would stay green for an island that had quietly grown a database
+  import, which is the only failure mode here that matters.
+
+### 9.6 Two acceptance items that were failing on `main`, and why
+
+Recorded because both had been reported as repaired and neither was.
+
+- **Item 18** could not pass once its own fix reached `main`. It built its
+  expected file from `git show main:src/terms.ts` and asserted the working
+  tree differed from it — true only while the correction was unmerged, and
+  false forever after. §8.6 repaired the wrong half of it. It now asserts the
+  property directly: the plain clause is present, the bold one is not.
+- **Item 16** was repaired at the assertion per §8.7 — the check strips
+  comments before scanning for `process.` — but the stripper split on
+  `'\n'`, so on a CRLF checkout every line kept a trailing `\r`, and
+  JavaScript's `.` excludes `\r` as a line terminator: `.*$` could never
+  reach the end of the line and the stripper matched nothing. The item failed
+  on Windows and passed on CI, and the source comment had been reworded to
+  make it pass — the exact repair §8.7 forbids. The comment is restored and
+  the stripper splits on `/\r?\n/`.
+
+Four further tests failed only on Windows, for reasons unrelated to what they
+assert: `path.relative` yields backslashes and two allow-lists were written
+with forward slashes; a bare filesystem path is not a valid ESM specifier;
+Node 24's default test reporter no longer emits the `# pass 7` line one item
+reads back; and `spawnSync('bash', ...)` resolves to the WSL launcher, which
+cannot see this filesystem, so twenty-one deploy-script tests exited 127
+without running. Those scripts are the ones week 5 added after `deploy.sh`
+deployed the wrong stack and exited 0, and they are the last ones that should
+be silently unrun on a developer's own machine. All four are fixed in the
+tests; no assertion was weakened to do it.

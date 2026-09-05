@@ -775,3 +775,98 @@ main{
 .legal h1,.legal h2{color:var(--text-1);margin-bottom:var(--space-3)}
 .legal p{margin:0 0 var(--space-3)}
 .legal ol,.legal ul{margin:0 0 var(--space-3);padding-inline-start:1.4em;display:flex;flex-direction:column;gap:var(--space-2)}
+/* ============================================================
+   THE CLIENT ISLAND -- spec section 9
+   ============================================================
+   Three components under app/_components/ are the whole of this app's
+   client JavaScript: a toast live region, a submit button that reports its
+   Server Action's pending state, and the link-copy accelerator section 7.1
+   deferred. Everything below styles those three and nothing else.
+
+   No new colour, no new easing and no new duration is introduced here.
+   Every value is a token already declared above, for the same reason
+   section 1.3 gives: a palette the app invents locally is a palette that
+   has drifted from the design of record without anyone deciding to. */
+
+/* Visually hidden, still announced. Carries the send screen's textarea
+   label, which the h1 above it makes redundant on screen but not to a
+   screen reader. */
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  margin:-1px;
+  padding:0;
+  border:0;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+
+/* The toast live region. Bottom-centred, which needs no direction-aware
+   inset in an RTL document, clear of the safe area on a phone, and never
+   over the sticky header. */
+.toasts{
+  position:fixed;
+  inset-inline:0;
+  bottom:calc(var(--space-4) + var(--safe-bottom));
+  z-index:50;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:var(--space-2);
+  padding:0 var(--gutter);
+  pointer-events:none;
+}
+
+.toast{
+  max-width:var(--content-max);
+  background:var(--surface-3);
+  border:1px solid var(--line);
+  border-radius:var(--radius-md);
+  padding:11px 16px;
+  color:var(--text-2);
+  font:var(--type-body-sm);
+  box-shadow:var(--shadow-sheet);
+  opacity:1;
+  transform:translateY(0);
+  transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);
+}
+/* The same two tones as .notice--citron and .notice--danger: a toast is a
+   transient echo of a notice, so it says things the same way. */
+.toast--citron{
+  background:var(--citron-wash);
+  border-color:rgba(214,242,91,.26);
+  color:var(--citron-100);
+}
+.toast--danger{
+  background:var(--danger-wash);
+  border-color:rgba(255,92,77,.32);
+  color:#FFC9C1;
+}
+.toast--leaving{opacity:0;transform:translateY(6px)}
+
+/* The pending ring inside a .btn. A CSS box, not an icon: one hairline
+   circle with a single transparent quadrant, rotating. currentColor, so it
+   is correct on every button variant without a rule per variant. */
+.btn__spinner{
+  flex:none;
+  width:15px;
+  height:15px;
+  border:2px solid currentColor;
+  border-top-color:transparent;
+  border-radius:var(--radius-pill);
+  opacity:.75;
+  animation:btn-spin 720ms linear infinite;
+}
+@keyframes btn-spin{to{transform:rotate(360deg)}}
+
+/* The reduced-motion block above collapses every --dur-* token to 1ms.
+   That is right for a transition and wrong for a loop -- a 1ms rotation is
+   a strobe, which is the exact thing the preference exists to prevent. So
+   the spinner does not read a duration token at all; it opts out of motion
+   here and stays a static ring, which still reads as busy beside the
+   button's own pending text and its aria-busy. */
+@media (prefers-reduced-motion:reduce){
+  .btn__spinner{animation:none}
+}

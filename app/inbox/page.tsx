@@ -12,6 +12,8 @@ import {
   reportConfessionAction,
   hideConfessionAction,
 } from './actions.js'
+import { CopyLink } from '../_components/CopyLink.js'
+import { SubmitButton } from '../_components/SubmitButton.js'
 
 const ERROR_COPY: Record<string, string> = {
   short: 'لازم تكتب شي مش أقل من حرفين، بكل خانة.',
@@ -151,7 +153,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
           <span className="hint">جوابك محفوظ من هلق وما فيك تغيّره بعدين.</span>
         </div>
 
-        <button type="submit" className="btn btn--primary">ابعت العرض</button>
+        <SubmitButton className="btn btn--primary" loadingText="عم يبعت العرض...">ابعت العرض</SubmitButton>
       </form>
     </details>
   )
@@ -190,6 +192,11 @@ export default async function InboxPage({
         </div>
 
         <div className="linkblock__actions">
+          {/* Spec §9, taking up §7.1's deferred decision. The button renders
+              itself only where the Clipboard API is actually usable, so the
+              slug above stays the guaranteed route to the link and this is
+              an accelerator on top of it. */}
+          <CopyLink url={`${env.appOrigin}/c/${link.slug}`} />
           <form action={setLinkEnabledAction}>
             <input type="hidden" name="linkId" value={link.linkId} />
             <input type="hidden" name="enabled" value={link.enabled ? '0' : '1'} />
@@ -198,9 +205,9 @@ export default async function InboxPage({
                 <strong>الرابط شغال</strong>
                 <span>{link.enabled ? 'الناس تقدر تبعتلك هلق.' : 'ما حدا يقدر يبعتلك لحد ما تشغلو.'}</span>
               </span>
-              <button type="submit" className="btn btn--secondary btn--md">
+              <SubmitButton className="btn btn--secondary btn--md">
                 {link.enabled ? 'طفي الرابط' : 'شغل الرابط'}
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </div>
@@ -235,11 +242,11 @@ export default async function InboxPage({
           <div className="msg__actions">
             <form action={hideConfessionAction}>
               <input type="hidden" name="confessionId" value={m.id} />
-              <button type="submit" className="btn btn--secondary btn--sm">خبيها</button>
+              <SubmitButton className="btn btn--secondary btn--sm">خبيها</SubmitButton>
             </form>
             <form action={blockSenderAction}>
               <input type="hidden" name="confessionId" value={m.id} />
-              <button type="submit" className="btn btn--danger btn--sm">احظر صاحبها</button>
+              <SubmitButton className="btn btn--danger btn--sm">احظر صاحبها</SubmitButton>
             </form>
             <details>
               <summary className="btn btn--secondary btn--sm">بلغ عنها</summary>
@@ -249,7 +256,7 @@ export default async function InboxPage({
                   <label className="field" htmlFor={`r-${m.id}`}>ليش عم تبلغ؟</label>
                   <input className="input" id={`r-${m.id}`} type="text" name="reason" required minLength={2} maxLength={300} />
                 </div>
-                <button type="submit" className="btn btn--danger">بلغ</button>
+                <SubmitButton className="btn btn--danger">بلغ</SubmitButton>
               </form>
             </details>
           </div>

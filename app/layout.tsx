@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { getViewerAccountId } from './_lib/auth.js'
 import { env } from './_lib/domain/env.js'
 import { genericShareMetadata } from '../src/share-card.js'
+import { ToastProvider } from './_components/ToastProvider.js'
 import './globals.css'
 
 // generateMetadata, not a static `export const metadata`, because it must
@@ -35,26 +36,32 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ar" dir="rtl">
       <body>
-        <header className="site">
-          <a className="brand" href="/">
-            <span className="brand__mark">م</span>
-            <span className="brand__word">مصارحة</span>
-          </a>
-          <nav className="nav">
-            {accountId ? (
-              <>
-                <a className="nav__item" href="/inbox">صندوقك</a>
-                <a className="nav__item" href="/sent">يلي بعتها</a>
-                <form action="/auth/logout" method="post">
-                  <button type="submit" className="btn btn--secondary btn--sm">تسجيل خروج</button>
-                </form>
-              </>
-            ) : (
-              <a className="nav__item" href="/">تسجيل دخول</a>
-            )}
-          </nav>
-        </header>
-        <main>{children}</main>
+        {/* Spec §9: the client island's live region wraps the tree so any
+            component below it can announce. The header, the nav and the
+            logout form stay exactly as they were -- plain anchors and a
+            plain submit button, both of which work with JavaScript off. */}
+        <ToastProvider>
+          <header className="site">
+            <a className="brand" href="/">
+              <span className="brand__mark">م</span>
+              <span className="brand__word">مصارحة</span>
+            </a>
+            <nav className="nav">
+              {accountId ? (
+                <>
+                  <a className="nav__item" href="/inbox">صندوقك</a>
+                  <a className="nav__item" href="/sent">يلي بعتها</a>
+                  <form action="/auth/logout" method="post">
+                    <button type="submit" className="btn btn--secondary btn--sm">تسجيل خروج</button>
+                  </form>
+                </>
+              ) : (
+                <a className="nav__item" href="/">تسجيل دخول</a>
+              )}
+            </nav>
+          </header>
+          <main>{children}</main>
+        </ToastProvider>
       </body>
     </html>
   )

@@ -3,6 +3,7 @@ import { getDb } from '../../_lib/domain/db.js'
 import { getPendingOfferForSender } from '../../_lib/domain/views.js'
 import { NotYourConfessionError, OfferNotPendingError, RevealOfferNotFoundError } from '../../_lib/domain/errors.js'
 import { acceptOfferAction, declineOfferAction } from './actions.js'
+import { SubmitButton } from '../../_components/SubmitButton.js'
 
 const ERROR_COPY: Record<string, string> = {
   short: 'لازم تكتب جوابك.',
@@ -57,12 +58,12 @@ export default async function OfferPage({
           <label className="field" htmlFor="senderAnswer">جوابك</label>
           <textarea className="textarea" id="senderAnswer" name="senderAnswer" required minLength={2} maxLength={4000} rows={4} />
         </div>
-        <button type="submit" className="btn btn--reveal btn--block">وافق وجاوب</button>
+        <SubmitButton className="btn btn--reveal btn--block" loadingText="عم ينزل الجوابين...">وافق وجاوب</SubmitButton>
       </form>
 
       <form action={declineOfferAction}>
         <input type="hidden" name="offerId" value={offer.offerId} />
-        <button type="submit" className="btn btn--secondary btn--block">لأ، مو هلق</button>
+        <SubmitButton className="btn btn--secondary btn--block">لأ، مو هلق</SubmitButton>
       </form>
     </div>
   )
