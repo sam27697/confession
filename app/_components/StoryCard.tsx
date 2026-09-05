@@ -23,6 +23,7 @@
 //     no dead control (spec section 7.1).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useToast } from './ToastProvider.js'
 
 const PROMPTS = [
@@ -301,7 +302,18 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
         بطاقة الستوري
       </button>
 
-      {open && (
+      {/* Portalled to <body>, and not as a matter of taste. This button
+          lives inside .linkblock, and .linkblock is a child of .enter, whose
+          entrance animation animates `transform`. An element with a
+          transform -- including the identity matrix a finished
+          fill-mode:both animation leaves behind -- becomes the containing
+          block for every position:fixed descendant. Declared in place, the
+          backdrop sized itself to the link block (333x327) instead of the
+          viewport and the sheet was clipped off the top of it. A dialog
+          should never be positioned relative to whichever container it
+          happens to be written in; the portal makes that true regardless of
+          what any ancestor does later. */}
+      {open && createPortal(
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <div
             className="modal-sheet"
@@ -344,7 +356,8 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
               نزّل وشارك
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )
