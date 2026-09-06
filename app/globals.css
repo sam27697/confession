@@ -317,11 +317,6 @@ button{font-family:inherit}
 ::placeholder{
   color:var(--text-faint);
   opacity: 0.6;
-  animation: whisper 3s ease-in-out infinite alternate;
-}
-@keyframes whisper {
-  0% { opacity: 0.3; filter: blur(1px); }
-  100% { opacity: 0.8; filter: blur(0px); }
 }
 
 /* ============================================================
@@ -551,7 +546,6 @@ main{
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  animation: float 6s ease-in-out infinite;
 }
 @keyframes float {
   0% { transform: translateY(0px); }
@@ -643,13 +637,6 @@ main{
   background:linear-gradient(135deg, var(--action-primary), var(--citron-300));
   color:var(--text-on-accent);
   box-shadow: 0 12px 30px -10px var(--citron-700), inset 0 2px 0 rgba(255,255,255,0.4);
-  animation: heartbeat 2.5s infinite;
-}
-@keyframes heartbeat {
-  0% { transform: scale(1); box-shadow: 0 12px 30px -10px var(--citron-700), inset 0 2px 0 rgba(255,255,255,0.4); }
-  10% { transform: scale(1.03); box-shadow: 0 12px 40px -5px var(--citron-500), inset 0 2px 0 rgba(255,255,255,0.6); }
-  20% { transform: scale(1); box-shadow: 0 12px 30px -10px var(--citron-700), inset 0 2px 0 rgba(255,255,255,0.4); }
-  100% { transform: scale(1); }
 }
 .btn--reveal{
   background:linear-gradient(135deg, var(--action-reveal), var(--rose-300));
@@ -772,14 +759,11 @@ main{
   border-radius:var(--radius-bubble);
   font:var(--weight-medium) var(--size-subtitle)/1.7 var(--font-ar);
   padding:18px;
-  animation: gentle-pulse 4s infinite alternate;
 }
 .textarea--hero:focus-visible {
-  animation: none;
-}
-@keyframes gentle-pulse {
-  0% { box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0px rgba(214,242,91,0); border-color: rgba(255,255,255,0.08); }
-  100% { box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 20px rgba(214,242,91,0.15); border-color: rgba(214,242,91,0.3); }
+  border-color:var(--citron-500);
+  background:rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 40px -8px var(--citron-glow), inset 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .hint{
@@ -1453,4 +1437,204 @@ main{
 }
 @media (prefers-reduced-motion:reduce){
   .msg__more-body{animation:none}
+}
+
+/* ============================================================
+   PUBLIC SEND SCREEN & SENT LIST UI - spec §3.3 & §3.5
+   ============================================================ */
+
+/* Send screen hero (recipient avatar & safe badge) */
+.send-hero{
+  display:flex;
+  align-items:center;
+  gap:var(--space-4);
+  margin-bottom:var(--space-5);
+}
+
+.send-avatar{
+  flex:0 0 52px;
+  width:52px;
+  height:52px;
+  border-radius:16px 16px var(--radius-notch) 16px;
+  background:linear-gradient(135deg, var(--citron-300), var(--citron-700));
+  color:var(--text-on-accent);
+  display:grid;
+  place-items:center;
+  font:var(--weight-black) 24px/1 var(--font-ar);
+  box-shadow:0 0 20px -4px var(--citron-glow);
+  animation:badge-pop var(--dur-base) var(--ease-bounce) both;
+}
+
+.send-hero__text{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.send-hero__text h1{
+  margin:0;
+  font:var(--type-title);
+  color:var(--text-1);
+}
+
+.send-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-1);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,.24);
+  color:var(--citron-300);
+  border-radius:var(--radius-pill);
+  padding:3px 10px;
+  font:var(--type-micro);
+  letter-spacing:var(--tracking-ar);
+  align-self:flex-start;
+  box-shadow:0 0 12px -4px var(--citron-glow);
+}
+
+/* Acquisition card on send screen when signed out */
+.send-card{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+  background:rgba(26, 21, 48, 0.6);
+  border-color:rgba(214,242,91,0.2);
+  box-shadow:var(--shadow-raised);
+}
+
+.send-pitch{
+  font:var(--weight-medium) var(--size-body)/var(--lh-tight) var(--font-ar);
+  color:var(--text-1);
+}
+
+/* Sent screen header & badge */
+.sent-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-3);
+  margin-bottom:var(--space-4);
+}
+.sent-header h1{margin-bottom:0}
+
+.sent-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-1);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,.32);
+  color:var(--citron-300);
+  border-radius:var(--radius-pill);
+  padding:5px 14px;
+  font:var(--type-caption);
+  letter-spacing:var(--tracking-ar);
+  box-shadow:0 0 16px -4px var(--citron-glow);
+  animation:badge-pop var(--dur-base) var(--ease-bounce) both;
+}
+.sent-badge--empty{
+  background:rgba(255,255,255,0.05);
+  border-color:rgba(255,255,255,0.12);
+  color:var(--text-2);
+  box-shadow:none;
+}
+
+/* Sent screen empty state (No veil, no glow - spec §3.5) */
+.sent-empty{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:var(--space-3);
+  padding:var(--space-10) var(--space-5);
+  background:var(--bg-card);
+  border:1px solid var(--border-card);
+  border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card);
+  margin:0 0 var(--stack-card);
+}
+
+.sent-empty__icon{
+  font-size:36px;
+  line-height:1;
+  margin-bottom:var(--space-1);
+}
+
+.sent-empty__title{
+  font:var(--type-subtitle);
+  color:var(--text-1);
+}
+
+.sent-empty__desc{
+  font:var(--type-body-sm);
+  color:var(--text-2);
+  max-width:32ch;
+  line-height:var(--lh-body);
+}
+
+/* Outgoing message bubble: notch is on bottom-trailing (RTL bottom-right) */
+.msg--out{
+  border-radius:var(--radius-bubble-out);
+  border-color:rgba(255,255,255,0.08);
+}
+
+/* Sent message top row with recipient tag and chip */
+.msg__top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+}
+
+.msg__to{
+  font:var(--type-caption);
+  color:var(--text-2);
+  font-weight:var(--weight-medium);
+}
+
+/* Offer blocks inside sent confessions */
+.sent-offer{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+  padding:var(--space-3);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,0.22);
+  border-radius:var(--radius-md);
+  margin-top:var(--space-1);
+}
+
+.sent-offer__badge{
+  font:var(--type-micro);
+  color:var(--citron-300);
+  letter-spacing:var(--tracking-ar);
+}
+
+.sent-offer__question{
+  font:var(--weight-medium) var(--size-body-sm)/var(--lh-tight) var(--font-ar);
+  color:var(--text-1);
+}
+
+.sent-declined{
+  padding-top:var(--space-1);
+}
+
+.sent-resolved{
+  margin-top:var(--space-2);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+
+.sent-resolved__item{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.sent-resolved__text{
+  font:var(--type-body-sm);
+  color:var(--text-1);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .send-avatar,.sent-badge{animation:none}
 }

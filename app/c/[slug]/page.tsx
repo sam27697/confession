@@ -8,7 +8,7 @@ import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
-import { ACTION_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
+import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
 // disabled link or a missing slug gets the generic card. Returning {} here
@@ -67,8 +67,10 @@ export default async function SendPage({
 
   if (!link.enabled) {
     return (
-      <div className="notice">
-        <p>هالرابط مطفي هلق.</p>
+      <div className="veil enter">
+        <div className="notice">
+          <p>هالرابط مطفي هلق.</p>
+        </div>
       </div>
     )
   }
@@ -78,10 +80,19 @@ export default async function SendPage({
   const isRateLimit = error === 'ratelimit'
 
   const action = sendConfessionAction.bind(null, slug)
+  const initial = link.ownerDisplayName.trim().slice(0, 1) || 'م'
 
   return (
     <div className="veil enter">
-      <h1>ابعتلـ {link.ownerDisplayName}</h1>
+      <div className="send-hero">
+        <div className="send-avatar" aria-hidden="true">
+          <span>{initial}</span>
+        </div>
+        <div className="send-hero__text">
+          <span className="send-badge">{MOOD_EMOJI.secret} اعتراف سري</span>
+          <h1>ابعتلـ {link.ownerDisplayName}</h1>
+        </div>
+      </div>
 
       {sent === '1' && (
         <>
@@ -94,7 +105,9 @@ export default async function SendPage({
       )}
 
       {isOwner ? (
-        <p className="hint">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
+        <div className="card">
+          <p className="hint">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
+        </div>
       ) : viewerAccountId ? (
         <form action={action}>
           <div className="field-row">
@@ -112,9 +125,12 @@ export default async function SendPage({
           <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
         </form>
       ) : (
-        <div className="card">
+        <div className="card send-card">
+          <p className="send-pitch">
+            صارح {link.ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
+          </p>
           <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
-          <a className="btn btn--primary" href="/">سجل دخول</a>
+          <a className="btn btn--primary btn--block" href="/">سجل دخول {ACTION_EMOJI.send}</a>
         </div>
       )}
     </div>
