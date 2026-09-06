@@ -46,6 +46,7 @@ export const ACTION_EMOJI = {
   send: '🚀',
   reveal: '🔓',
   copyLink: '🔗',
+  copied: '✅',
   storyCard: '✨',
 } as const
 

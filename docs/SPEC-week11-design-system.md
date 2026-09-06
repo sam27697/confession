@@ -869,3 +869,95 @@ flags are ports, OAuth, headless Chrome and MCP -- an IDE API server with no
 mode that takes a prompt and returns work, behind a browser OAuth flow. The
 `bin/` directories hold `webm_encoder.exe` and a shim to that same server.
 Recorded here because the next person to ask will find the same thing.
+
+### 9.10 The inbox, with some life in it
+
+*Amended 2026-09-06. Sam asked for more animation and fun on the inbox.*
+
+The inbox is both the growth screen and the reading screen, so it earns the
+most attention of anything in the app. This adds motion to it under one
+rule: **every effect is either triggered by something the reader did, or
+tied to a real piece of state.** Nothing here is ambient decoration except
+one loop, and that loop means something.
+
+#### A budget, measured rather than assumed
+
+§9.8 cut `/c/[slug]` back because five looping animations were running on
+it at once. Before adding anything here, the inbox was measured on the
+running page: **one** loop (the brand mark), plus the empty state's floating
+mark when the inbox is empty. It now runs **at most three**, and the third
+only when the link is live. That is the budget, and it is stated so the next
+pass has a number to check itself against rather than a feeling.
+
+#### `--ease-bounce`, and why it is a token rather than a literal
+
+The recolour arrived with `--transition-control` set to an overshoot and
+§9.8 reverted it, because an overshoot on the shared control transition
+means every button, input and chip in the app springs. That reasoning does
+not extend to an entrance. So the overshoot comes back as **one named
+token**, in the design system and the app alike:
+
+```
+--ease-bounce:cubic-bezier(.34,1.4,.64,1)
+```
+
+**It is permitted on an entrance or a celebration, and nowhere else.**
+Control transitions stay on `--ease-out`: a button that springs under a
+thumb reads as a bug rather than as delight, and §2.2's ban was right about
+that even though it was too broad. 1.4, not the 1.56 that was reverted.
+
+#### What was added
+
+| Effect | Trigger |
+|---|---|
+| Messages **land** instead of rising, on `--ease-bounce`, keeping `.enter`'s existing delay ladder | page load; a full inbox deals itself out like a hand of cards |
+| The state chip **pops in 260ms behind its card** | page load; the eye reads the message first and the label second |
+| A card **leans towards the cursor**, `hover` media query only | pointer devices; on a phone there is no hover and a transform that sticks after a tap is worse than none |
+| The link block **breathes while the link is live**, still when it is off | `link.enabled` |
+| «صارحني بدورك» **unfolds** when opened | the reader opening it |
+| The copy button **confirms in place** and turns «اننسخ ✅» for 1.4s | a successful copy |
+
+The link-block breathe is the one new loop, and it is not decoration: it is
+the on/off state of the thing the entire screen exists to promote, said in
+motion as well as in the word «شغال». It stops the moment the link is
+switched off, which is the point.
+
+The copy confirmation is in place because the toast lands at the bottom of
+the screen and the thumb that pressed the button is at the top of it.
+
+#### The state dot is gone
+
+`.chip::before` carried a 6px coloured dot per state. With a glyph now
+leading the chip (§9.9) that is two indicators saying one thing, and the
+glyph is the one legible at arm's length. The dot is hidden rather than the
+rule deleted, so the colour pairs it depended on stay intact for anything
+that wants them later.
+
+#### Reduced motion
+
+Every rule above is switched off under `prefers-reduced-motion`, including
+the hover lean and the press scale. The budget for a reader who has asked
+for less motion is, as in §9.9, zero.
+
+### 9.11 Fewer buttons
+
+*Amended 2026-09-06. Sam: teenagers need clear items to see, not a wall of
+controls.*
+
+A message carried four: «صارحني بدورك», «خبيها», «احظر صاحبها», «بلغ عنها».
+Three of those are moderation -- needed, rarely wanted, and never the reason
+anyone opened this screen. They fold behind one «خيارات» disclosure, so a
+card reads as a message with one thing to do rather than a toolbar.
+Measured on the running page: **four visible controls per card down to two**,
+which on a four-message inbox is sixteen buttons down to eight.
+
+The report form is flattened out of its own nested `<details>` while it
+moves: a disclosure inside a disclosure was two taps to reach a text field.
+
+Nothing about what the forms submit changes -- no `action`, no field `name`,
+no validation attribute -- which is what lets §0 hold across a structural
+edit and keeps acceptance item 17 green against `main`.
+
+Not touched: the link block keeps its three controls. Copy, story card and
+the on/off toggle are the growth screen's entire job, and none of them is a
+secondary action.

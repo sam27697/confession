@@ -10,6 +10,10 @@
   --ease-out:cubic-bezier(.22,.61,.36,1); /* @kind other */
   --ease-in-out:cubic-bezier(.4,0,.2,1); /* @kind other */
   --ease-enter:cubic-bezier(.16,.84,.44,1); /* @kind other */
+  /* The one overshoot in the system, and it is scoped: an entrance or a
+     celebration may use it, a control transition may not. See
+     docs/SPEC-week11 §9.10. */
+  --ease-bounce:cubic-bezier(.34,1.4,.64,1); /* @kind other */
 
   --press-scale:.97; /* @kind other */
   --hover-lift:-1px; /* @kind spacing */

@@ -20,15 +20,23 @@
 // link is always obtainable by hand. This is an accelerator, never the only
 // route.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useToast } from './ToastProvider.js'
+
+const CONFIRM_MS = 1400
 
 export function CopyLink({ url }: { url: string }) {
   const { toast } = useToast()
   const [canCopy, setCanCopy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setCanCopy(typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function')
+  }, [])
+
+  useEffect(() => () => {
+    if (confirmTimer.current) clearTimeout(confirmTimer.current)
   }, [])
 
   if (!canCopy) return null
@@ -37,6 +45,11 @@ export function CopyLink({ url }: { url: string }) {
     try {
       await navigator.clipboard.writeText(url)
       toast('اننسخ الرابط.', 'citron')
+      // The toast lands at the bottom of the screen and the thumb is at the
+      // top of it, so the button confirms in place as well.
+      if (confirmTimer.current) clearTimeout(confirmTimer.current)
+      setCopied(true)
+      confirmTimer.current = setTimeout(() => setCopied(false), CONFIRM_MS)
     } catch {
       // Permission denied, or a document that is not focused. The slug is on
       // screen regardless, so the recovery is to say so plainly.
@@ -45,8 +58,12 @@ export function CopyLink({ url }: { url: string }) {
   }
 
   return (
-    <button type="button" className="btn btn--secondary btn--sm" onClick={handleCopy}>
-      انسخ الرابط 🔗
+    <button
+      type="button"
+      className={copied ? 'btn btn--secondary btn--sm btn--copied' : 'btn btn--secondary btn--sm'}
+      onClick={handleCopy}
+    >
+      {copied ? 'اننسخ ✅' : 'انسخ الرابط 🔗'}
     </button>
   )
 }

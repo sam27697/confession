@@ -250,6 +250,12 @@
   --ease-out:cubic-bezier(.22,.61,.36,1); /* @kind other */
   --ease-in-out:cubic-bezier(.4,0,.2,1); /* @kind other */
   --ease-enter:cubic-bezier(.16,.84,.44,1); /* @kind other */
+  /* The one overshoot in the system, and it is scoped: spec §9.10 permits
+     it on an entrance or a celebration and nowhere else. Control
+     transitions stay on --ease-out, because a button that springs under a
+     thumb reads as a bug, not as delight. 1.4, not the 1.56 that arrived
+     with the recolour and was reverted. */
+  --ease-bounce:cubic-bezier(.34,1.4,.64,1); /* @kind other */
 
   --press-scale:.97; /* @kind other */
   --hover-lift:-1px; /* @kind spacing */
@@ -1256,4 +1262,103 @@ main{
   .celebrate{display:none}
   .reveal--resolved{animation:none}
   .btn--primary:active,.btn--reveal:active{transform:none}
+}
+/* ============================================================
+   THE INBOX, WITH SOME LIFE IN IT -- spec section 9.10
+   ============================================================
+   The growth screen and the reading screen, so the one that earns the most
+   attention. Everything below is either triggered by something the reader
+   did, or tied to a real piece of state -- there is exactly one new ambient
+   loop on this screen and it means something. Measured before adding any of
+   it: the inbox was running one looping animation (the brand mark) plus the
+   empty state's floating mark when the inbox is empty. It now runs at most
+   three, and never five, which is the count that made /c/[slug] unpleasant
+   before section 9.8 cut it back. */
+
+/* Messages land rather than rise. Same delay ladder as .enter gives every
+   other child; only the shape of the arrival changes, so a full inbox deals
+   itself out like a hand of cards. */
+.enter > .msg{
+  animation-name:msg-land;
+  animation-timing-function:var(--ease-bounce);
+}
+@keyframes msg-land{
+  0%{opacity:0;transform:translateY(16px) scale(.96) rotate(-.6deg)}
+  100%{opacity:1;transform:none}
+}
+
+/* The state chip pops in just behind its card, so the eye reads the message
+   first and the label second. */
+.msg .chip{animation:chip-pop var(--dur-base) var(--ease-bounce) 260ms both}
+@keyframes chip-pop{
+  0%{opacity:0;transform:scale(.5)}
+  100%{opacity:1;transform:none}
+}
+
+/* A card leans very slightly towards the cursor. Pointer devices only: on a
+   phone there is no hover, and a transform that sticks after a tap is worse
+   than no transform at all. */
+@media (hover:hover){
+  .msg:hover{transform:translateY(var(--hover-lift)) rotate(.35deg) scale(1.006)}
+  .msg:active{transform:scale(.995)}
+}
+
+/* The link block breathes while the link is live, and stops the moment it
+   is switched off. This is the one ambient loop added here, and it is not
+   decoration: it is the on/off state of the thing the whole screen exists
+   to promote, said in motion instead of only in the word «شغال». */
+.linkblock--live{animation:link-breathe 4.5s var(--ease-in-out) infinite}
+@keyframes link-breathe{
+  0%,100%{box-shadow:var(--shadow-raised)}
+  50%{box-shadow:var(--shadow-raised),0 0 34px -6px var(--citron-glow)}
+}
+
+/* Opening «صارحني بدورك» is a decision, so the panel unfolds instead of
+   appearing. summary is excluded or it would animate the thing that was
+   just clicked. */
+.reveal[open] > *:not(summary){animation:reveal-unfold var(--dur-base) var(--ease-out) both}
+@keyframes reveal-unfold{
+  0%{opacity:0;transform:translateY(-6px)}
+  100%{opacity:1;transform:none}
+}
+
+/* The copy button confirms in place as well as in the toast: the toast is
+   at the bottom of the screen and the thumb is at the top of it. */
+.btn--copied{
+  background:var(--citron-wash);
+  border-color:rgba(214,242,91,.45);
+  color:var(--citron-100);
+  animation:copied-pop var(--dur-base) var(--ease-bounce) both;
+}
+@keyframes copied-pop{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.07)}
+  100%{transform:scale(1)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .enter > .msg{animation:none}
+  .msg .chip{animation:none}
+  .msg:hover,.msg:active{transform:none}
+  .linkblock--live{animation:none}
+  .reveal[open] > *:not(summary){animation:none}
+  .btn--copied{animation:none}
+}
+/* One disclosure instead of three moderation buttons on every card
+   (spec section 9.11). Closed, a message shows the reveal and one quiet
+   word; open, it shows everything it always did. */
+.msg__more{margin-inline-start:auto}
+.msg__more summary{cursor:pointer;list-style:none}
+.msg__more summary::-webkit-details-marker{display:none}
+.msg__more-body{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+  margin-top:var(--space-3);
+  padding-top:var(--space-3);
+  border-top:1px solid var(--line-faint);
+  animation:reveal-unfold var(--dur-base) var(--ease-out) both;
+}
+@media (prefers-reduced-motion:reduce){
+  .msg__more-body{animation:none}
 }

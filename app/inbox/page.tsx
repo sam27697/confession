@@ -183,7 +183,11 @@ export default async function InboxPage({
     <div className="enter">
       <h1>صندوقك</h1>
 
-      <div className="linkblock">
+      {/* The block breathes while the link is live and is still the moment
+          it is switched off (spec §9.10). The state is link.enabled, the
+          same field the toggle below submits: motion saying what the word
+          «شغال» already says, not a new claim. */}
+      <div className={link.enabled ? 'linkblock linkblock--live' : 'linkblock'}>
         <div className="linkblock__head">
           <span>رابطك</span>
           <span>{link.enabled ? 'شغال' : 'مطفي'}</span>
@@ -249,25 +253,38 @@ export default async function InboxPage({
 
           <RevealBlock reveal={m.reveal} confessionId={m.id} />
 
+          {/* Spec §9.11. A message used to carry four buttons: the reveal
+              plus hide, block and report. Three of those are moderation --
+              needed, rarely wanted, and never the reason anyone opened this
+              screen. They fold behind one disclosure, so a card reads as a
+              message with one thing to do rather than a toolbar.
+
+              The report form is flattened out of its own nested <details>
+              in the process: a disclosure inside a disclosure was two taps
+              to reach a text field. No form action, no field name and no
+              validation attribute changes here, which is what lets §0 and
+              acceptance item 17 stay true across the restructure. */}
           <div className="msg__actions">
-            <form action={hideConfessionAction}>
-              <input type="hidden" name="confessionId" value={m.id} />
-              <SubmitButton className="btn btn--secondary btn--sm">خبيها</SubmitButton>
-            </form>
-            <form action={blockSenderAction}>
-              <input type="hidden" name="confessionId" value={m.id} />
-              <SubmitButton className="btn btn--danger btn--sm">احظر صاحبها</SubmitButton>
-            </form>
-            <details>
-              <summary className="btn btn--secondary btn--sm">بلغ عنها</summary>
-              <form action={reportConfessionAction}>
-                <input type="hidden" name="confessionId" value={m.id} />
-                <div className="field-row">
-                  <label className="field" htmlFor={`r-${m.id}`}>ليش عم تبلغ؟</label>
-                  <input className="input" id={`r-${m.id}`} type="text" name="reason" required minLength={2} maxLength={300} />
-                </div>
-                <SubmitButton className="btn btn--danger">بلغ</SubmitButton>
-              </form>
+            <details className="msg__more">
+              <summary className="btn btn--ghost btn--sm">خيارات</summary>
+              <div className="msg__more-body">
+                <form action={hideConfessionAction}>
+                  <input type="hidden" name="confessionId" value={m.id} />
+                  <SubmitButton className="btn btn--secondary btn--sm">خبيها</SubmitButton>
+                </form>
+                <form action={blockSenderAction}>
+                  <input type="hidden" name="confessionId" value={m.id} />
+                  <SubmitButton className="btn btn--danger btn--sm">احظر صاحبها</SubmitButton>
+                </form>
+                <form action={reportConfessionAction}>
+                  <input type="hidden" name="confessionId" value={m.id} />
+                  <div className="field-row">
+                    <label className="field" htmlFor={`r-${m.id}`}>ليش عم تبلغ؟</label>
+                    <input className="input" id={`r-${m.id}`} type="text" name="reason" required minLength={2} maxLength={300} />
+                  </div>
+                  <SubmitButton className="btn btn--danger btn--sm">بلغ</SubmitButton>
+                </form>
+              </div>
             </details>
           </div>
         </div>
