@@ -22,7 +22,7 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
-// COPY-ar.md "Default question set" — #9 first, per the note that it is the
+// COPY-ar.md "Default question set" - #9 first, per the note that it is the
 // one question a sender cannot answer generically.
 const QUESTION_SUGGESTIONS = [
   'شو يلي خلاك تبعتلي هالرسالة هلق بالذات؟',
@@ -37,9 +37,9 @@ const QUESTION_SUGGESTIONS = [
   'شو بتتمنى إني اعرفه عنك بس ما بتعرف تحكيه؟',
 ]
 
-// COPY-ar.md "Default stake set" — what she commits to disclose, shown to
+// COPY-ar.md "Default stake set" - what she commits to disclose, shown to
 // the sender before he decides (this becomes stake_prompt, not her literal
-// answer — see the note in the composer form below).
+// answer - see the note in the composer form below).
 const STAKE_SUGGESTIONS = [
   'رح قلك شو كان رأيي فيك بالحقيقة أول ما تعرفنا.',
   'رح قلك الشي يلي زعلني منك وما حكيته.',
@@ -178,10 +178,17 @@ export default async function InboxPage({
   const messages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId })
   const visible = messages.filter((m) => m.status !== 'hidden_by_recipient')
   const now = new Date()
+  const totalCount = visible.length
+  const isInboxEmpty = totalCount === 0
 
   return (
     <div className="enter">
-      <h1>صندوقك</h1>
+      <div className="inbox-header">
+        <h1>صندوقك</h1>
+        <span className={isInboxEmpty ? 'inbox-badge inbox-badge--empty' : 'inbox-badge'}>
+          {isInboxEmpty ? `جاهز للرسايل ${MOOD_EMOJI.sparkle}` : `${totalCount} ${MOOD_EMOJI.fire}`}
+        </span>
+      </div>
 
       {/* The block breathes while the link is live and is still the moment
           it is switched off (spec §9.10). The state is link.enabled, the
@@ -197,16 +204,27 @@ export default async function InboxPage({
           {env.appOrigin}/c/<strong>{link.slug}</strong>
         </div>
 
+        {/* Only when there is something in the inbox. On an empty one the
+            .empty block below already says «حط رابطك بستوري أو بالبايو»,
+            which is the design system readme's own growth copy (spec §3.2),
+            and two near-identical instructions on one short screen read as
+            nagging rather than as help. */}
+        {!isInboxEmpty && (
+          <p className="linkblock__hint">انشر الرابط بستوري أو بالبايو لتوصلك اعترافات جديدة {MOOD_EMOJI.eyes}</p>
+        )}
+
         <div className="linkblock__actions">
-          {/* Spec §9, taking up §7.1's deferred decision. The button renders
-              itself only where the Clipboard API is actually usable, so the
-              slug above stays the guaranteed route to the link and this is
-              an accelerator on top of it. */}
-          <CopyLink url={`${env.appOrigin}/c/${link.slug}`} />
-          {/* Spec §9.7. The card is the same link as a 1080x1920 image,
-              because the slug's whole job is to reach a story, and asking
-              someone to retype it there is where the funnel leaks. */}
-          <StoryCard url={`${env.appOrigin}/c/${link.slug}`} slug={link.slug} />
+          <div className="linkblock__buttons">
+            {/* Spec §9, taking up §7.1's deferred decision. The button renders
+                itself only where the Clipboard API is actually usable, so the
+                slug above stays the guaranteed route to the link and this is
+                an accelerator on top of it. */}
+            <CopyLink url={`${env.appOrigin}/c/${link.slug}`} />
+            {/* Spec §9.7. The card is the same link as a 1080x1920 image,
+                because the slug's whole job is to reach a story, and asking
+                someone to retype it there is where the funnel leaks. */}
+            <StoryCard url={`${env.appOrigin}/c/${link.slug}`} slug={link.slug} />
+          </div>
           <form action={setLinkEnabledAction}>
             <input type="hidden" name="linkId" value={link.linkId} />
             <input type="hidden" name="enabled" value={link.enabled ? '0' : '1'} />
@@ -234,6 +252,7 @@ export default async function InboxPage({
 
       {visible.map((m) => {
         const isHidden = m.status === 'hidden_by_recipient'
+        const isResolved = m.reveal.kind === 'resolved'
         const isReported = m.status === 'reported'
         const statusLabel = isHidden
           ? `${STATE_EMOJI.hidden} مخبّاها`
@@ -241,7 +260,12 @@ export default async function InboxPage({
             ? `${STATE_EMOJI.reported} تم الإبلاغ عنها`
             : `${STATE_EMOJI.delivered} وصلت`
         return (
-        <div className={isHidden ? 'msg msg--hidden' : 'msg'} key={m.id}>
+        <div className={isHidden ? 'msg msg--hidden' : isResolved ? 'msg msg--resolved' : 'msg'} key={m.id}>
+          <div className={isResolved ? 'msg__tag msg__tag--resolved' : 'msg__tag'}>
+            <span>{isResolved ? 'اعتراف مكشوف' : 'اعتراف سري'}</span>
+            <span>{isResolved ? STATE_EMOJI.resolved : MOOD_EMOJI.secret}</span>
+          </div>
+
           <p className="msg__body">{m.body}</p>
 
           <div className="msg__meta">

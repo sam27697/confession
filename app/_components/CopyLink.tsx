@@ -22,6 +22,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from './ToastProvider.js'
+import { Celebrate } from './Celebrate.js'
 
 const CONFIRM_MS = 1400
 
@@ -29,7 +30,9 @@ export function CopyLink({ url }: { url: string }) {
   const { toast } = useToast()
   const [canCopy, setCanCopy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setCanCopy(typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function')
@@ -37,6 +40,7 @@ export function CopyLink({ url }: { url: string }) {
 
   useEffect(() => () => {
     if (confirmTimer.current) clearTimeout(confirmTimer.current)
+    if (celebrateTimer.current) clearTimeout(celebrateTimer.current)
   }, [])
 
   if (!canCopy) return null
@@ -48,8 +52,11 @@ export function CopyLink({ url }: { url: string }) {
       // The toast lands at the bottom of the screen and the thumb is at the
       // top of it, so the button confirms in place as well.
       if (confirmTimer.current) clearTimeout(confirmTimer.current)
+      if (celebrateTimer.current) clearTimeout(celebrateTimer.current)
       setCopied(true)
+      setCelebrating(true)
       confirmTimer.current = setTimeout(() => setCopied(false), CONFIRM_MS)
+      celebrateTimer.current = setTimeout(() => setCelebrating(false), 2000)
     } catch {
       // Permission denied, or a document that is not focused. The slug is on
       // screen regardless, so the recovery is to say so plainly.
@@ -58,12 +65,15 @@ export function CopyLink({ url }: { url: string }) {
   }
 
   return (
-    <button
-      type="button"
-      className={copied ? 'btn btn--secondary btn--sm btn--copied' : 'btn btn--secondary btn--sm'}
-      onClick={handleCopy}
-    >
-      {copied ? 'اننسخ ✅' : 'انسخ الرابط 🔗'}
-    </button>
+    <>
+      <button
+        type="button"
+        className={copied ? 'btn btn--secondary btn--sm btn--copied' : 'btn btn--secondary btn--sm'}
+        onClick={handleCopy}
+      >
+        {copied ? 'اننسخ ✅' : 'انسخ الرابط 🔗'}
+      </button>
+      {celebrating && <Celebrate />}
+    </>
   )
 }

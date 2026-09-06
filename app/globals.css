@@ -680,7 +680,6 @@ main{
   padding:var(--space-10) var(--space-5);
   background-image:var(--veil-citron);
   background-size: 200% 200%;
-  animation: blob-bounce 10s ease infinite;
   border-radius:var(--radius-card);
   margin:0 0 var(--stack-card);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -878,6 +877,21 @@ main{
 }
 .linkblock__slug strong{color:var(--citron-500);font-weight:var(--weight-bold)}
 
+.linkblock__buttons{
+  display:flex;
+  gap:var(--space-2);
+}
+.linkblock__buttons > *{flex:1;min-width:0}
+
+.linkblock__hint{
+  font:var(--type-caption);
+  color:var(--text-2);
+  display:flex;
+  align-items:center;
+  gap:var(--space-1);
+  margin:0;
+}
+
 .linkblock__actions{
   display:flex;
   flex-direction:column;
@@ -896,6 +910,29 @@ main{
   margin:0 0 var(--stack-card);
 }
 .msg--hidden{opacity:.62}
+.msg--resolved{
+  border-color:rgba(227,155,168,.4);
+  box-shadow:var(--shadow-card),0 0 24px -8px var(--rose-glow);
+}
+
+.msg__tag{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-1);
+  font:var(--type-micro);
+  color:var(--citron-300);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,.22);
+  border-radius:var(--radius-pill);
+  padding:3px 10px;
+  align-self:flex-start;
+  letter-spacing:var(--tracking-ar);
+}
+.msg__tag--resolved{
+  color:var(--rose-300);
+  background:var(--rose-wash);
+  border-color:rgba(227,155,168,.28);
+}
 
 .msg__body{
   font:var(--weight-medium) var(--size-subtitle)/1.65 var(--font-ar);
@@ -1246,7 +1283,8 @@ main{
    scale is on press only: nothing moves until a finger is on it, so this
    adds no ambient motion to the screen. */
 .btn--primary:active,
-.btn--reveal:active{transform:scale(.94)}
+.btn--reveal:active,
+.btn--secondary:active{transform:scale(.95)}
 
 /* The reveal panel is the payoff of the whole product. When it resolves it
    arrives rather than appears. */
@@ -1261,7 +1299,7 @@ main{
      is here as well so the styling cannot outlive a change to that logic. */
   .celebrate{display:none}
   .reveal--resolved{animation:none}
-  .btn--primary:active,.btn--reveal:active{transform:none}
+  .btn--primary:active,.btn--reveal:active,.btn--secondary:active{transform:none}
 }
 /* ============================================================
    THE INBOX, WITH SOME LIFE IN IT -- spec section 9.10
@@ -1274,6 +1312,41 @@ main{
    empty state's floating mark when the inbox is empty. It now runs at most
    three, and never five, which is the count that made /c/[slug] unpleasant
    before section 9.8 cut it back. */
+
+/* The inbox header counter badge pops in on entrance. */
+.inbox-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-3);
+  margin-bottom:var(--space-4);
+}
+.inbox-header h1{margin-bottom:0}
+
+.inbox-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-1);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,.32);
+  color:var(--citron-300);
+  border-radius:var(--radius-pill);
+  padding:5px 14px;
+  font:var(--type-caption);
+  letter-spacing:var(--tracking-ar);
+  box-shadow:0 0 16px -4px var(--citron-glow);
+  animation:badge-pop var(--dur-base) var(--ease-bounce) both;
+}
+.inbox-badge--empty{
+  background:rgba(255,255,255,0.05);
+  border-color:rgba(255,255,255,0.12);
+  color:var(--text-2);
+  box-shadow:none;
+}
+@keyframes badge-pop{
+  0%{opacity:0;transform:scale(.75)}
+  100%{opacity:1;transform:none}
+}
 
 /* Messages land rather than rise. Same delay ladder as .enter gives every
    other child; only the shape of the arrival changes, so a full inbox deals
@@ -1297,9 +1370,11 @@ main{
 
 /* A card leans very slightly towards the cursor. Pointer devices only: on a
    phone there is no hover, and a transform that sticks after a tap is worse
-   than no transform at all. */
+   than no transform at all. Alternating cards tilt in opposite directions for
+   a natural hand-of-cards feel. */
 @media (hover:hover){
   .msg:hover{transform:translateY(var(--hover-lift)) rotate(.35deg) scale(1.006)}
+  .msg:nth-child(even):hover{transform:translateY(var(--hover-lift)) rotate(-.35deg) scale(1.006)}
   .msg:active{transform:scale(.995)}
 }
 
@@ -1311,6 +1386,21 @@ main{
 @keyframes link-breathe{
   0%,100%{box-shadow:var(--shadow-raised)}
   50%{box-shadow:var(--shadow-raised),0 0 34px -6px var(--citron-glow)}
+}
+.linkblock--live .linkblock__head span:last-child{
+  color:var(--citron-300);
+  display:inline-flex;
+  align-items:center;
+}
+.linkblock--live .linkblock__head span:last-child::before{
+  content:'';
+  display:inline-block;
+  width:6px;
+  height:6px;
+  border-radius:var(--radius-pill);
+  background:var(--citron-500);
+  box-shadow:0 0 8px var(--citron-500);
+  margin-inline-end:6px;
 }
 
 /* Opening «صارحني بدورك» is a decision, so the panel unfolds instead of
@@ -1341,8 +1431,10 @@ main{
   .msg .chip{animation:none}
   .msg:hover,.msg:active{transform:none}
   .linkblock--live{animation:none}
+  .linkblock--live .linkblock__head span:last-child::before{box-shadow:none}
   .reveal[open] > *:not(summary){animation:none}
   .btn--copied{animation:none}
+  .inbox-badge{animation:none}
 }
 /* One disclosure instead of three moderation buttons on every card
    (spec section 9.11). Closed, a message shows the reveal and one quiet

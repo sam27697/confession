@@ -58,4 +58,6 @@ export const MOOD_EMOJI = {
   fire: '🔥',
   eyes: '👀',
   heart: '💜',
+  secret: '🤫',
 } as const
+
