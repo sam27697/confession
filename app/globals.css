@@ -27,9 +27,9 @@
    ============================================================ */
 
 /* tokens/colors.css -- مصارحة colour system. Dark is the default and only
-   theme. Warm charcoal-brown ground, acid-citron primary, dusty-rose
-   reveal. No external assets: every surface below is a colour or a CSS
-   gradient. */
+   theme. Deep indigo ground, acid-citron primary, dusty-rose reveal. The
+   ground moved from warm charcoal to indigo in week 12; see spec §9.8. No
+   external assets: every surface below is a colour or a CSS gradient. */
 :root{
   color-scheme:dark;
 
@@ -1195,4 +1195,65 @@ main{
   .input:focus-visible,
   .textarea:focus-visible{transform:none}
   body::before{transition:none}
+}
+/* ============================================================
+   THE BURST, AND THE TACTILE BITS -- spec section 9.9
+   ============================================================ */
+
+/* The send celebration. Fixed over the viewport, above everything, and
+   inert: aria-hidden on the element, pointer-events:none here, because the
+   notice underneath has already said the message arrived and this is only
+   how it felt. */
+.celebrate{
+  position:fixed;
+  inset:0;
+  z-index:70;
+  overflow:hidden;
+  pointer-events:none;
+}
+.celebrate__bit{
+  position:absolute;
+  bottom:-40px;
+  left:var(--bit-left);
+  font-size:26px;
+  line-height:1;
+  will-change:transform,opacity;
+  animation:bit-rise 1900ms var(--ease-out) var(--bit-delay) both;
+}
+/* Rises the height of the screen, drifts sideways a little, turns a little,
+   and is gone. One pass, no loop -- a celebration that repeats is wallpaper. */
+@keyframes bit-rise{
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(0) scale(.6)}
+  12%{opacity:1;transform:translate3d(0,-12vh,0) rotate(calc(var(--bit-spin) * .3)) scale(1.1)}
+  70%{opacity:1}
+  100%{opacity:0;transform:translate3d(var(--bit-drift),-96vh,0) rotate(var(--bit-spin)) scale(.85)}
+}
+
+/* A chip now leads with a glyph, so the 6px dot it used to carry would be
+   two state indicators side by side saying the same thing. The glyph wins;
+   it is legible at a glance and the dot never was. */
+.chip::before{display:none}
+.chip{gap:5px}
+
+/* Press feedback with a little more life than the shared control
+   transition, on the two actions that are meant to feel good to hit. The
+   scale is on press only: nothing moves until a finger is on it, so this
+   adds no ambient motion to the screen. */
+.btn--primary:active,
+.btn--reveal:active{transform:scale(.94)}
+
+/* The reveal panel is the payoff of the whole product. When it resolves it
+   arrives rather than appears. */
+.reveal--resolved{animation:reveal-land var(--dur-reveal) var(--ease-out) both}
+@keyframes reveal-land{
+  0%{opacity:0;transform:translateY(10px) scale(.98)}
+  100%{opacity:1;transform:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  /* The component already refuses to render under this preference; the rule
+     is here as well so the styling cannot outlive a change to that logic. */
+  .celebrate{display:none}
+  .reveal--resolved{animation:none}
+  .btn--primary:active,.btn--reveal:active{transform:none}
 }

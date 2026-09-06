@@ -46,7 +46,7 @@ export function CopyLink({ url }: { url: string }) {
 
   return (
     <button type="button" className="btn btn--secondary btn--sm" onClick={handleCopy}>
-      انسخ الرابط
+      انسخ الرابط 🔗
     </button>
   )
 }

@@ -299,7 +299,7 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
         className="btn btn--secondary btn--sm"
         onClick={() => setOpen(true)}
       >
-        بطاقة الستوري
+        بطاقة الستوري ✨
       </button>
 
       {/* Portalled to <body>, and not as a matter of taste. This button

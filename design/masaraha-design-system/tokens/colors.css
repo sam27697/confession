@@ -1,5 +1,6 @@
 /* مصارحة — colour system. Dark is the default and only theme.
-   Warm charcoal-brown ground, acid-citron primary, dusty-rose reveal.
+   Deep indigo ground, acid-citron primary, dusty-rose reveal. The ground
+   moved from warm charcoal to indigo in week 12; see docs/SPEC-week11 §9.8.
    No external assets: every surface below is a colour or a CSS gradient. */
 :root{
   color-scheme:dark;

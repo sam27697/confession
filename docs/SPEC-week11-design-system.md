@@ -798,3 +798,74 @@ It rewrote `globals.css` by literal string match against the file as it
 stood, so a second run against the already-changed file would have matched
 nothing, matched partially, or corrupted it. The result is committed; the
 instrument is not a thing to keep loaded.
+
+### 9.9 Emoji and motion: the ban is lifted, the discipline is not
+
+*Amended 2026-09-06. Sam's call, stated plainly: the audience is teenagers,
+and they want emoji and things that move. §0's "no icons, no emoji" and
+acceptance item 7 are reversed here.*
+
+This is the third time this document has been amended by the person who
+commissioned it, and the pattern is the same each time: the rule moves, the
+reason it existed does not.
+
+Item 7 was never really about emoji. It was about an interface nobody
+curates, which accumulates a different glyph per edit until it looks like a
+keyboard fell on it. That risk is unchanged. So the flat ban becomes a
+vocabulary, and the check becomes three checks that are together harder to
+satisfy carelessly than the ban was:
+
+| | |
+|---|---|
+| **7a** | No emoji in `src/*.ts`. Business rules, database values and error names are read by tests and logs, not by teenagers. |
+| **7b** | Every glyph under `app/` is declared in `app/_lib/emoji.ts`. Adding one is a deliberate edit to that file, which is the review step the ban was standing in for. The test reads the vocabulary out of the module rather than duplicating it, so the two cannot drift. |
+| **7c** | No glyph in a `className`, a `name=`, an `id=` or an `htmlFor=`. A glyph in a `name=` would change what the form submits, which §0 forbids and item 17 asserts against `main`; one in a class or id breaks a selector or a label association silently, which is worse than breaking it loudly. |
+
+#### The vocabulary
+
+`app/_lib/emoji.ts`, in three groups. **State** carries one glyph per state
+of the confession machine, so the same state looks the same on `/inbox` and
+on `/sent`. **Action** appears only on the playful surfaces: sending, the
+mutual reveal, and getting the link into circulation. **Mood** is empty
+states and encouragement.
+
+Deliberately bare of them: **`/account/delete` and the whole admin
+surface.** §3.7 says the tone shifts once and drops all playfulness, and
+"plain, factual, and explicit about what is irreversible" is not a place for
+a rocket. That is the one line this amendment does not cross.
+
+#### What moves
+
+- **The send burst.** `Celebrate.tsx`, the island's fifth component. Twelve
+  glyphs rise the height of the screen once, drift, turn, and are gone in
+  1.9s. One pass, never a loop: a celebration that repeats is wallpaper.
+- **The reveal lands** rather than appears, over `--dur-reveal`. It is the
+  payoff of the entire product and it was arriving with no ceremony at all.
+- **Press feedback** on the primary and reveal buttons only, and only on
+  `:active` -- nothing moves until a finger is on it, so this adds no
+  ambient motion to any screen.
+- **The state dot is retired.** `.chip::before` carried a 6px coloured dot;
+  with a glyph leading the chip that is two indicators saying one thing. The
+  glyph wins, because it is legible at a glance and the dot never was.
+
+#### Reduced motion is not negotiable
+
+`Celebrate` reads `prefers-reduced-motion` and renders **nothing** under it
+-- not a slower burst, none. A shower of glyphs across the viewport is the
+most literal possible instance of what that preference exists to stop. The
+stylesheet repeats the rule as `.celebrate{display:none}` so the styling
+cannot outlive a change to that logic, and the reveal landing and the press
+scale are switched off there too.
+
+This is the boundary of the amendment. Emoji are a matter of taste and Sam's
+to set. Motion that a reader has explicitly asked not to see is an
+accessibility floor, and no audience argument reaches it.
+
+#### On the agent that was asked to do this
+
+Sam asked for the local Antigravity/Gemini CLI agent to implement this pass.
+It could not be invoked: the install ships `language_server.exe`, whose
+flags are ports, OAuth, headless Chrome and MCP -- an IDE API server with no
+mode that takes a prompt and returns work, behind a browser OAuth flow. The
+`bin/` directories hold `webm_encoder.exe` and a shim to that same server.
+Recorded here because the next person to ask will find the same thing.

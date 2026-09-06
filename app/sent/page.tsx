@@ -3,6 +3,7 @@ import { getDb } from '../_lib/domain/db.js'
 import { getSentForSender } from '../_lib/domain/views.js'
 import type { SentConfession } from '../_lib/domain/views.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
+import { MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
 
 function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   if (offer.kind === 'none') return null
@@ -42,13 +43,17 @@ export default async function SentPage() {
     <div className="enter">
       <h1>يلي بعتها</h1>
 
-      {messages.length === 0 && <p className="hint">لسا ما بعتّ شي.</p>}
+      {messages.length === 0 && <p className="hint">{MOOD_EMOJI.nothingSent} لسا ما بعتّ شي.</p>}
 
       {messages.map((m) => {
         const isPending = m.offer.kind === 'pending'
         const isDeclined = m.offer.kind === 'declined'
         const hasOffer = m.offer.kind !== 'none'
-        const offerChipLabel = isPending ? 'لسا ما رد' : isDeclined ? 'ما وافق' : 'انكشفوا الاتنين'
+        const offerChipLabel = isPending
+          ? `${STATE_EMOJI.pending} لسا ما رد`
+          : isDeclined
+            ? `${STATE_EMOJI.declined} ما وافق`
+            : `${STATE_EMOJI.resolved} انكشفوا الاتنين`
         return (
         <div className="msg" key={m.confessionId}>
           <p className="hint">لـ {m.recipientDisplayName}</p>

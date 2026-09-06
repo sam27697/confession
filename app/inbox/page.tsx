@@ -12,6 +12,7 @@ import {
   reportConfessionAction,
   hideConfessionAction,
 } from './actions.js'
+import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
 import { CopyLink } from '../_components/CopyLink.js'
 import { StoryCard } from '../_components/StoryCard.js'
 import { SubmitButton } from '../_components/SubmitButton.js'
@@ -54,7 +55,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'resolved') {
     return (
       <div className="reveal reveal--resolved">
-        <span className="chip chip--resolved">انكشفوا الاتنين</span>
+        <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشفوا الاتنين</span>
         <p>هو: {reveal.senderDisplayName}</p>
         <p className="hint">جوابه</p>
         <p>{reveal.senderAnswer}</p>
@@ -67,7 +68,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'offered' && reveal.state === 'pending') {
     return (
       <div className="reveal">
-        <span className="chip chip--pending">لسا ما رد</span>
+        <span className="chip chip--pending">{STATE_EMOJI.pending} لسا ما رد</span>
         <p>بعتلو عرض مصارحة. لسا ما رد.</p>
       </div>
     )
@@ -76,7 +77,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'offered' && reveal.state === 'declined') {
     return (
       <div className="reveal">
-        <span className="chip chip--declined">ما وافق</span>
+        <span className="chip chip--declined">{STATE_EMOJI.declined} ما وافق</span>
         <p>ما وافق على المصارحة. جوابك ضلّ عندك وما حدا شافو.</p>
       </div>
     )
@@ -85,7 +86,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'offered' && reveal.state === 'cancelled') {
     return (
       <div className="reveal">
-        <span className="chip chip--cancelled">انسحب العرض</span>
+        <span className="chip chip--cancelled">{STATE_EMOJI.cancelled} انسحب العرض</span>
         <p>انسحب عرض المصارحة.</p>
       </div>
     )
@@ -93,7 +94,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
 
   return (
     <details className="reveal">
-      <summary className="btn btn--reveal btn--sm">صارحني بدورك</summary>
+      <summary className="btn btn--reveal btn--sm">صارحني بدورك {ACTION_EMOJI.reveal}</summary>
       <p>
         بتحكيلو شي عن حالك، وبتطلب منه شي بالمقابل. ما حدا بيشوف جواب التاني قبل ما ينزلوا الاتنين سوا.
       </p>
@@ -154,7 +155,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
           <span className="hint">جوابك محفوظ من هلق وما فيك تغيّره بعدين.</span>
         </div>
 
-        <SubmitButton className="btn btn--primary" loadingText="عم يبعت العرض...">ابعت العرض</SubmitButton>
+        <SubmitButton className="btn btn--primary" loadingText="عم يبعت العرض...">ابعت العرض {ACTION_EMOJI.send}</SubmitButton>
       </form>
     </details>
   )
@@ -222,7 +223,7 @@ export default async function InboxPage({
 
       {visible.length === 0 && (
         <div className="empty">
-          <p>صندوقك لسا فاضي</p>
+          <p>{MOOD_EMOJI.emptyInbox} صندوقك لسا فاضي</p>
           <p>حط رابطك بستوري أو بالبايو. أول رسالة بتوصل أسرع مما تتخيل.</p>
         </div>
       )}
@@ -230,7 +231,11 @@ export default async function InboxPage({
       {visible.map((m) => {
         const isHidden = m.status === 'hidden_by_recipient'
         const isReported = m.status === 'reported'
-        const statusLabel = isHidden ? 'مخبّاها' : isReported ? 'تم الإبلاغ عنها' : 'وصلت'
+        const statusLabel = isHidden
+          ? `${STATE_EMOJI.hidden} مخبّاها`
+          : isReported
+            ? `${STATE_EMOJI.reported} تم الإبلاغ عنها`
+            : `${STATE_EMOJI.delivered} وصلت`
         return (
         <div className={isHidden ? 'msg msg--hidden' : 'msg'} key={m.id}>
           <p className="msg__body">{m.body}</p>

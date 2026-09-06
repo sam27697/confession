@@ -404,27 +404,102 @@ test('item 6: --font-ar in app/globals.css equals the value in design/masaraha-d
 // design system readme explicitly permits as non-emoji marks.
 const EMOJI_PATTERN = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u
 
-test('item 7: no emoji anywhere under app/ or in src/*.ts (spec section 6 item 7)', () => {
-  const appFiles = listAppFiles(() => true)
+// Item 7 as frozen read "no emoji anywhere under app/ or in src/*.ts".
+// Spec section 9.9 reverses the ban on Sam's call: the audience is
+// teenagers. What it does not reverse is the reason the ban existed, which
+// was never "emoji are bad" but "an interface nobody curates accumulates a
+// different glyph per edit". So the rule moved instead of vanishing, and
+// splits into three checks that are, together, harder to satisfy carelessly
+// than the flat ban was:
+//
+//   7a  the domain layer stays clean
+//   7b  every glyph comes from one declared vocabulary
+//   7c  no glyph reaches an identifier the machine reads
+//
+// The vocabulary lives in app/_lib/emoji.ts and is read out of that file
+// here rather than duplicated, so the test cannot drift from the source.
+
+const EMOJI_VOCAB_PATH = path.join(APP_DIR, '_lib', 'emoji.ts')
+
+function declaredEmojiVocabulary(): Set<string> {
+  const src = readIfExists(EMOJI_VOCAB_PATH)
+  assert.ok(src, `app/_lib/emoji.ts must exist; looked at ${EMOJI_VOCAB_PATH}`)
+  const found = new Set<string>()
+  for (const ch of src!.match(/\p{Extended_Pictographic}|\p{Regional_Indicator}/gu) ?? []) found.add(ch)
+  assert.ok(found.size > 0, 'app/_lib/emoji.ts declares no emoji at all, so the vocabulary check would be vacuous')
+  return found
+}
+
+test('item 7a: no emoji in src/*.ts, the domain layer (spec section 9.9)', () => {
   const srcFiles = readdirSync(SRC_DIR)
     .filter((f) => f.endsWith('.ts'))
     .map((f) => path.join(SRC_DIR, f))
-  const files = [...appFiles, ...srcFiles]
-  assert.ok(files.length > 0, 'expected to find files under app/ and src/*.ts')
+  assert.ok(srcFiles.length > 0, 'expected to find src/*.ts')
+
+  const offenders: string[] = []
+  for (const file of srcFiles) {
+    const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+    for (let i = 0; i < lines.length; i++) {
+      const match = EMOJI_PATTERN.exec(lines[i]!)
+      if (match) offenders.push(`${toRelPosix(file)}:${i + 1} contains "${match[0]}"`)
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    'business rules, database values and error names are read by tests and logs, not by teenagers: ' +
+      `${JSON.stringify(offenders)}`,
+  )
+})
+
+test('item 7b: every emoji used under app/ is declared in app/_lib/emoji.ts (spec section 9.9)', () => {
+  const vocabulary = declaredEmojiVocabulary()
+  const files = listAppFiles(() => true)
+  assert.ok(files.length > 0, 'expected to find files under app/')
 
   const offenders: string[] = []
   for (const file of files) {
-    const src = readFileSync(file, 'utf8')
-    const lines = src.split('\n')
+    if (path.resolve(file) === path.resolve(EMOJI_VOCAB_PATH)) continue
+    const lines = readFileSync(file, 'utf8').split(/\r?\n/)
     for (let i = 0; i < lines.length; i++) {
-      const match = EMOJI_PATTERN.exec(lines[i])
-      if (match) {
-        offenders.push(`${toRelPosix(file)}:${i + 1} contains "${match[0]}" (U+${match[0].codePointAt(0)!.toString(16).toUpperCase()})`)
+      for (const ch of lines[i]!.match(/\p{Extended_Pictographic}|\p{Regional_Indicator}/gu) ?? []) {
+        if (!vocabulary.has(ch)) {
+          offenders.push(`${toRelPosix(file)}:${i + 1} uses "${ch}" (U+${ch.codePointAt(0)!.toString(16).toUpperCase()})`)
+        }
       }
     }
   }
 
-  assert.deepEqual(offenders, [], `emoji found: ${JSON.stringify(offenders)}`)
+  assert.deepEqual(
+    offenders,
+    [],
+    'these glyphs are not in the declared vocabulary; add them to app/_lib/emoji.ts deliberately, which is the ' +
+      `review step the old flat ban stood in for: ${JSON.stringify(offenders)}`,
+  )
+})
+
+test('item 7c: no emoji in a className, a form field name, or an element id (spec section 9.9)', () => {
+  const files = listAppFiles((name) => name.endsWith('.tsx') || name.endsWith('.ts') || name.endsWith('.css'))
+
+  // A glyph in a `name=` would change what the form submits, which spec
+  // section 0 forbids and acceptance item 17 asserts against main; one in a
+  // className or an id breaks the selector or the label association
+  // silently, which is worse than breaking it loudly.
+  const ATTRS = /\b(className|name|id|htmlFor)\s*=\s*(?:"([^"]*)"|\{`([^`]*)`\}|\{'([^']*)'\})/g
+
+  const offenders: string[] = []
+  for (const file of files) {
+    const src = readFileSync(file, 'utf8')
+    let m: RegExpExecArray | null
+    while ((m = ATTRS.exec(src))) {
+      const value = m[2] ?? m[3] ?? m[4] ?? ''
+      const hit = EMOJI_PATTERN.exec(value)
+      if (hit) offenders.push(`${toRelPosix(file)}: ${m[1]}="${value}" contains "${hit[0]}"`)
+    }
+  }
+
+  assert.deepEqual(offenders, [], `emoji reached an identifier the machine reads: ${JSON.stringify(offenders)}`)
 })
 
 // ---------------------------------------------------------------------------
@@ -547,6 +622,7 @@ test('item 10b: every client component under app/ lives in app/_components and i
   // not a bug this test can judge -- it is a decision that belongs in the
   // spec first, which is the whole point of listing them by name here.
   const AUTHORISED = [
+    'app/_components/Celebrate.tsx',
     'app/_components/CopyLink.tsx',
     'app/_components/StoryCard.tsx',
     'app/_components/SubmitButton.tsx',

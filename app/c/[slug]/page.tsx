@@ -7,6 +7,8 @@ import { env } from '../../_lib/domain/env.js'
 import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
+import { Celebrate } from '../../_components/Celebrate.js'
+import { ACTION_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
 // disabled link or a missing slug gets the generic card. Returning {} here
@@ -81,7 +83,12 @@ export default async function SendPage({
     <div className="veil enter">
       <h1>ابعتلـ {link.ownerDisplayName}</h1>
 
-      {sent === '1' && <p className="notice notice--citron">الرسالة وصلت.</p>}
+      {sent === '1' && (
+        <>
+          <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
+          <Celebrate />
+        </>
+      )}
       {error && ERROR_COPY[error] && (
         <p className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
       )}
@@ -102,7 +109,7 @@ export default async function SendPage({
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>
-          <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت</SubmitButton>
+          <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
         </form>
       ) : (
         <div className="card">
