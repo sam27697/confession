@@ -31,6 +31,12 @@ export function RevealCard({ children }: { children?: ReactNode }) {
         بتحكيلو شي عن حالك، وبتطلب منه شي بالمقابل. ما حدا بيشوف جواب التاني قبل ما ينزلوا الاتنين سوا.
       </p>
       {children}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if(!window.__revealChipInit){window.__revealChipInit=true;document.addEventListener('click',function(e){var b=e.target&&e.target.closest('button[data-target][data-prompt]');if(b){var el=document.getElementById(b.getAttribute('data-target'));if(el){el.value=b.getAttribute('data-prompt');el.dispatchEvent(new Event('input',{bubbles:true}));el.focus();}}});}`,
+        }}
+      />
     </div>
   )
 }
+
