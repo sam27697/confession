@@ -109,6 +109,11 @@ export default async function SendPage({
       {sent === '1' && (
         <>
           <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{sessionStorage.removeItem('confession_draft_${slug}');}catch(e){void e;}`,
+            }}
+          />
           <div className="card" style={{ marginTop: '1rem' }}>
             <p className="hint">تقدر تشوف الرسائل اللي أرسلتها من صندوق الرسائل المرسلة.</p>
             <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
@@ -137,6 +142,7 @@ export default async function SendPage({
               id="body"
               className="textarea textarea--hero"
               name="body"
+              data-draft-slug={slug}
               required
               minLength={1}
               maxLength={4000}
