@@ -43,7 +43,7 @@ export default async function OfferPage({
         إلو، وبس على هالرسالة.
       </p>
 
-      <div className="card card--bubble reveal">
+      <div className="card card--raised card--bubble reveal">
         <p className="hint">شو بدها تعرف</p>
         <p className="sent-resolved__text">{offer.questionForSender}</p>
         <p className="hint">شو رح تحكيلك عن حالها</p>
