@@ -16,40 +16,14 @@ import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
 import { CopyLink } from '../_components/CopyLink.js'
 import { StoryCard } from '../_components/StoryCard.js'
 import { SubmitButton } from '../_components/SubmitButton.js'
+import { RevealCard, QUESTION_SUGGESTIONS, STAKE_SUGGESTIONS } from '../_components/RevealCard.js'
 
 const ERROR_COPY: Record<string, string> = {
   short: 'لازم تكتب شي مش أقل من حرفين، بكل خانة.',
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
-// COPY-ar.md "Default question set" - #9 first, per the note that it is the
-// one question a sender cannot answer generically.
-const QUESTION_SUGGESTIONS = [
-  'شو يلي خلاك تبعتلي هالرسالة هلق بالذات؟',
-  'شو الشي يلي دايماً بتحس إني ما فهمته عنك؟',
-  'إيمتى كانت آخر مرة زعلت مني وما حكيت؟',
-  'شو الشي يلي ندمان عليه معي؟',
-  'لو كنت محلي، شو كنت عملت غير؟',
-  'شو الشي يلي بتخاف قلّي ياه؟',
-  'شو أكتر شي بتتذكره عنّي؟',
-  'شو الشي يلي بتمنى لو رجعنا مثل قبل فيه؟',
-  'وين كنت غلطان معي وما اعترفت؟',
-  'شو بتتمنى إني اعرفه عنك بس ما بتعرف تحكيه؟',
-]
 
-// COPY-ar.md "Default stake set" - what she commits to disclose, shown to
-// the sender before he decides (this becomes stake_prompt, not her literal
-// answer - see the note in the composer form below).
-const STAKE_SUGGESTIONS = [
-  'رح قلك شو كان رأيي فيك بالحقيقة أول ما تعرفنا.',
-  'رح قلك الشي يلي زعلني منك وما حكيته.',
-  'رح قلك شو الشي يلي ندمانة/ندمان عليه معك.',
-  'رح قلك مين الشخص يلي كنت عم فكر فيه لما وصلتني رسالتك.',
-  'رح قلك شو أكتر شي بيخوفني هالفترة.',
-  'رح قلك شي عني ما بيعرفه غير شخص واحد.',
-  'رح قلك ليش بعدت.',
-  'رح قلك شو الشي يلي بتمنى لو قلتلك ياه بوقتو.',
-]
 
 function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['reveal']; confessionId: string }) {
   if (reveal.kind === 'resolved') {
@@ -93,71 +67,75 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   }
 
   return (
-    <details className="reveal">
-      <summary className="btn btn--reveal btn--sm">صارحني بدورك {ACTION_EMOJI.reveal}</summary>
-      <p>
-        بتحكيلو شي عن حالك، وبتطلب منه شي بالمقابل. ما حدا بيشوف جواب التاني قبل ما ينزلوا الاتنين سوا.
-      </p>
-      <form action={openRevealOfferAction}>
-        <input type="hidden" name="confessionId" value={confessionId} />
+    <div className="reveal">
+      <div className="btn btn--reveal btn--sm">صارحني بدورك {ACTION_EMOJI.reveal}</div>
+      <RevealCard>
+        <form action={openRevealOfferAction}>
+          <input type="hidden" name="confessionId" value={confessionId} />
 
-        <div className="field-row">
-          <label className="field" htmlFor={`q-${confessionId}`}>شو بدك تسأله؟</label>
-          <input
-            className="input"
-            list={`q-list-${confessionId}`}
-            id={`q-${confessionId}`}
-            name="questionForSender"
-            required
-            minLength={2}
-            maxLength={500}
-            placeholder="اكتب سؤالك، أو اختار من تحت"
-          />
-          <datalist id={`q-list-${confessionId}`}>
-            {QUESTION_SUGGESTIONS.map((q) => (
-              <option key={q} value={q} />
-            ))}
-          </datalist>
-        </div>
+          <div className="field-row">
+            <label className="field" htmlFor={`q-${confessionId}`}>شو بدك تسأله؟</label>
+            <input
+              className="input"
+              list={`q-list-${confessionId}`}
+              id={`q-${confessionId}`}
+              name="questionForSender"
+              required
+              minLength={2}
+              maxLength={500}
+              placeholder="اكتب سؤالك، أو اختار من تحت"
+            />
+            <datalist id={`q-list-${confessionId}`}>
+              {QUESTION_SUGGESTIONS.map((q) => (
+                <option key={q} value={q} />
+              ))}
+            </datalist>
+            <div className="field-row">
+              {QUESTION_SUGGESTIONS.slice(0, 3).map((q) => (
+                <span key={q} className="chip chip--pending">{q}</span>
+              ))}
+            </div>
+          </div>
 
-        <div className="field-row">
-          <label className="field" htmlFor={`s-${confessionId}`}>وشو رح تحكيله عن حالك؟</label>
-          <input
-            className="input"
-            list={`s-list-${confessionId}`}
-            id={`s-${confessionId}`}
-            name="stakePrompt"
-            required
-            minLength={2}
-            maxLength={500}
-            placeholder="اختار من تحت أو اكتب وعدك"
-          />
-          <datalist id={`s-list-${confessionId}`}>
-            {STAKE_SUGGESTIONS.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
-          <span className="hint">لازم يكون شي بنفس الصراحة. هيدا يلي بيخليه يرد.</span>
-        </div>
+          <div className="field-row">
+            <label className="field" htmlFor={`s-${confessionId}`}>وشو رح تحكيله عن حالك؟</label>
+            <input
+              className="input"
+              list={`s-list-${confessionId}`}
+              id={`s-${confessionId}`}
+              name="stakePrompt"
+              required
+              minLength={2}
+              maxLength={500}
+              placeholder="اختار من تحت أو اكتب وعدك"
+            />
+            <datalist id={`s-list-${confessionId}`}>
+              {STAKE_SUGGESTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+            <span className="hint">لازم يكون شي بنفس الصراحة. هيدا يلي بيخليه يرد.</span>
+          </div>
 
-        <div className="field-row">
-          <label className="field" htmlFor={`a-${confessionId}`}>جوابك الحقيقي (رح يضل مخبى لحد ما يوافق هو)</label>
-          <textarea
-            className="textarea"
-            id={`a-${confessionId}`}
-            name="recipientAnswer"
-            required
-            minLength={2}
-            maxLength={4000}
-            rows={3}
-            placeholder="اكتب جوابك هون"
-          />
-          <span className="hint">جوابك محفوظ من هلق وما فيك تغيّره بعدين.</span>
-        </div>
+          <div className="field-row">
+            <label className="field" htmlFor={`a-${confessionId}`}>جوابك الحقيقي (رح يضل مخبى لحد ما يوافق هو)</label>
+            <textarea
+              className="textarea"
+              id={`a-${confessionId}`}
+              name="recipientAnswer"
+              required
+              minLength={2}
+              maxLength={4000}
+              rows={3}
+              placeholder="اكتب جوابك هون"
+            />
+            <span className="hint">جوابك محفوظ من هلق وما فيك تغيّره بعدين.</span>
+          </div>
 
-        <SubmitButton className="btn btn--primary" loadingText="عم يبعت العرض...">ابعت العرض {ACTION_EMOJI.send}</SubmitButton>
-      </form>
-    </details>
+          <SubmitButton className="btn btn--primary" loadingText="عم يبعت العرض...">ابعت العرض {ACTION_EMOJI.send}</SubmitButton>
+        </form>
+      </RevealCard>
+    </div>
   )
 }
 

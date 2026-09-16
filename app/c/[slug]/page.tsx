@@ -51,6 +51,18 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
+  return (
+    <div className="card send-card">
+      <p className="send-pitch">
+        صارح {ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
+      </p>
+      <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
+      <a className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول {ACTION_EMOJI.send}</a>
+    </div>
+  )
+}
+
 export default async function SendPage({
   params,
   searchParams,
@@ -97,11 +109,15 @@ export default async function SendPage({
       {sent === '1' && (
         <>
           <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
+          <div className="card" style={{ marginTop: '1rem' }}>
+            <p className="hint">تقدر تشوف الرسائل اللي أرسلتها من صندوق الرسائل المرسلة.</p>
+            <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
+          </div>
           <Celebrate />
         </>
       )}
       {error && ERROR_COPY[error] && (
-        <p className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
+        <p id="body-error" role="alert" className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
       )}
 
       {isOwner ? (
@@ -117,21 +133,28 @@ export default async function SendPage({
                 the screen; nothing about the field's name or validation
                 changes (spec §0, acceptance item 17). */}
             <label className="sr-only" htmlFor="body">رسالتك</label>
-            <textarea id="body" className="textarea textarea--hero" name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
+            <textarea
+              id="body"
+              className="textarea textarea--hero"
+              name="body"
+              required
+              minLength={1}
+              maxLength={4000}
+              rows={5}
+              placeholder="اكتب اللي بقلبك..."
+              aria-describedby={error ? 'body-error' : undefined}
+              aria-invalid={error ? 'true' : undefined}
+              autoFocus={Boolean(error)}
+            />
           </div>
+          <p className="hint" aria-live="polite">الحد الأقصى 4000 حرف</p>
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>
           <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
         </form>
       ) : (
-        <div className="card send-card">
-          <p className="send-pitch">
-            صارح {link.ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
-          </p>
-          <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
-          <a className="btn btn--primary btn--block" href="/">سجل دخول {ACTION_EMOJI.send}</a>
-        </div>
+        <SignInCard slug={slug} ownerDisplayName={link.ownerDisplayName} />
       )}
     </div>
   )
