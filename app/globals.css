@@ -765,7 +765,7 @@ main{
 
 .textarea--hero{
   border-radius:var(--radius-bubble);
-  font:var(--weight-medium) var(--size-subtitle)/1.7 var(--font-ar);
+  font:var(--weight-medium) var(--size-subtitle)/var(--lh-body) var(--font-ar);
   padding:18px;
 }
 .textarea--hero:focus-visible {
@@ -927,7 +927,7 @@ main{
 }
 
 .msg__body{
-  font:var(--weight-medium) var(--size-subtitle)/1.65 var(--font-ar);
+  font:var(--weight-medium) var(--size-subtitle)/var(--lh-body) var(--font-ar);
   color:var(--text-1);
   margin:0;
 }
@@ -1510,7 +1510,7 @@ main{
 }
 
 .send-pitch{
-  font:var(--weight-medium) var(--size-body)/var(--lh-tight) var(--font-ar);
+  font:var(--weight-medium) var(--size-body)/var(--lh-body) var(--font-ar);
   color:var(--text-1);
 }
 
