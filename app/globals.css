@@ -1599,6 +1599,7 @@ main{
   background:var(--citron-wash);
   border:1px solid rgba(214,242,91,0.22);
   border-radius:var(--radius-md);
+  box-shadow:var(--shadow-card);
   margin-top:var(--space-1);
 }
 
