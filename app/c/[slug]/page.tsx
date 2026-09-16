@@ -117,7 +117,7 @@ export default async function SendPage({
         </>
       )}
       {error && ERROR_COPY[error] && (
-        <p className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
+        <p id="body-error" role="alert" className={isRateLimit ? 'notice notice--warning' : 'notice notice--danger'}>{ERROR_COPY[error]}</p>
       )}
 
       {isOwner ? (
@@ -133,8 +133,21 @@ export default async function SendPage({
                 the screen; nothing about the field's name or validation
                 changes (spec §0, acceptance item 17). */}
             <label className="sr-only" htmlFor="body">رسالتك</label>
-            <textarea id="body" className="textarea textarea--hero" name="body" required minLength={1} maxLength={4000} rows={5} placeholder="اكتب اللي بقلبك..." />
+            <textarea
+              id="body"
+              className="textarea textarea--hero"
+              name="body"
+              required
+              minLength={1}
+              maxLength={4000}
+              rows={5}
+              placeholder="اكتب اللي بقلبك..."
+              aria-describedby={error ? 'body-error' : undefined}
+              aria-invalid={error ? 'true' : undefined}
+              autoFocus={Boolean(error)}
+            />
           </div>
+          <p className="hint" aria-live="polite">الحد الأقصى 4000 حرف</p>
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>
