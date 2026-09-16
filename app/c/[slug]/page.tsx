@@ -51,6 +51,18 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
+  return (
+    <div className="card send-card">
+      <p className="send-pitch">
+        صارح {ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
+      </p>
+      <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
+      <a className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول {ACTION_EMOJI.send}</a>
+    </div>
+  )
+}
+
 export default async function SendPage({
   params,
   searchParams,
@@ -97,6 +109,10 @@ export default async function SendPage({
       {sent === '1' && (
         <>
           <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
+          <div className="card" style={{ marginTop: '1rem' }}>
+            <p className="hint">تقدر تشوف الرسائل اللي أرسلتها من صندوق الرسائل المرسلة.</p>
+            <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
+          </div>
           <Celebrate />
         </>
       )}
@@ -125,13 +141,7 @@ export default async function SendPage({
           <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
         </form>
       ) : (
-        <div className="card send-card">
-          <p className="send-pitch">
-            صارح {link.ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
-          </p>
-          <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
-          <a className="btn btn--primary btn--block" href="/">سجل دخول {ACTION_EMOJI.send}</a>
-        </div>
+        <SignInCard slug={slug} ownerDisplayName={link.ownerDisplayName} />
       )}
     </div>
   )

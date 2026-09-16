@@ -6,7 +6,7 @@ import { env } from './_lib/domain/env.js'
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ deleted?: string }>
+  searchParams?: Promise<{ deleted?: string; next?: string }>
 }) {
   // Resolved against the database, not the cookie alone (spec §8.3): a
   // cookie whose account is missing, disabled or deleted renders the
@@ -18,7 +18,7 @@ export default async function HomePage({
     redirect('/inbox')
   }
 
-  const { deleted } = await searchParams
+  const { deleted, next } = (await searchParams) ?? {}
 
   return (
     <div className="veil enter">
@@ -39,6 +39,7 @@ export default async function HomePage({
 
         {env.allowDevLogin && (
           <form action="/auth/dev" method="post">
+            {next && <input type="hidden" name={'next'} value={next} />}
             <div className="field-row">
               <label className="field" htmlFor="displayName">اسم تجريبي (وضع تجربة فقط)</label>
               <input className="input" id="displayName" type="text" name="displayName" required minLength={1} maxLength={80} />
