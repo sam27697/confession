@@ -43,11 +43,11 @@ export default async function OfferPage({
         إلو، وبس على هالرسالة.
       </p>
 
-      <div className="reveal">
+      <div className="card card--bubble reveal">
         <p className="hint">شو بدها تعرف</p>
-        <p>{offer.questionForSender}</p>
+        <p className="sent-resolved__text">{offer.questionForSender}</p>
         <p className="hint">شو رح تحكيلك عن حالها</p>
-        <p>{offer.stakePrompt}</p>
+        <p className="sent-resolved__text">{offer.stakePrompt}</p>
       </div>
 
       {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
