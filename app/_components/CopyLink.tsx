@@ -26,7 +26,17 @@ import { Celebrate } from './Celebrate.js'
 
 const CONFIRM_MS = 1400
 
-export function CopyLink({ url }: { url: string }) {
+export function CopyLink({
+  url,
+  label = 'انسخ الرابط 🔗',
+  copiedLabel = 'تم النسخ ✅',
+  className = 'btn btn--secondary btn--sm',
+}: {
+  url: string
+  label?: string
+  copiedLabel?: string
+  className?: string
+}) {
   const { toast } = useToast()
   const [canCopy, setCanCopy] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -86,11 +96,11 @@ export function CopyLink({ url }: { url: string }) {
     <>
       <button
         type="button"
-        className={copied ? 'btn btn--secondary btn--sm btn--copied' : 'btn btn--secondary btn--sm'}
+        className={copied ? `${className} btn--copied` : className}
         onClick={handleAction}
         aria-label="مشاركة الرابط أو نسخه"
       >
-        {copied ? 'تم النسخ ✅' : 'انسخ الرابط 🔗'}
+        {copied ? copiedLabel : label}
       </button>
       {celebrating && <Celebrate />}
     </>
