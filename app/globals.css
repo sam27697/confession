@@ -1192,23 +1192,37 @@ main{
   color:var(--citron-300);
 }
 
-.story-prompts{display:flex;flex-direction:column;gap:var(--space-2)}
+.story-prompts{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  gap:var(--space-2);
+  max-height:160px;
+  overflow-y:auto;
+}
 
 .prompt-pill{
   min-height:var(--tap-min);
-  padding:12px 14px;
+  padding:8px 12px;
   text-align:start;
   background:var(--bg-field);
   border:1px solid var(--line);
   border-radius:var(--radius-md);
   color:var(--text-2);
-  font:var(--type-body-sm);
+  font:var(--type-caption);
   letter-spacing:var(--tracking-ar);
   cursor:pointer;
   transition:var(--transition-control);
 }
 .prompt-pill:hover{border-color:var(--line-strong);color:var(--text-1)}
 .prompt-pill--active{background:var(--citron-wash);border-color:rgba(214,242,91,.32);color:var(--citron-100)}
+
+.story-actions{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+  margin-top:var(--space-3);
+}
 
 .story-preview{
   display:flex;
