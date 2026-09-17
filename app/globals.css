@@ -2184,6 +2184,20 @@ main{
   margin-bottom: var(--space-4);
 }
 
+/* Policy return navigation (A3-T02) */
+.policy-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.policy-return {
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
