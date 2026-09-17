@@ -153,4 +153,27 @@
 | total tests passing | test suite | 322 | 322 | .uxprogram/logs/20260917-070539-a2-review-gate.log |
 | ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-070539-a2-review-gate.log |
 | project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-070539-a2-review-gate.log |
-
+## cycle B2 2026-09-17
+| Metric | Scope | Value | Best so far | Evidence |
+|---|---|---|---|---|
+| taps | send-confession | 2 | 2 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| decisions | send-confession | 2 | 2 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| effort s | send-confession | 13.60 | 13.60 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| taps | view-inbox | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| decisions | view-inbox | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| effort s | view-inbox | 2.55 | 2.55 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| taps | offer-mutual-reveal | 2 | 2 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| decisions | offer-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| effort s | offer-mutual-reveal | 4.25 | 4.25 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| taps | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| decisions | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| effort s | respond-mutual-reveal | 3.05 | 3.05 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| taps | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| decisions | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| effort s | onboarding-terms | 3.05 | 3.05 | .uxprogram/logs/20260917-102247-b2-effort.log |
+| undefined CSS motion variables | global :root | 0 | 0 | .uxprogram/logs/20260917-111609-b2-t01-checks-pass.log |
+| active nav tab indicator | app-nav__tab--active | inset citron pill | inset citron pill | .uxprogram/logs/20260917-111902-b2-t03-checks-pass.log |
+| discovery step badge contrast | home-step__badge | > 7:1 (solid citron) | > 7:1 (solid citron) | .uxprogram/logs/20260917-112026-b2-t04-checks-pass.log |
+| total tests passing | test suite | 338 | 338 | .uxprogram/logs/20260917-112604-b2-gate.log |
+| ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-112604-b2-gate.log |
+| project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-112604-b2-gate.log |
