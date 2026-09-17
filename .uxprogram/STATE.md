@@ -7,8 +7,8 @@ STEP: 1
 SUBSTEP: start
 NEXT_ACTION: begin Track C Cycle 2 Step 1 Explore (fresh eyes, verify claims in HANDOFF.md, walk core flows and effort metrics)
 WAITING_FOR: none
-BRANCH: ux/program
-CYCLE_BASE: 0b96ff9
+BRANCH: ux/C-c2
+CYCLE_BASE: 532bbbc
 UPDATED: 2026-09-17T11:30:00Z
 
 ## Schedule
