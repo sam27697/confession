@@ -46,13 +46,31 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   )
 }
 
-export default async function SentPage() {
+export default async function SentPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ filter?: string }>
+}) {
+  const { filter = 'all' } = (await searchParams) || {}
   const db = getDb()
   const senderAccountId = await requireActiveViewerAccountId(db)
   const messages = await getSentForSender(db, { senderAccountId })
   const now = new Date()
   const totalSent = messages.length
   const isSentEmpty = totalSent === 0
+
+  const pendingCount = messages.filter((m) => m.offer.kind === 'pending').length
+  const resolvedCount = messages.filter((m) => m.offer.kind === 'resolved').length
+
+  const filteredMessages = messages.filter((m) => {
+    if (filter === 'pending') return m.offer.kind === 'pending'
+    if (filter === 'resolved') return m.offer.kind === 'resolved'
+    return true
+  })
+
+  const isAllFilter = filter === 'all'
+  const isPendingFilter = filter === 'pending'
+  const isResolvedFilter = filter === 'resolved'
 
   return (
     <div className="enter">
@@ -63,6 +81,35 @@ export default async function SentPage() {
         </span>
       </div>
 
+      {!isSentEmpty && (
+        <div className="sent-filters" role="tablist" aria-label="تصفية الرسائل المرسلة">
+          <a
+            href="/sent"
+            className={isAllFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isAllFilter}
+          >
+            الكل ({totalSent})
+          </a>
+          <a
+            href="/sent?filter=pending"
+            className={isPendingFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isPendingFilter}
+          >
+            معلّق ({pendingCount})
+          </a>
+          <a
+            href="/sent?filter=resolved"
+            className={isResolvedFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isResolvedFilter}
+          >
+            مكشوف ({resolvedCount})
+          </a>
+        </div>
+      )}
+
       {isSentEmpty && (
         <div className="sent-empty">
           <div className="sent-empty__icon" aria-hidden="true">{MOOD_EMOJI.nothingSent}</div>
@@ -71,7 +118,7 @@ export default async function SentPage() {
         </div>
       )}
 
-      {messages.map((m) => {
+      {filteredMessages.map((m) => {
         const isPending = m.offer.kind === 'pending'
         const isDeclined = m.offer.kind === 'declined'
         const isResolved = m.offer.kind === 'resolved'

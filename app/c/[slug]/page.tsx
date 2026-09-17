@@ -109,6 +109,11 @@ export default async function SendPage({
       {sent === '1' && (
         <>
           <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{sessionStorage.removeItem('confession_draft_${slug}');}catch(e){void e;}`,
+            }}
+          />
           <div className="card" style={{ marginTop: '1rem' }}>
             <p className="hint">تقدر تشوف الرسائل اللي أرسلتها من صندوق الرسائل المرسلة.</p>
             <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
@@ -137,6 +142,7 @@ export default async function SendPage({
               id="body"
               className="textarea textarea--hero"
               name="body"
+              data-draft-slug={slug}
               required
               minLength={1}
               maxLength={4000}
@@ -147,7 +153,10 @@ export default async function SendPage({
               autoFocus={Boolean(error)}
             />
           </div>
-          <p className="hint" aria-live="polite">الحد الأقصى 4000 حرف</p>
+          <div className="compose-meta">
+            <span className="hint" aria-live="polite">الحد الأقصى 4000 حرف</span>
+            <span id="draft-status" className="draft-indicator" aria-live="polite" />
+          </div>
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>

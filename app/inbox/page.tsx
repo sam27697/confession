@@ -92,7 +92,15 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
             </datalist>
             <div className="field-row">
               {QUESTION_SUGGESTIONS.slice(0, 3).map((q) => (
-                <span key={q} className="chip chip--pending">{q}</span>
+                <button
+                  key={q}
+                  type="button"
+                  className="chip chip--pending"
+                  data-target={`q-${confessionId}`}
+                  data-prompt={q}
+                >
+                  {q}
+                </button>
               ))}
             </div>
           </div>
@@ -114,6 +122,19 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
                 <option key={s} value={s} />
               ))}
             </datalist>
+            <div className="field-row">
+              {STAKE_SUGGESTIONS.slice(0, 3).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="chip chip--pending"
+                  data-target={`s-${confessionId}`}
+                  data-prompt={s}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
             <span className="hint">لازم يكون شي بنفس الصراحة. هيدا يلي بيخليه يرد.</span>
           </div>
 
