@@ -138,6 +138,7 @@ export default async function SendPage({
         <div className="card">
           <p className="hint">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
         </div>
+      ) : viewerAccountId ? (
         <form action={action}>
           <div className="compose-starters" role="group" aria-label="أفكار للبدء">
             <span className="compose-starters__label">أفكار للبدء:</span>
