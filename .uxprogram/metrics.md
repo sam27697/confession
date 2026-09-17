@@ -177,3 +177,27 @@
 | total tests passing | test suite | 338 | 338 | .uxprogram/logs/20260917-112604-b2-gate.log |
 | ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-112604-b2-gate.log |
 | project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-112604-b2-gate.log |
+## cycle C2 2026-09-17
+| Metric | Scope | Value | Best so far | Evidence |
+|---|---|---|---|---|
+| taps | send-confession | 2 | 2 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| decisions | send-confession | 2 | 2 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| effort s | send-confession | 4.50 | 4.50 | .uxprogram/track-C/cycle-2/01_explore.md |
+| taps | view-inbox | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| decisions | view-inbox | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| effort s | view-inbox | 2.55 | 2.55 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| taps | offer-mutual-reveal | 2 | 2 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| decisions | offer-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| effort s | offer-mutual-reveal | 4.25 | 4.25 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| taps | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| decisions | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| effort s | respond-mutual-reveal | 3.05 | 3.05 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| taps | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| decisions | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| effort s | onboarding-terms | 3.05 | 3.05 | .uxprogram/logs/20260917-115121-c2-effort.log |
+| confession compose keystrokes | /c/[slug] | 1 | 1 | .uxprogram/logs/20260917-120146-c2-t02-checks-pass.log.log |
+| outbox copy gestures | /sent | 1 tap | 1 tap | .uxprogram/logs/20260917-120356-c2-t03-checks-pass.log.log |
+| textarea inner scroll on 100+ chars | /c/[slug] | 0% | 0% | .uxprogram/logs/20260917-115957-c2-t01-checks-pass.log.log |
+| total tests passing | test suite | 353 | 353 | .uxprogram/logs/20260917-121020-c2-test-report.log.log |
+| ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-121656-c2-gate.log.log |
+| project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-121656-c2-gate.log.log |

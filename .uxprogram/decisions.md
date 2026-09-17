@@ -40,3 +40,9 @@ WHY: After A2 additions, raw literal values in new CSS classes (home-step__badge
 ALTERNATIVES: Accept raw literals as acceptable in new classes (rejected: creates entropy that compounds across cycles and defeats tokens.md v1 investment).
 REVERSIBLE: yes.
 REVERSES: none
+## D-007 2026-09-17 C2 Step 3
+DECISION: Focus Cycle C2 on zero-keystroke input inspiration, auto-expanding textarea geometry, and 1-tap outbox copying
+WHY: Measures from effort_calc show send-confession requires 13.60s KLM with 40 manual keystrokes and high blank-canvas hesitation. Providing 1-tap starter chips and adaptive textarea sizing eliminates mobile scrolling strain and reduces cognitive effort without constraining expression.
+ALTERNATIVES: Add character countdown bells or mandatory prompt wizards (rejected: adds pressure and increases interaction friction).
+REVERSIBLE: yes.
+REVERSES: none.

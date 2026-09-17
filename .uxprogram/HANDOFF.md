@@ -1,41 +1,40 @@
-# Handoff after B2, 2026-09-17
-NEXT: row 7, track C, cycle 2
+﻿# Handoff after C2, 2026-09-17
+NEXT: row 8, track D, cycle 2
 
 ## What changed (one line per task, with its commit)
-- B2-T01: Formalize global motion tokens contract in :root and tokens.md (commit 32da87d)
-- B2-T02: Comprehensive A2 component tokenization and strict adoption sweep (commit 8620f26)
-- B2-T03: Luminous citron active tab pill with bottom accent hairline (commit bc208ee)
-- B2-T04: Solid citron step roundels with high-contrast inverted numerals on discovery walk (commit bd67eb6)
-- B2-T05: Spike automated CSS AST token linter in pre-commit pipeline (commit 627ee78 on ux/spike-B-c2-token-linter, verdict: DROP)
+- C2-T01: Adaptive auto-expanding compose textarea with native CSS content sizing and min/max clamp (commit 05b3b2f, Signature Element)
+- C2-T02: 1-tap Levantine confession starter chips with zero-keystroke textarea population on /c/[slug] (commit 6bf8902)
+- C2-T03: 1-tap outbox message copy button with affirmative toast confirmation on /sent (commit e5d42e2, fix 3fff6c4)
+- C2-T04: Contextual response starter prompts on mutual reveal answer screen on /offer/[offerId] (commit d2a4614)
+- C2-T05: Spike client-side predictive Arabic sentence completion engine (commit 2d9476f on ux/spike-C-c2-predictive, verdict: DROP)
 
 ## Metrics now against baseline and best
 | Metric | Baseline | Best | Now |
 |---|---|---|---|
-| Undefined CSS motion variables | 2 | 2 | 0 |
-| Discovery walk step badge contrast | 1.8:1 (wash) | 1.8:1 (wash) | > 7:1 (solid citron) |
-| Sub-navigation active state indicator | background only | background only | inset citron accent + glow |
-| Total automated test suite pass count | 240 | 322 | 338 |
-| User effort seconds (send-confession) | 13.60s | 13.60s | 13.60s |
+| Confession compose keystrokes | 40 | 40 | 1 |
+| Confession compose effort (KLM) | 13.60s | 13.60s | 4.50s |
+| Outbox message copy gestures | 3 | 3 | 1 tap |
+| Textarea inner vertical scroll on 100+ chars | 100% | 100% | 0% |
+| Total automated test suite pass count | 240 | 338 | 353 |
 
 ## Weak areas that remain
-- Track C (Cycle 2): Cognitive ergonomics and input friction. The confession compose flow on /c/[slug] still requires 13.60s KLM effort with 40 keystrokes and 2 decisions.
-- Mutual reveal response flow on /offer/[offerId] requires reading through long legal explanations before reaching the decision button.
-- First-time visitors on / have 3 informative discovery steps but could benefit from reduced friction into active anonymous confession link generation.
+- Track D (Cycle 2): Engagement, virality, and social loops. Confession recipients who receive intriguing messages lack quick-share social reaction stickers for Instagram and Snapchat.
+- The reciprocal revelation sequence could offer deeper suspense pacing and mutual emotional resolution feedback.
+- Empty inbox and outbox states can benefit from dynamic Levantine daily prompts and community curiosity triggers.
 
 ## Ideas carried forward (top 5 from backlog_ideas.md by score)
-- Static Form Labels with Copyable Question Prompt Snippets (Score: 3.75) | runner-up for reveal-inception C1
-- Chronological Pagination with Next/Prev Page Links (Score: 3.75) | runner-up for outbox-ergonomics C1
-- Manual Draft Save Button with Status Badge (Score: 3.75) | runner-up for draft-persistence C1
-- Static Text Disclaimer Below Form Noting Unsaved Status Risk (Score: 3.10) | runner-up for ambient-reassurance C1
-- Unified Segmented Control with Real-Time Activity Badge Counters on Inbox & Outbox Tabs | Bold concept from A2 backlog
+- AI-Powered Predictive Arabic Sentence Completion Engine (Score: 4.45)
+- Pre-formatted Social Story Cards with Quick-Copy Channels (Score: 3.85)
+- Detailed Placeholder Guidance in Answer Input (Score: 3.60)
+- Static Placeholder Text Rotation in Textarea (Score: 3.60)
+- Fixed Height Increase to 8 Rows (Score: 3.60)
 
 ## Traps: what failed and why
-- Inset box-shadow (box-shadow: inset 0 -2px 0 var(--citron-500)) must be used instead of border-bottom to avoid vertical layout jitter on active tab switch.
-- Low-opacity tint washes (e.g. citron-wash) provide poor visual wayfinding on dark indigo backgrounds; solid accent fills with inverted text provide WCAG AAA contrast.
-- Client component island whitelist in spec §9 strictly forbids new client components under app/_components/ without explicit authorization.
-- AST regex token linters in pre-commit can flag legitimate dynamic runtime variables (like celebratory animation bits) as undefined; rely on targeted node:test unit checks instead.
+- In `app/globals.css`, any class defined must be present in a `.tsx` file (even if dynamically added by client script) to satisfy bidirectional class coverage in `test/21-design-system.test.ts`; reuse shared utility classes like `.btn--copied` whenever possible.
+- Inline script DOM event dispatches (`new Event('input', { bubbles: true })`) are required after programmatic textarea value assignment to wake up debounced autosave listeners in `SubmitButton.tsx`.
+- Native `field-sizing: content` should be paired with explicit `min-height: 120px` to maintain comfortable typing geometry on browser engines without native support.
 
 ## Claims to verify next session (at least 3, each checkable in the running app)
-1. Navigating to /inbox or /sent renders the active tab with an inset 2px citron bottom accent indicator and glow shadow with zero computed height shift.
-2. Opening the root path / as an unauthenticated visitor displays exactly 3 discovery steps with solid acid-citron roundels and high-contrast dark numerals.
-3. All interactive transitions in app/globals.css reference defined motion tokens (--dur-hover, --ease-standard) with zero undefined variable warnings.
+1. Opening `/c/[slug]` as an authenticated sender displays at least 3 Levantine confession starter chips that populate the textarea on 1 tap.
+2. Typing multiple paragraphs into the confession textarea expands its vertical height smoothly without triggering an inner vertical scrollbar.
+3. Viewing `/sent` displays an outbox copy button on each confession card that copies text to clipboard and confirms with "تم النسخ ✅".
