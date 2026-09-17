@@ -19,6 +19,12 @@ export default async function DeleteAccountPage({
 
   return (
     <div>
+      <nav className="view-breadcrumb" aria-label="مسار التنقل">
+        <a href="/inbox" className="view-breadcrumb__link" aria-label="الرجوع للصندوق">
+          <span aria-hidden="true">→</span>
+          <span>صندوقي</span>
+        </a>
+      </nav>
       <h1>حذف الحساب</h1>
 
       <div className="sovereignty-card">

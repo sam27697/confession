@@ -43,6 +43,12 @@ export default async function OfferPage({
 
   return (
     <div className="veil veil--rose">
+      <nav className="view-breadcrumb" aria-label="مسار التنقل">
+        <a href="/sent" className="view-breadcrumb__link" aria-label="الرجوع للرسائل المرسلة">
+          <span aria-hidden="true">→</span>
+          <span>الرسائل المرسلة</span>
+        </a>
+      </nav>
       <h1>وصلك عرض مصارحة</h1>
       <p className="notice notice--rose">
         الشخص يلي بعتلو الرسالة بدو يعرف منك شي، وبالمقابل رح يحكيلك شي عن حالو. إذا وافقت، اسمك رح ينكشف إلو، وبس
