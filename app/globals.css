@@ -1924,6 +1924,58 @@ main{
   white-space:nowrap;
 }
 
+/* Compose starter chips (C2-T02) */
+.compose-starters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.compose-starters__label {
+  font: var(--type-caption);
+  color: var(--text-3);
+}
+
+.compose-starters__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.starter-chip {
+  background: var(--surface-1);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chip);
+  font: var(--type-micro);
+  padding: var(--space-1) var(--space-3);
+  min-height: var(--control-h-sm);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease-standard),
+              background var(--dur-hover) var(--ease-standard),
+              color var(--dur-hover) var(--ease-standard);
+  text-align: right;
+  direction: rtl;
+}
+
+.starter-chip:hover {
+  border-color: var(--citron-500);
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.starter-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.starter-chip:active {
+  transform: scale(var(--press-scale));
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
