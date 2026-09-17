@@ -1874,11 +1874,12 @@ main{
   background:var(--surface-1);
   border:1px solid var(--line);
   border-radius:var(--radius-card);
-  transition:border-color var(--dur-hover) var(--ease-standard);
+  transition:border-color var(--dur-hover) var(--ease-standard),background var(--dur-hover) var(--ease-standard);
 }
 
 .home-step:hover{
   border-color:var(--line-strong);
+  background:var(--surface-2);
 }
 
 .home-step__badge{
@@ -1888,8 +1889,9 @@ main{
   width:28px;
   height:28px;
   border-radius:var(--radius-pill);
-  background:var(--citron-wash);
-  color:var(--citron-500);
+  background:var(--citron-500);
+  color:var(--text-on-accent);
+  box-shadow:0 0 0 1px var(--citron-300);
   font-weight:700;
   font-size:var(--size-caption);
   flex-shrink:0;
