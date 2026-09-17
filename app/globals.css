@@ -1845,6 +1845,64 @@ main{
   margin-top:var(--space-3);
 }
 
+.home-hero{
+  text-align:center;
+  margin-bottom:var(--space-6);
+}
+
+.home-hero h1{
+  font:var(--type-title);
+  color:var(--text-1);
+  margin-bottom:var(--space-2);
+}
+
+.home-steps{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+  margin-bottom:var(--space-6);
+}
+
+.home-step{
+  display:flex;
+  align-items:flex-start;
+  gap:var(--space-3);
+  padding:var(--space-3) var(--space-4);
+  background:var(--surface-1);
+  border:1px solid var(--line);
+  border-radius:var(--radius-card);
+  transition:border-color var(--dur-hover) var(--ease-standard);
+}
+
+.home-step:hover{
+  border-color:var(--line-strong);
+}
+
+.home-step__badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  border-radius:9999px;
+  background:var(--citron-wash);
+  color:var(--citron-500);
+  font-weight:700;
+  font-size:0.875rem;
+  flex-shrink:0;
+}
+
+.home-step__text{
+  margin:0;
+  font:var(--type-body);
+  color:var(--text-2);
+  line-height:1.6;
+}
+
+.home-step__text strong{
+  color:var(--text-1);
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
