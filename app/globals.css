@@ -1675,9 +1675,24 @@ main{
   font-weight:var(--weight-medium);
 }
 
+.compose-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+  min-height:24px;
+}
+
+.draft-indicator{
+  font:var(--type-micro);
+  color:var(--text-3);
+  transition:color var(--dur-hover) var(--ease-standard);
+}
+
 @media (prefers-reduced-motion:reduce){
   .send-avatar,.sent-badge{animation:none}
 }
 
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
+
 

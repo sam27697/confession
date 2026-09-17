@@ -153,7 +153,10 @@ export default async function SendPage({
               autoFocus={Boolean(error)}
             />
           </div>
-          <p className="hint" aria-live="polite">الحد الأقصى 4000 حرف</p>
+          <div className="compose-meta">
+            <span className="hint" aria-live="polite">الحد الأقصى 4000 حرف</span>
+            <span id="draft-status" className="draft-indicator" aria-live="polite" />
+          </div>
           <p className="notice">
             اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
           </p>

@@ -45,6 +45,8 @@ export function SubmitButton({
     const slug = textarea.getAttribute('data-draft-slug')
     if (!slug) return
 
+    const indicator = form.querySelector('#draft-status') as HTMLElement | null
+
     let saved: string | null = null
     try {
       saved = sessionStorage.getItem('confession_draft_' + slug)
@@ -53,25 +55,34 @@ export function SubmitButton({
     }
     if (saved && !textarea.value) {
       textarea.value = saved
+      if (indicator) indicator.textContent = 'تم استعادة المسودة'
       textarea.dispatchEvent(new Event('input', { bubbles: true }))
     }
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
     const handleInput = () => {
+      if (indicator) indicator.textContent = 'عم يحفظ...'
       if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(() => {
         try {
           sessionStorage.setItem('confession_draft_' + slug, textarea.value)
+          if (indicator) indicator.textContent = 'تم الحفظ تلقائياً'
         } catch {
           void 0
         }
       }, 150)
     }
 
+    const handleSubmit = () => {
+      if (indicator) indicator.textContent = ''
+    }
+
     textarea.addEventListener('input', handleInput)
+    form.addEventListener('submit', handleSubmit)
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer)
       textarea.removeEventListener('input', handleInput)
+      form.removeEventListener('submit', handleSubmit)
     }
   }, [])
 
