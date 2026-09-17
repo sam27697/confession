@@ -1779,6 +1779,28 @@ main{
   gap:var(--space-3);
 }
 
+.sent-resolved--glow{
+  box-shadow:0 0 0 1px rgba(242,138,122,0.4), 0 4px 20px rgba(242,138,122,0.12);
+}
+
+.reveal--glow{
+  box-shadow:0 0 0 1px rgba(242,138,122,0.4), 0 4px 20px rgba(242,138,122,0.12);
+}
+
+.sent-resolved__affirmation{
+  display:block;
+  font:var(--type-caption);
+  color:var(--text-2);
+  margin-top:var(--space-1);
+}
+
+.reveal-seal__affirmation{
+  display:block;
+  font:var(--type-caption);
+  color:var(--text-2);
+  margin-top:var(--space-1);
+}
+
 .sent-filters{
   display:flex;
   gap:var(--space-2);

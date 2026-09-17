@@ -33,9 +33,10 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   // the panel it labels is the same redundancy the previous pass produced on
   // the inbox link block. The rose tint is the signal here.
   return (
-    <div className="card card--rose card--bubble sent-resolved">
+    <div className="card card--rose card--bubble sent-resolved sent-resolved--glow">
       <div className="sent-resolved__seal">
         <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر بينكم</span>
+        <span className="sent-resolved__affirmation">انكشف السر بينكم، صار فيكم تحكوا براحتكم ✨</span>
       </div>
       <div className="sent-resolved__dialogue">
         <div className="sent-resolved__item">

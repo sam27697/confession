@@ -38,10 +38,11 @@ const DAILY_SPARKS = [
 function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['reveal']; confessionId: string }) {
   if (reveal.kind === 'resolved') {
     return (
-      <div className="reveal reveal--resolved">
+      <div className="reveal reveal--resolved reveal--glow">
         <div className="reveal-seal">
           <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر</span>
           <strong className="reveal-seal__identity">{reveal.senderDisplayName}</strong>
+          <span className="reveal-seal__affirmation">انكشف السر بينكم، صار فيكم تحكوا براحتكم ✨</span>
         </div>
         <div className="reveal-dialogue">
           <div className="reveal-dialogue__item">
