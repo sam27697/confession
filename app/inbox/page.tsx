@@ -23,6 +23,16 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+const DAILY_SPARKS = [
+  'شو الشي يلي مغير فيني ومستحي تقوله؟',
+  'شو أول انطباع أخدته عني وطلع غلط؟',
+  'كلمة أو موقف بيننا مستحيل تنساه؟',
+  'شو أكتر صفة بتحبها فيني وما بتعرف تعبر عنها؟',
+  'شو السر يلي كنت حابب تعترفلي فيه من زمان؟',
+  'لو فيك تسألني سؤال واحد وتضمن إني أجاوب بصراحة؟',
+  'شو الشي يلي بتتمنى نتشاركه سوا وما صار فرصة؟',
+]
+
 
 
 function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['reveal']; confessionId: string }) {
@@ -188,6 +198,8 @@ export default async function InboxPage({
   const now = new Date()
   const totalCount = visible.length
   const isInboxEmpty = totalCount === 0
+  const dayIndex = Math.floor(now.getTime() / 86400000) % DAILY_SPARKS.length
+  const sparkOfTheDay = DAILY_SPARKS[Math.abs(dayIndex)] || DAILY_SPARKS[0]
 
   return (
     <div className="enter">
@@ -206,6 +218,27 @@ export default async function InboxPage({
           {isInboxEmpty ? `جاهز للرسايل ${MOOD_EMOJI.sparkle}` : `${totalCount} ${MOOD_EMOJI.fire}`}
         </span>
       </div>
+
+      <div className="daily-spark" role="region" aria-label="سؤال اليوم">
+        <div className="daily-spark__header">
+          <span className="daily-spark__badge">{MOOD_EMOJI.sparkle} سؤال اليوم</span>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm daily-spark__copy"
+            data-spark-text={sparkOfTheDay}
+            aria-label="نسخ سؤال اليوم"
+          >
+            نسخ السؤال
+          </button>
+        </div>
+        <p className="daily-spark__prompt">«{sparkOfTheDay}»</p>
+        <span className="daily-spark__hint">انشره بستوري أو حالة ليسألوك عنه بالسر</span>
+      </div>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){document.addEventListener('click',function(e){var b=e.target.closest('.daily-spark__copy');if(!b)return;var text=b.getAttribute('data-spark-text')||'';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1600);});}});})();`,
+        }}
+      />
 
       {/* The block breathes while the link is live and is still the moment
           it is switched off (spec §9.10). The state is link.enabled, the
@@ -264,7 +297,6 @@ export default async function InboxPage({
         <div className="empty inbox-empty">
           <p className="inbox-empty__title">{MOOD_EMOJI.emptyInbox} نوّرت الصندوق، لسا عم نستنى أول مصارحة</p>
           <p className="inbox-empty__text">حط رابطك بستوري أو بالبايو، واطلب من رفقاتك يحكولك اللي بقلبهم بالسر.</p>
-          <span className="empty-spark">سؤال مقترح: «اعترف بشي بتحبه فيني ومستحيل تتجرأ تحكيه؟»</span>
         </div>
       )}
 
