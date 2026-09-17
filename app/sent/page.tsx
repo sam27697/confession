@@ -176,12 +176,25 @@ export default async function SentPage({
 
             <div className="msg__meta">
               <span className="hour">{formatHourStamp(m.createdHour, now)}</span>
+              <button
+                type="button"
+                className="msg__copy-btn"
+                data-copy-text={m.body}
+                aria-label="نسخ نص الرسالة"
+              >
+                انسخ النص
+              </button>
             </div>
 
             <OfferBlock offer={m.offer} />
           </div>
         )
       })}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){document.addEventListener('click',async function(e){var b=e.target.closest('button[data-copy-text]');if(!b)return;var txt=b.getAttribute('data-copy-text');if(!txt)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}else{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1500);}catch(err){b.textContent='فشل النسخ';setTimeout(function(){b.textContent='انسخ النص';},1500);}});})();`,
+        }}
+      />
     </div>
   )
 }

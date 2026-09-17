@@ -51,6 +51,13 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+const STARTER_PROMPTS = [
+  'صارحني بشي ما بتسترجي تقوله بوجهي...',
+  'شو أكتر موقف حلو ما بتنساه معي؟',
+  'كلمة بقلبك من زمان وحابب توصلني...',
+  'نصيحة صادقة من قلبك بتفيدني بهالفترة...',
+]
+
 function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
   return (
     <div className="card send-card">
@@ -133,6 +140,26 @@ export default async function SendPage({
         </div>
       ) : viewerAccountId ? (
         <form action={action}>
+          <div className="compose-starters" role="group" aria-label="أفكار للبدء">
+            <span className="compose-starters__label">أفكار للبدء:</span>
+            <div className="compose-starters__list">
+              {STARTER_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="starter-chip"
+                  data-starter-prompt={prompt}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
+            }}
+          />
           <div className="field-row">
             {/* The field had a placeholder and no label, so a screen reader
                 announced it as an unnamed text area. The label is visually
