@@ -1903,6 +1903,16 @@ main{
   color:var(--text-1);
 }
 
+.compose-rule{
+  font:var(--type-micro);
+  color:var(--text-3);
+  padding:2px 8px;
+  border-radius:9999px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  white-space:nowrap;
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 

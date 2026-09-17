@@ -157,6 +157,7 @@ export default async function SendPage({
           </div>
           <div className="compose-meta">
             <span className="hint" aria-live="polite">الحد الأقصى 4000 حرف</span>
+            <span className="compose-rule" aria-live="polite">حرفين على الأقل للبدء</span>
             <span id="draft-status" className="draft-indicator" aria-live="polite" />
           </div>
           <p className="notice">
