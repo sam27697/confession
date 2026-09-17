@@ -120,7 +120,7 @@ function wrapCentred(
   if (line) ctx.fillText(line, centreX, y)
 }
 
-function draw(canvas: HTMLCanvasElement, prompt: string, linkLabel: string): void {
+function draw(canvas: HTMLCanvasElement, prompt: string, linkLabel: string, reactionText?: string): void {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
@@ -185,15 +185,22 @@ function draw(canvas: HTMLCanvasElement, prompt: string, linkLabel: string): voi
 
   ctx.fillStyle = p.citron
   ctx.font = `bold 36px ${p.fontAr}`
-  ctx.fillText('سؤال الستوري', centre, cardY + 90)
+  ctx.fillText(reactionText ? 'وصلني اعتراف بالسر' : 'سؤال الستوري', centre, cardY + 90)
 
   ctx.fillStyle = p.text1
   ctx.font = `bold 50px ${p.fontAr}`
-  wrapCentred(ctx, prompt, centre, cardY + 230, cardW - 120, 76)
+  const bodyText = reactionText
+    ? (reactionText.length > 240 ? reactionText.slice(0, 237) + '...' : reactionText)
+    : prompt
+  wrapCentred(ctx, reactionText ? `«${bodyText}»` : bodyText, centre, cardY + 230, cardW - 120, 76)
 
   ctx.fillStyle = p.text2
   ctx.font = `400 32px ${p.fontAr}`
-  ctx.fillText('احكيلي اللي بقلبك بالسر وبدون ما اعرف مين إنت', centre, cardY + cardH - 80)
+  ctx.fillText(
+    reactionText ? 'صارحوني بالسر وبدون ما اعرف مين انتو' : 'احكيلي اللي بقلبك بالسر وبدون ما اعرف مين إنت',
+    centre,
+    cardY + cardH - 80,
+  )
 
   const stickW = 840
   const stickH = 140
@@ -218,7 +225,19 @@ function draw(canvas: HTMLCanvasElement, prompt: string, linkLabel: string): voi
   ctx.fillText('حط رابطك بستيكر الرابط بالستوري ليقدروا يجاوبوك مباشرة', centre, 1540)
 }
 
-export function StoryCard({ url, slug }: { url: string; slug: string }) {
+export function StoryCard({
+  url,
+  slug,
+  reactionText,
+  buttonText = 'بطاقة الستوري ✨',
+  buttonClass = 'btn btn--secondary btn--sm',
+}: {
+  url: string
+  slug: string
+  reactionText?: string
+  buttonText?: string
+  buttonClass?: string
+}) {
   const { toast } = useToast()
   const [ready, setReady] = useState(false)
   const [open, setOpen] = useState(false)
@@ -240,8 +259,8 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
   useEffect(() => {
     if (!open) return
     const canvas = canvasRef.current
-    if (canvas) draw(canvas, PROMPTS[prompt]!, linkLabel)
-  }, [open, prompt, linkLabel])
+    if (canvas) draw(canvas, PROMPTS[prompt]!, linkLabel, reactionText)
+  }, [open, prompt, linkLabel, reactionText])
 
   // Escape closes, the sheet takes focus on open and hands it back on close,
   // and the page behind does not scroll while it is up.
@@ -293,18 +312,19 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
   }, [slug, shareUrl, toast])
 
   const handleCopyCaption = useCallback(() => {
-    const activePrompt = PROMPTS[prompt] || ''
-    const caption = `حطيت رابط الصندوق بالستيكر فوق، احكولي بصراحة وبالسر وبدون ما اعرف مين انتو ✨\n«${activePrompt}»\n${shareUrl}`
+    const caption = reactionText
+      ? `وصلني اعتراف بالسر عالصندوق 👀\n«${reactionText.length > 120 ? reactionText.slice(0, 117) + '...' : reactionText}»\nاحكولي انتو كمان عالرابط بالستيكر:\n${shareUrl}`
+      : `حطيت رابط الصندوق بالستيكر فوق، احكولي بصراحة وبالسر وبدون ما اعرف مين انتو ✨\n«${PROMPTS[prompt] || ''}»\n${shareUrl}`
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(caption)
         .then(() => {
-          toast('تم نسخ كابشن الستوري.', 'citron')
+          toast(reactionText ? 'تم نسخ كابشن الرد للستوري.' : 'تم نسخ كابشن الستوري.', 'citron')
         })
         .catch(() => {
           toast('ما قدرنا ننسخ الكابشن.', 'danger')
         })
     }
-  }, [prompt, shareUrl, toast])
+  }, [reactionText, prompt, shareUrl, toast])
 
   if (!ready) return null
 
@@ -313,10 +333,10 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
       <button
         ref={triggerRef}
         type="button"
-        className="btn btn--secondary btn--sm"
+        className={buttonClass}
         onClick={() => setOpen(true)}
       >
-        بطاقة الستوري ✨
+        {buttonText}
       </button>
 
       {/* Portalled to <body>, and not as a matter of taste. This button
@@ -336,37 +356,43 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
             className="modal-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="بطاقة الستوري"
+            aria-label={reactionText ? 'بطاقة الرد على الستوري' : 'بطاقة الستوري'}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal__head">
-              <span>قوالب الستوري</span>
+              <span>{reactionText ? 'بطاقة الرد على الستوري' : 'قوالب الستوري'}</span>
               <button ref={closeRef} type="button" className="btn btn--secondary btn--sm" onClick={() => setOpen(false)}>
                 سكّر
               </button>
             </div>
 
-            <p className="hint">اختر السؤال يلي بدك تحطه بالستوري:</p>
+            {reactionText ? (
+              <p className="hint">شارك ردك على هالاعتراف بالستوري مع رابط صندوقك:</p>
+            ) : (
+              <>
+                <p className="hint">اختر السؤال يلي بدك تحطه بالستوري:</p>
 
-            <div className="story-prompts">
-              {PROMPTS.map((p, i) => {
-                const isActive = i === prompt
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    className={isActive ? 'prompt-pill prompt-pill--active' : 'prompt-pill'}
-                    aria-pressed={isActive}
-                    onClick={() => setPrompt(i)}
-                  >
-                    {p}
-                  </button>
-                )
-              })}
-            </div>
+                <div className="story-prompts">
+                  {PROMPTS.map((p, i) => {
+                    const isActive = i === prompt
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        className={isActive ? 'prompt-pill prompt-pill--active' : 'prompt-pill'}
+                        aria-pressed={isActive}
+                        onClick={() => setPrompt(i)}
+                      >
+                        {p}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
             <div className="story-preview">
-              <canvas ref={canvasRef} aria-label="معاينة بطاقة الستوري" />
+              <canvas ref={canvasRef} aria-label={reactionText ? 'معاينة بطاقة الرد' : 'معاينة بطاقة الستوري'} />
             </div>
 
             <div className="story-actions">
@@ -374,7 +400,7 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
                 نزّل وشارك
               </button>
               <button type="button" className="btn btn--secondary btn--block" onClick={handleCopyCaption}>
-                نسخ كابشن الستوري
+                {reactionText ? 'نسخ كابشن الرد' : 'نسخ كابشن الستوري'}
               </button>
             </div>
           </div>

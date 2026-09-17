@@ -307,6 +307,13 @@ export default async function InboxPage({
               validation attribute changes here, which is what lets §0 and
               acceptance item 17 stay true across the restructure. */}
           <div className="msg__actions">
+            <StoryCard
+              url={`${env.appOrigin}/c/${link.slug}`}
+              slug={link.slug}
+              reactionText={m.body}
+              buttonText="شارك ردك بالستوري"
+              buttonClass="btn btn--ghost btn--sm"
+            />
             <details className="msg__more">
               <summary className="btn btn--ghost btn--sm">خيارات</summary>
               <div className="msg__more-body">
