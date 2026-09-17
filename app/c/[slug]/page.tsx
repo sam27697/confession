@@ -114,8 +114,10 @@ export default async function SendPage({
               __html: `try{sessionStorage.removeItem('confession_draft_${slug}');}catch(e){void e;}`,
             }}
           />
-          <div className="card" style={{ marginTop: '1rem' }}>
-            <p className="hint">تقدر تشوف الرسائل اللي أرسلتها من صندوق الرسائل المرسلة.</p>
+          <div className="card reciprocal-card">
+            <p className="hint">حابب تعرف شو مخبيلك أصحابك بقلبهم؟</p>
+            <p className="reciprocal-card__pitch">افتح صندوقك السري وشارك رابطك مع رفقاتك ليصارحوك.</p>
+            <a className="btn btn--primary btn--block" href="/inbox">افتح صندوقك السري {ACTION_EMOJI.send}</a>
             <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
           </div>
           <Celebrate />

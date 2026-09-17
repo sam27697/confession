@@ -697,6 +697,38 @@ main{
 .empty p:first-of-type{font:var(--type-subtitle);color:var(--text-1)}
 .empty p:last-of-type{font:var(--type-body-sm);color:var(--text-2);max-width:30ch}
 
+.inbox-empty{
+  gap:var(--space-3);
+}
+
+.inbox-empty__title{
+  font:var(--type-subtitle);
+  color:var(--text-1);
+}
+
+.inbox-empty__text{
+  font:var(--type-body-sm);
+  color:var(--text-2);
+  max-width:32ch;
+  line-height:var(--lh-body);
+}
+
+.empty-spark{
+  display:inline-block;
+  font:var(--type-caption);
+  color:var(--citron-300);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,0.25);
+  border-radius:var(--radius-pill);
+  padding:var(--space-1) var(--space-3);
+  margin-top:var(--space-2);
+}
+
+.filter-empty{
+  margin-top:var(--space-3);
+  padding:var(--space-6) var(--space-4);
+}
+
 .toggle{
   display:flex;
   align-items:center;
@@ -974,6 +1006,41 @@ main{
   box-shadow:var(--glow-rose);
 }
 
+.reveal-seal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+  margin-bottom:var(--space-3);
+  padding-bottom:var(--space-2);
+  border-bottom:1px solid var(--line);
+}
+
+.reveal-seal__identity{
+  font:var(--type-body-sm);
+  color:var(--citron-100);
+  font-weight:var(--weight-bold);
+}
+
+.reveal-dialogue{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+
+.reveal-dialogue__item{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-1);
+}
+
+.reveal-dialogue__text{
+  font:var(--type-body);
+  line-height:var(--lh-body);
+  color:var(--text-1);
+  margin:0;
+}
+
 /* ---- legal (terms & privacy prose) ------------------------------------ */
 
 .legal{
@@ -1160,23 +1227,37 @@ main{
   color:var(--citron-300);
 }
 
-.story-prompts{display:flex;flex-direction:column;gap:var(--space-2)}
+.story-prompts{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  gap:var(--space-2);
+  max-height:160px;
+  overflow-y:auto;
+}
 
 .prompt-pill{
   min-height:var(--tap-min);
-  padding:12px 14px;
+  padding:8px 12px;
   text-align:start;
   background:var(--bg-field);
   border:1px solid var(--line);
   border-radius:var(--radius-md);
   color:var(--text-2);
-  font:var(--type-body-sm);
+  font:var(--type-caption);
   letter-spacing:var(--tracking-ar);
   cursor:pointer;
   transition:var(--transition-control);
 }
 .prompt-pill:hover{border-color:var(--line-strong);color:var(--text-1)}
 .prompt-pill--active{background:var(--citron-wash);border-color:rgba(214,242,91,.32);color:var(--citron-100)}
+
+.story-actions{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+  margin-top:var(--space-3);
+}
 
 .story-preview{
   display:flex;
@@ -1280,8 +1361,9 @@ main{
 
 /* The reveal panel is the payoff of the whole product. When it resolves it
    arrives rather than appears. */
-.reveal--resolved{animation:reveal-land var(--dur-reveal) var(--ease-out) both}
-@keyframes reveal-land{
+.reveal--resolved,
+.sent-resolved{animation:revealUnmask var(--dur-reveal) var(--ease-out) both}
+@keyframes revealUnmask{
   0%{opacity:0;transform:translateY(10px) scale(.98)}
   100%{opacity:1;transform:none}
 }
@@ -1290,7 +1372,8 @@ main{
   /* The component already refuses to render under this preference; the rule
      is here as well so the styling cannot outlive a change to that logic. */
   .celebrate{display:none}
-  .reveal--resolved{animation:none}
+  .reveal--resolved,
+  .sent-resolved{animation:none}
   .btn--primary:active,.btn--reveal:active,.btn--secondary:active{transform:none}
 }
 /* ============================================================
@@ -1644,6 +1727,18 @@ main{
   color:var(--text-1);
 }
 
+.sent-resolved__seal{
+  display:flex;
+  align-items:center;
+  margin-bottom:var(--space-2);
+}
+
+.sent-resolved__dialogue{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+
 .sent-filters{
   display:flex;
   gap:var(--space-2);
@@ -1687,6 +1782,20 @@ main{
   font:var(--type-micro);
   color:var(--text-3);
   transition:color var(--dur-hover) var(--ease-standard);
+}
+
+.reciprocal-card{
+  margin-top:var(--space-4);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+  text-align:center;
+}
+
+.reciprocal-card__pitch{
+  font:var(--type-body);
+  color:var(--text-1);
+  margin:0;
 }
 
 @media (prefers-reduced-motion:reduce){

@@ -29,12 +29,20 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'resolved') {
     return (
       <div className="reveal reveal--resolved">
-        <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشفوا الاتنين</span>
-        <p>هو: {reveal.senderDisplayName}</p>
-        <p className="hint">جوابه</p>
-        <p>{reveal.senderAnswer}</p>
-        <p className="hint">جوابك</p>
-        <p>{reveal.recipientAnswer}</p>
+        <div className="reveal-seal">
+          <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر</span>
+          <strong className="reveal-seal__identity">{reveal.senderDisplayName}</strong>
+        </div>
+        <div className="reveal-dialogue">
+          <div className="reveal-dialogue__item">
+            <span className="hint">جوابه</span>
+            <p className="reveal-dialogue__text">{reveal.senderAnswer}</p>
+          </div>
+          <div className="reveal-dialogue__item">
+            <span className="hint">جوابك</span>
+            <p className="reveal-dialogue__text">{reveal.recipientAnswer}</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -175,6 +183,7 @@ export default async function InboxPage({
   }
 
   const messages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId })
+  const confessions = messages
   const visible = messages.filter((m) => m.status !== 'hidden_by_recipient')
   const now = new Date()
   const totalCount = visible.length
@@ -242,10 +251,11 @@ export default async function InboxPage({
 
       {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
-      {visible.length === 0 && (
-        <div className="empty">
-          <p>{MOOD_EMOJI.emptyInbox} صندوقك لسا فاضي</p>
-          <p>حط رابطك بستوري أو بالبايو. أول رسالة بتوصل أسرع مما تتخيل.</p>
+      {(confessions.length === 0 || visible.length === 0) && (
+        <div className="empty inbox-empty">
+          <p className="inbox-empty__title">{MOOD_EMOJI.emptyInbox} نوّرت الصندوق، لسا عم نستنى أول مصارحة</p>
+          <p className="inbox-empty__text">حط رابطك بستوري أو بالبايو، واطلب من رفقاتك يحكولك اللي بقلبهم بالسر.</p>
+          <span className="empty-spark">سؤال مقترح: «اعترف بشي بتحبه فيني ومستحيل تتجرأ تحكيه؟»</span>
         </div>
       )}
 
