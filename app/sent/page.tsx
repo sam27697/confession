@@ -1,6 +1,7 @@
 import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
-import { getSentForSender } from '../_lib/domain/views.js'
+import { getInboxForRecipient, getSentForSender } from '../_lib/domain/views.js'
+import { getLinkForOwner } from '../_lib/domain/links.js'
 import type { SentConfession } from '../_lib/domain/views.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
@@ -61,6 +62,12 @@ export default async function SentPage({
   const db = getDb()
   const senderAccountId = await requireActiveViewerAccountId(db)
   const messages = await getSentForSender(db, { senderAccountId })
+  const link = await getLinkForOwner(db, { ownerAccountId: senderAccountId })
+  let totalInbox = 0
+  if (link) {
+    const inboxMessages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId: senderAccountId })
+    totalInbox = inboxMessages.filter((m) => m.status !== 'hidden_by_recipient').length
+  }
   const now = new Date()
   const totalSent = messages.length
   const isSentEmpty = totalSent === 0
@@ -82,10 +89,12 @@ export default async function SentPage({
     <div className="enter">
       <nav className="app-nav" aria-label="التنقل الرئيسي">
         <a href="/inbox" className="app-nav__tab">
-          صندوقي
+          <span>صندوقي</span>
+          <span className="app-nav__badge">{totalInbox}</span>
         </a>
         <a href="/sent" className="app-nav__tab app-nav__tab--active" aria-current="page">
-          الرسائل المرسلة
+          <span>الرسائل المرسلة</span>
+          <span className="app-nav__badge">{totalSent}</span>
         </a>
       </nav>
 

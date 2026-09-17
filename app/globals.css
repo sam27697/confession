@@ -1881,6 +1881,7 @@ main{
   display:flex;
   align-items:center;
   justify-content:center;
+  gap:var(--space-2);
   min-height:44px;
   padding:var(--space-2) var(--space-3);
   border-radius:var(--radius-pill);
@@ -1899,6 +1900,51 @@ main{
   background:var(--surface-2);
   color:var(--text-1);
   box-shadow:inset 0 -2px 0 var(--citron-500),0 2px 8px -2px var(--citron-glow);
+}
+
+.app-nav__badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:20px;
+  padding:0 var(--space-1);
+  border-radius:var(--radius-pill);
+  font:var(--type-micro);
+  font-weight:var(--weight-bold);
+  line-height:1;
+  background:var(--surface-3);
+  color:var(--text-2);
+  transition:background var(--dur-hover) var(--ease-standard),color var(--dur-hover) var(--ease-standard);
+}
+
+.app-nav__tab--active .app-nav__badge{
+  background:var(--citron-wash);
+  color:var(--citron-300);
+}
+
+.view-breadcrumb{
+  display:flex;
+  align-items:center;
+  margin-bottom:var(--space-4);
+}
+
+.view-breadcrumb__link{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--space-2);
+  min-height:44px;
+  padding:var(--space-2) var(--space-3);
+  border-radius:var(--radius-pill);
+  font:var(--type-caption);
+  color:var(--text-2);
+  text-decoration:none;
+  transition:color var(--dur-hover) var(--ease-standard),background var(--dur-hover) var(--ease-standard);
+}
+
+.view-breadcrumb__link:hover{
+  color:var(--text-1);
+  background:var(--surface-2);
 }
 
 .offer-actions{
@@ -2104,6 +2150,98 @@ main{
   font: var(--type-caption);
   color: var(--text-2);
   text-align: center;
+}
+
+/* Data sovereignty card on /account/delete (A3-T01) */
+.sovereignty-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.sovereignty-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--line);
+}
+
+.sovereignty-card__section--purged {
+  background: var(--danger-wash);
+  border-color: rgba(255, 92, 77, 0.25);
+}
+
+.sovereignty-card__section--preserved {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.sovereignty-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sovereignty-card__badge {
+  font: var(--type-caption);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.sovereignty-card__badge--purged {
+  background: var(--danger-hover);
+  color: var(--text-on-accent);
+}
+
+.sovereignty-card__badge--preserved {
+  background: var(--surface-3);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+}
+
+.sovereignty-card__title {
+  font: var(--type-ui-strong);
+  margin: 0;
+  color: var(--text-1);
+}
+
+.sovereignty-card__text {
+  font: var(--type-body);
+  color: var(--text-2);
+  line-height: var(--lh-snug);
+  margin: 0;
+}
+
+.sovereignty-card__final-hint {
+  font: var(--type-caption);
+  color: var(--danger-500);
+  margin: 0;
+  text-align: center;
+}
+
+.sovereignty-card__actions {
+  margin-bottom: var(--space-4);
+}
+
+/* Policy return navigation (A3-T02) */
+.policy-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.policy-return {
+  min-height: var(--tap-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */

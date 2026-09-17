@@ -13,6 +13,9 @@
 export default function PrivacyPage() {
   return (
     <div>
+      <div className="policy-header">
+        <a className="policy-return btn btn--ghost btn--sm" href="/inbox">→ رجوع</a>
+      </div>
       <h1>سياسة الخصوصية</h1>
       <div className="legal" dir="rtl">
         <p>هيك منخزن معلومات عنك بالظبط:</p>

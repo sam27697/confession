@@ -52,3 +52,9 @@ WHY: While personal link sharing is supported by StoryCard, recipients in /inbox
 ALTERNATIVES: Generic external social icons (rejected: lacks personalized emotional content; provides poor viral conversion).
 REVERSIBLE: yes.
 REVERSES: none.
+## D-009 2026-09-17 A3 Step 3
+DECISION: Focus Cycle A3 on non-destructive secondary view wayfinding, structured data sovereignty on account deletion, and quantitative activity volume badges
+WHY: Users navigating to /terms and /privacy currently encounter dead ends with zero in-app return navigation; /account/delete causes intense anxiety with fragmented danger warnings and a buried safe exit; and active users on /inbox and /sent lack ambient message volume recognition. Providing return navigation, structured deletion transparency, and ambient tab counts completes architectural continuity.
+ALTERNATIVES: Rely on browser back buttons and keep deletion warnings unstructured (rejected: violates Principle 6 and increases cognitive anxiety).
+REVERSIBLE: yes.
+REVERSES: none.
