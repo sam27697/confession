@@ -21,20 +21,32 @@ export default async function DeleteAccountPage({
     <div>
       <h1>حذف الحساب</h1>
 
-      <div className="notice notice--danger">
-        <p>شو رح ينمحي</p>
-        <p>اسمك، وربط حسابك بفيسبوك، وقدرتك إنك ترجع تفوت على نفس الحساب، ورابطك، يلي بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.</p>
+      <div className="sovereignty-card">
+        <div className="sovereignty-card__section sovereignty-card__section--purged">
+          <div className="sovereignty-card__header">
+            <span className="sovereignty-card__badge sovereignty-card__badge--purged">سيتم الحذف</span>
+            <h2 className="sovereignty-card__title">شو رح ينمحي</h2>
+          </div>
+          <p className="sovereignty-card__text">اسمك، وربط حسابك بفيسبوك، وقدرتك إنك ترجع تفوت على نفس الحساب، ورابطك، يلي بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.</p>
+        </div>
+
+        <div className="sovereignty-card__section sovereignty-card__section--preserved">
+          <div className="sovereignty-card__header">
+            <span className="sovereignty-card__badge sovereignty-card__badge--preserved">يبقى محفوظاً</span>
+            <h2 className="sovereignty-card__title">شو بيضل</h2>
+          </div>
+          <p className="sovereignty-card__text">
+            الرسائل يلي بعتها بتضل عند الإدارة، مربوطة برقم حساب بلا اسم. الرسائل يلي وصلتك بتضل كمان. وجوابك بأي
+            مصارحة متبادلة ما منقدر نشيله.
+          </p>
+        </div>
+
+        <p className="sovereignty-card__final-hint">حذف الحساب نهائي وما فيك ترجع عنه.</p>
       </div>
 
-      <div className="notice notice--danger">
-        <p>شو بيضل</p>
-        <p>
-          الرسائل يلي بعتها بتضل عند الإدارة، مربوطة برقم حساب بلا اسم. الرسائل يلي وصلتك بتضل كمان. وجوابك بأي
-          مصارحة متبادلة ما منقدر نشيله.
-        </p>
+      <div className="sovereignty-card__actions">
+        <a className="btn btn--secondary btn--block" href="/inbox">رجوع بلا حذف - احتفظ بحسابي</a>
       </div>
-
-      <p className="notice notice--danger">حذف الحساب نهائي وما فيك ترجع عنه.</p>
 
       {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
@@ -50,8 +62,6 @@ export default async function DeleteAccountPage({
             deleteAccount call. */}
         <SubmitButton className="btn btn--danger-solid btn--block" loadingText="عم ينحذف...">احذف حسابي</SubmitButton>
       </form>
-
-      <a className="btn btn--ghost" href="/inbox">رجوع بلا حذف</a>
     </div>
   )
 }
