@@ -175,6 +175,7 @@ export default async function InboxPage({
   }
 
   const messages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId })
+  const confessions = messages
   const visible = messages.filter((m) => m.status !== 'hidden_by_recipient')
   const now = new Date()
   const totalCount = visible.length
@@ -242,10 +243,11 @@ export default async function InboxPage({
 
       {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
-      {visible.length === 0 && (
-        <div className="empty">
-          <p>{MOOD_EMOJI.emptyInbox} صندوقك لسا فاضي</p>
-          <p>حط رابطك بستوري أو بالبايو. أول رسالة بتوصل أسرع مما تتخيل.</p>
+      {(confessions.length === 0 || visible.length === 0) && (
+        <div className="empty inbox-empty">
+          <p className="inbox-empty__title">{MOOD_EMOJI.emptyInbox} نوّرت الصندوق، لسا عم نستنى أول مصارحة</p>
+          <p className="inbox-empty__text">حط رابطك بستوري أو بالبايو، واطلب من رفقاتك يحكولك اللي بقلبهم بالسر.</p>
+          <span className="empty-spark">سؤال مقترح: «اعترف بشي بتحبه فيني ومستحيل تتجرأ تحكيه؟»</span>
         </div>
       )}
 

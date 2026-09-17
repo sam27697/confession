@@ -697,6 +697,38 @@ main{
 .empty p:first-of-type{font:var(--type-subtitle);color:var(--text-1)}
 .empty p:last-of-type{font:var(--type-body-sm);color:var(--text-2);max-width:30ch}
 
+.inbox-empty{
+  gap:var(--space-3);
+}
+
+.inbox-empty__title{
+  font:var(--type-subtitle);
+  color:var(--text-1);
+}
+
+.inbox-empty__text{
+  font:var(--type-body-sm);
+  color:var(--text-2);
+  max-width:32ch;
+  line-height:var(--lh-body);
+}
+
+.empty-spark{
+  display:inline-block;
+  font:var(--type-caption);
+  color:var(--citron-300);
+  background:var(--citron-wash);
+  border:1px solid rgba(214,242,91,0.25);
+  border-radius:var(--radius-pill);
+  padding:var(--space-1) var(--space-3);
+  margin-top:var(--space-2);
+}
+
+.filter-empty{
+  margin-top:var(--space-3);
+  padding:var(--space-6) var(--space-4);
+}
+
 .toggle{
   display:flex;
   align-items:center;

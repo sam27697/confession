@@ -110,11 +110,25 @@ export default async function SentPage({
         </div>
       )}
 
-      {isSentEmpty && (
+      {totalSent === 0 && (
         <div className="sent-empty">
           <div className="sent-empty__icon" aria-hidden="true">{MOOD_EMOJI.nothingSent}</div>
           <p className="sent-empty__title">لسا ما بعتّ شي.</p>
           <p className="sent-empty__desc">أي اعتراف بتبعته لحدا رح يظهر هون، وتشوف إذا وصل أو وصلك رد عليه.</p>
+          <a className="btn btn--secondary btn--sm" href="/inbox">صندوقي السري</a>
+        </div>
+      )}
+
+      {!isSentEmpty && filteredMessages.length === 0 && (
+        <div className="sent-empty filter-empty">
+          <p className="sent-empty__title">
+            {isPendingFilter ? 'ما في رسائل معلّقة عم تستنى رد هلق.' : 'لسا ما في مصارحات انكشفت.'}
+          </p>
+          <p className="sent-empty__desc">
+            {isPendingFilter
+              ? 'لما حدا يبعتلك عرض مصارحة أو تبعت عرض لحدا، بتلاقيه هون.'
+              : 'المصارحات اللي وافق الطرفين على كشفها بتظهر هون.'}
+          </p>
         </div>
       )}
 
