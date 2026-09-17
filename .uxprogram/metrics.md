@@ -201,3 +201,27 @@
 | total tests passing | test suite | 353 | 353 | .uxprogram/logs/20260917-121020-c2-test-report.log.log |
 | ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-121656-c2-gate.log.log |
 | project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-121656-c2-gate.log.log |
+## cycle D2 2026-09-17
+| Metric | Scope | Value | Best so far | Evidence |
+|---|---|---|---|---|
+| taps | send-confession | 2 | 2 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| decisions | send-confession | 2 | 2 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| effort s | send-confession | 4.50 | 4.50 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| taps | view-inbox | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| decisions | view-inbox | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| effort s | view-inbox | 2.55 | 2.55 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| taps | offer-mutual-reveal | 2 | 2 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| decisions | offer-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| effort s | offer-mutual-reveal | 4.25 | 4.25 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| taps | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| decisions | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| effort s | respond-mutual-reveal | 3.05 | 3.05 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| taps | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| decisions | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| effort s | onboarding-terms | 3.05 | 3.05 | .uxprogram/logs/20260917-122609-d2-effort.log.log |
+| confession quote-to-story creation steps | /inbox | 1 tap | 1 tap | .uxprogram/logs/20260917-123324-d2-t01-checks-pass.log.log |
+| daily inspiration prompts on empty inbox | /inbox | 1 rotating | 1 rotating | .uxprogram/logs/20260917-123826-d2-t02-checks-pass.log.log |
+| post-send friend challenge share gestures | /c/[slug] | 1 tap | 1 tap | .uxprogram/logs/20260917-124056-d2-t03-checks-pass.log.log |
+| total tests passing | test suite | 369 | 369 | .uxprogram/logs/20260917-124923-d2-test-report.log.log |
+| ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-125939-d2-gate.log.log |
+| project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-125939-d2-gate.log.log |

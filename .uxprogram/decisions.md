@@ -46,3 +46,9 @@ WHY: Measures from effort_calc show send-confession requires 13.60s KLM with 40 
 ALTERNATIVES: Add character countdown bells or mandatory prompt wizards (rejected: adds pressure and increases interaction friction).
 REVERSIBLE: yes.
 REVERSES: none.
+## D-008 2026-09-17 D2 Step 3
+DECISION: Focus Cycle D2 on viral confession reaction sharing, daily Levantine community sparks, and celebratory unmasking payoff
+WHY: While personal link sharing is supported by StoryCard, recipients in /inbox currently lack an anonymized reaction share loop to post received confessions to Instagram/WhatsApp stories. Coupling 1-tap reaction share cards with daily rotating Levantine sparks closes the viral loop and gives users recurring reasons to return.
+ALTERNATIVES: Generic external social icons (rejected: lacks personalized emotional content; provides poor viral conversion).
+REVERSIBLE: yes.
+REVERSES: none.
