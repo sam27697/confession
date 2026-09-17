@@ -1,7 +1,7 @@
 import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
 import { getLinkForOwner } from '../_lib/domain/links.js'
-import { getInboxForRecipient } from '../_lib/domain/views.js'
+import { getInboxForRecipient, getSentForSender } from '../_lib/domain/views.js'
 import type { RecipientConfession } from '../_lib/domain/views.js'
 import { env } from '../_lib/domain/env.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
@@ -198,6 +198,8 @@ export default async function InboxPage({
   const visible = messages.filter((m) => m.status !== 'hidden_by_recipient')
   const now = new Date()
   const totalCount = visible.length
+  const sentMessages = await getSentForSender(db, { senderAccountId: viewerAccountId })
+  const totalSent = sentMessages.length
   const isInboxEmpty = totalCount === 0
   const dayIndex = Math.floor(now.getTime() / 86400000) % DAILY_SPARKS.length
   const sparkOfTheDay = DAILY_SPARKS[Math.abs(dayIndex)] || DAILY_SPARKS[0]
@@ -206,10 +208,12 @@ export default async function InboxPage({
     <div className="enter">
       <nav className="app-nav" aria-label="التنقل الرئيسي">
         <a href="/inbox" className="app-nav__tab app-nav__tab--active" aria-current="page">
-          صندوقي
+          <span>صندوقي</span>
+          <span className="app-nav__badge">{totalCount}</span>
         </a>
         <a href="/sent" className="app-nav__tab">
-          الرسائل المرسلة
+          <span>الرسائل المرسلة</span>
+          <span className="app-nav__badge">{totalSent}</span>
         </a>
       </nav>
 
