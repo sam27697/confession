@@ -1644,8 +1644,40 @@ main{
   color:var(--text-1);
 }
 
+.sent-filters{
+  display:flex;
+  gap:var(--space-2);
+  margin-bottom:var(--space-4);
+}
+
+.sent-filter{
+  display:inline-flex;
+  align-items:center;
+  padding:var(--space-1) var(--space-3);
+  font:var(--type-caption);
+  color:var(--text-2);
+  background:var(--surface-1);
+  border:1px solid var(--border-card);
+  border-radius:var(--radius-pill);
+  text-decoration:none;
+  transition:background var(--dur-hover) var(--ease-standard),color var(--dur-hover) var(--ease-standard);
+}
+
+.sent-filter:hover{
+  background:var(--surface-2);
+  color:var(--text-1);
+}
+
+.sent-filter--active{
+  background:var(--citron-wash);
+  border-color:rgba(214,242,91,0.3);
+  color:var(--citron-300);
+  font-weight:var(--weight-medium);
+}
+
 @media (prefers-reduced-motion:reduce){
   .send-avatar,.sent-badge{animation:none}
 }
 
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
+
