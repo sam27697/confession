@@ -98,7 +98,7 @@ export function CopyLink({
         type="button"
         className={copied ? `${className} btn--copied` : className}
         onClick={handleAction}
-        aria-label={label}
+        aria-label="مشاركة الرابط أو نسخه"
       >
         {copied ? copiedLabel : label}
       </button>
