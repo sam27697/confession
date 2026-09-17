@@ -192,7 +192,7 @@ export default async function SentPage({
       })}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){document.addEventListener('click',async function(e){var b=e.target.closest('button[data-copy-text]');if(!b)return;var txt=b.getAttribute('data-copy-text');if(!txt)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}else{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('msg__copy-btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('msg__copy-btn--copied');},1500);}catch(err){b.textContent='فشل النسخ';setTimeout(function(){b.textContent='انسخ النص';},1500);}});})();`,
+          __html: `(function(){document.addEventListener('click',async function(e){var b=e.target.closest('button[data-copy-text]');if(!b)return;var txt=b.getAttribute('data-copy-text');if(!txt)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}else{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1500);}catch(err){b.textContent='فشل النسخ';setTimeout(function(){b.textContent='انسخ النص';},1500);}});})();`,
         }}
       />
     </div>

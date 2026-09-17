@@ -2017,12 +2017,6 @@ main{
   transform: scale(var(--press-scale));
 }
 
-.msg__copy-btn--copied {
-  border-color: var(--citron-500);
-  background: var(--citron-wash);
-  color: var(--citron-400);
-}
-
 /* Offer response starters (C2-T04) */
 .offer-starters {
   display: flex;
