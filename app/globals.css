@@ -1006,6 +1006,41 @@ main{
   box-shadow:var(--glow-rose);
 }
 
+.reveal-seal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-2);
+  margin-bottom:var(--space-3);
+  padding-bottom:var(--space-2);
+  border-bottom:1px solid var(--line);
+}
+
+.reveal-seal__identity{
+  font:var(--type-body-sm);
+  color:var(--citron-100);
+  font-weight:var(--weight-bold);
+}
+
+.reveal-dialogue{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+
+.reveal-dialogue__item{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-1);
+}
+
+.reveal-dialogue__text{
+  font:var(--type-body);
+  line-height:var(--lh-body);
+  color:var(--text-1);
+  margin:0;
+}
+
 /* ---- legal (terms & privacy prose) ------------------------------------ */
 
 .legal{
@@ -1326,8 +1361,9 @@ main{
 
 /* The reveal panel is the payoff of the whole product. When it resolves it
    arrives rather than appears. */
-.reveal--resolved{animation:reveal-land var(--dur-reveal) var(--ease-out) both}
-@keyframes reveal-land{
+.reveal--resolved,
+.sent-resolved{animation:revealUnmask var(--dur-reveal) var(--ease-out) both}
+@keyframes revealUnmask{
   0%{opacity:0;transform:translateY(10px) scale(.98)}
   100%{opacity:1;transform:none}
 }
@@ -1336,7 +1372,8 @@ main{
   /* The component already refuses to render under this preference; the rule
      is here as well so the styling cannot outlive a change to that logic. */
   .celebrate{display:none}
-  .reveal--resolved{animation:none}
+  .reveal--resolved,
+  .sent-resolved{animation:none}
   .btn--primary:active,.btn--reveal:active,.btn--secondary:active{transform:none}
 }
 /* ============================================================
@@ -1690,6 +1727,18 @@ main{
   color:var(--text-1);
 }
 
+.sent-resolved__seal{
+  display:flex;
+  align-items:center;
+  margin-bottom:var(--space-2);
+}
+
+.sent-resolved__dialogue{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+
 .sent-filters{
   display:flex;
   gap:var(--space-2);
@@ -1733,6 +1782,8 @@ main{
   font:var(--type-micro);
   color:var(--text-3);
   transition:color var(--dur-hover) var(--ease-standard);
+}
+
 .reciprocal-card{
   margin-top:var(--space-4);
   display:flex;

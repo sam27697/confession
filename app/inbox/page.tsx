@@ -29,12 +29,20 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
   if (reveal.kind === 'resolved') {
     return (
       <div className="reveal reveal--resolved">
-        <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشفوا الاتنين</span>
-        <p>هو: {reveal.senderDisplayName}</p>
-        <p className="hint">جوابه</p>
-        <p>{reveal.senderAnswer}</p>
-        <p className="hint">جوابك</p>
-        <p>{reveal.recipientAnswer}</p>
+        <div className="reveal-seal">
+          <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر</span>
+          <strong className="reveal-seal__identity">{reveal.senderDisplayName}</strong>
+        </div>
+        <div className="reveal-dialogue">
+          <div className="reveal-dialogue__item">
+            <span className="hint">جوابه</span>
+            <p className="reveal-dialogue__text">{reveal.senderAnswer}</p>
+          </div>
+          <div className="reveal-dialogue__item">
+            <span className="hint">جوابك</span>
+            <p className="reveal-dialogue__text">{reveal.recipientAnswer}</p>
+          </div>
+        </div>
       </div>
     )
   }

@@ -34,13 +34,18 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   // the inbox link block. The rose tint is the signal here.
   return (
     <div className="card card--rose card--bubble sent-resolved">
-      <div className="sent-resolved__item">
-        <p className="hint">جوابك</p>
-        <p className="sent-resolved__text">{offer.senderAnswer}</p>
+      <div className="sent-resolved__seal">
+        <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر بينكم</span>
       </div>
-      <div className="sent-resolved__item">
-        <p className="hint">جوابها</p>
-        <p className="sent-resolved__text">{offer.recipientAnswer}</p>
+      <div className="sent-resolved__dialogue">
+        <div className="sent-resolved__item">
+          <span className="hint">جوابك</span>
+          <p className="sent-resolved__text">{offer.senderAnswer}</p>
+        </div>
+        <div className="sent-resolved__item">
+          <span className="hint">جوابها</span>
+          <p className="sent-resolved__text">{offer.recipientAnswer}</p>
+        </div>
       </div>
     </div>
   )
