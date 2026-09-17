@@ -130,7 +130,7 @@ export default async function SendPage({
             <div className="friend-challenge">
               <span className="friend-challenge__label">أو تحدى رفقاتك يصارحوا {link.ownerDisplayName}:</span>
               <CopyLink
-                url={`${env.appOrigin}/c/${link.slug}`}
+                url={`${env.appOrigin}/c/${slug}`}
                 label={`انسخ رابط ${link.ownerDisplayName} لتبعتوه بالغروب`}
                 className="btn btn--ghost btn--block"
               />

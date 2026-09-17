@@ -42,7 +42,7 @@ test('AC2 (NEW): Friend challenge provides 1-tap accelerator referencing friend 
   // Address PE-03: clear label with owner name and group context
   assert.match(
     sendSrc,
-    /<CopyLink[\s\S]*?url=\{`\$\{env\.appOrigin\}\/c\/\$\{link\.slug\}`\}[\s\S]*?label=\{`انسخ رابط \$\{link\.ownerDisplayName\} لتبعتوه بالغروب`\}[\s\S]*?\/>/,
+    /<CopyLink[\s\S]*?url=\{`\$\{env\.appOrigin\}\/c\/\$\{slug\}`\}[\s\S]*?label=\{`انسخ رابط \$\{link\.ownerDisplayName\} لتبعتوه بالغروب`\}[\s\S]*?\/>/,
     'Send page must invoke CopyLink with friend URL and explicit group challenge label',
   )
 })
