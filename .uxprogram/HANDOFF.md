@@ -1,42 +1,41 @@
-# Handoff after A2, 2026-09-17
-NEXT: row 6, track B, cycle 2
+# Handoff after B2, 2026-09-17
+NEXT: row 7, track C, cycle 2
 
 ## What changed (one line per task, with its commit)
-- A2-T01: Persistent sub-navigation tab bar linking inbox and outbox views (commit 1df8ad5)
-- A2-T02: Safe non-destructive return exit and clear danger phrasing on reveal offer (commit 139b3a5)
-- A2-T03: 3-step feature discovery walk and value illustration on unauthenticated home (commit 3756745)
-- A2-T04: Proactive minimum length guidance pill and dynamic feedback on compose screen (commit aae1775)
-- A2-T05: Spike sandboxed guest confession playground simulator (commit e123d4a on ux/spike-A-c2-playground, verdict: DROP)
+- B2-T01: Formalize global motion tokens contract in :root and tokens.md (commit 32da87d)
+- B2-T02: Comprehensive A2 component tokenization and strict adoption sweep (commit 8620f26)
+- B2-T03: Luminous citron active tab pill with bottom accent hairline (commit bc208ee)
+- B2-T04: Solid citron step roundels with high-contrast inverted numerals on discovery walk (commit bd67eb6)
+- B2-T05: Spike automated CSS AST token linter in pre-commit pipeline (commit 627ee78 on ux/spike-B-c2-token-linter, verdict: DROP)
 
 ## Metrics now against baseline and best
 | Metric | Baseline | Best | Now |
 |---|---|---|---|
-| Core view dual-tab wayfinding | 0% | 0% | 100% |
-| Offer response non-destructive exit | 0 | 0 | 1 |
-| Unauthenticated home onboarding steps | 0 | 0 | 3 steps |
-| Compose length feedback indicator | none | none | proactive pill |
-| Total automated test suite pass count | 240 | 306 | 322 |
+| Undefined CSS motion variables | 2 | 2 | 0 |
+| Discovery walk step badge contrast | 1.8:1 (wash) | 1.8:1 (wash) | > 7:1 (solid citron) |
+| Sub-navigation active state indicator | background only | background only | inset citron accent + glow |
+| Total automated test suite pass count | 240 | 322 | 338 |
 | User effort seconds (send-confession) | 13.60s | 13.60s | 13.60s |
 
 ## Weak areas that remain
-- Track B (Cycle 2): Screen-level visual craft and motion on core screens; dark mode quality; higher token adoption across the new sub-nav bar, home discovery walk, and compose constraint pill.
-- Token adoption is at 60.1%; the new sub-nav bar CSS classes introduced in A2-T01 and compose pill in A2-T04 should be audited against the token system.
-- Typography scale on the 3-step discovery cards (A2-T03) uses inline sizes; aligning to the token type scale is deferred to B2.
+- Track C (Cycle 2): Cognitive ergonomics and input friction. The confession compose flow on /c/[slug] still requires 13.60s KLM effort with 40 keystrokes and 2 decisions.
+- Mutual reveal response flow on /offer/[offerId] requires reading through long legal explanations before reaching the decision button.
+- First-time visitors on / have 3 informative discovery steps but could benefit from reduced friction into active anonymous confession link generation.
 
 ## Ideas carried forward (top 5 from backlog_ideas.md by score)
-- Static CSS Variable Reference Sheet (Score: 3.95) | runner-up for design-tokens B1
-- Standard Hover and Focus Outline Styling (Score: 3.75) | runner-up for component-microstates B1
-- Flat Border Outlines on Cards (Score: 3.75) | runner-up for card-surface-hierarchy B1
-- Standard Rounded Rectangles with Default Line Height (Score: 3.75) | runner-up for arabic-typography-notch B1
-- Unified Segmented Control with Real-Time Activity Badge Counters on Inbox and Outbox Tabs | Bold concept from A2 backlog
+- Static Form Labels with Copyable Question Prompt Snippets (Score: 3.75) | runner-up for reveal-inception C1
+- Chronological Pagination with Next/Prev Page Links (Score: 3.75) | runner-up for outbox-ergonomics C1
+- Manual Draft Save Button with Status Badge (Score: 3.75) | runner-up for draft-persistence C1
+- Static Text Disclaimer Below Form Noting Unsaved Status Risk (Score: 3.10) | runner-up for ambient-reassurance C1
+- Unified Segmented Control with Real-Time Activity Badge Counters on Inbox & Outbox Tabs | Bold concept from A2 backlog
 
 ## Traps: what failed and why
-- Playground simulator (A2-T05 spike) violates client component island whitelist in spec 9; test/21-design-system.test.ts item 10b fails on any new client component under app/_components/ without explicit whitelist authorization.
-- CSS property declarations inside class rules in app/globals.css must always have matching closing braces to avoid unintended nesting affecting subsequent class definitions.
-- Class coverage parity (test/21-design-system.test.ts item 5) requires strict two-way parity: every class in JSX must be in app/globals.css, and every class in app/globals.css must be used in some .tsx file.
-- PowerShell Out-File adds a UTF-8 BOM; always use [System.IO.File]::WriteAllText to write .md files without BOM when Python scripts need to parse headings from line 1.
+- Inset box-shadow (box-shadow: inset 0 -2px 0 var(--citron-500)) must be used instead of border-bottom to avoid vertical layout jitter on active tab switch.
+- Low-opacity tint washes (e.g. citron-wash) provide poor visual wayfinding on dark indigo backgrounds; solid accent fills with inverted text provide WCAG AAA contrast.
+- Client component island whitelist in spec §9 strictly forbids new client components under app/_components/ without explicit authorization.
+- AST regex token linters in pre-commit can flag legitimate dynamic runtime variables (like celebratory animation bits) as undefined; rely on targeted node:test unit checks instead.
 
 ## Claims to verify next session (at least 3, each checkable in the running app)
-1. Navigating to /inbox or /sent renders a persistent dual-tab navigation bar with Arabic labels showing the active tab with aria-current=page and an active highlight token.
-2. Opening /offer/[offerId] as a logged-in recipient displays a permanent back link to /sent outside the response form, plus a clearly styled danger decline button with irreversible wording.
-3. Opening the root path / as an unauthenticated visitor renders exactly 3 numbered discovery steps before the login form, each with a step badge and a distinct mechanic explanation.
+1. Navigating to /inbox or /sent renders the active tab with an inset 2px citron bottom accent indicator and glow shadow with zero computed height shift.
+2. Opening the root path / as an unauthenticated visitor displays exactly 3 discovery steps with solid acid-citron roundels and high-contrast dark numerals.
+3. All interactive transitions in app/globals.css reference defined motion tokens (--dur-hover, --ease-standard) with zero undefined variable warnings.
