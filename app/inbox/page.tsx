@@ -191,6 +191,15 @@ export default async function InboxPage({
 
   return (
     <div className="enter">
+      <nav className="app-nav" aria-label="التنقل الرئيسي">
+        <a href="/inbox" className="app-nav__tab app-nav__tab--active" aria-current="page">
+          صندوقي
+        </a>
+        <a href="/sent" className="app-nav__tab">
+          الرسائل المرسلة
+        </a>
+      </nav>
+
       <div className="inbox-header">
         <h1>صندوقك</h1>
         <span className={isInboxEmpty ? 'inbox-badge inbox-badge--empty' : 'inbox-badge'}>
