@@ -225,3 +225,30 @@
 | total tests passing | test suite | 369 | 369 | .uxprogram/logs/20260917-124923-d2-test-report.log.log |
 | ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-125939-d2-gate.log.log |
 | project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-125939-d2-gate.log.log |
+
+## cycle A3 2026-09-17
+| Metric | Scope | Value | Best so far | Evidence |
+|---|---|---|---|---|
+| taps | send-confession | 2 | 2 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| decisions | send-confession | 2 | 2 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| effort s | send-confession | 4.50 | 4.50 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| taps | view-inbox | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| decisions | view-inbox | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| effort s | view-inbox | 2.55 | 2.55 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| taps | offer-mutual-reveal | 2 | 2 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| decisions | offer-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| effort s | offer-mutual-reveal | 4.25 | 4.25 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| taps | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| decisions | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| effort s | respond-mutual-reveal | 3.05 | 3.05 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| taps | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| decisions | onboarding-terms | 1 | 1 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| effort s | onboarding-terms | 3.05 | 3.05 | .uxprogram/logs/20260917-161955-a3-effort.log.log |
+| in-app dead ends on legal pages | /terms, /privacy | 0 | 0 | .uxprogram/logs/20260917-203305-a3-t02-checks-pass.log.log |
+| destructive account deletion notices | /account/delete | 1 structured card | 1 structured card | .uxprogram/logs/20260917-202937-a3-t01-checks-pass.log.log |
+| ambient message volume visibility | /inbox, /sent | 2 badges | 2 badges | .uxprogram/logs/20260917-203721-a3-t03-checks-pass.log.log |
+| contextual breadcrumb navigation on deep routes | /offer, /account/delete | 2 views | 2 views | .uxprogram/logs/20260917-203908-a3-t04-checks-pass.log.log |
+| total tests passing | test suite | 388 | 388 | .uxprogram/logs/20260917-204125-a3-test-report.log.log |
+| ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-204740-a3-gate.log.log |
+| project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-204740-a3-gate.log.log |
+
