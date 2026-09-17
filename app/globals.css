@@ -2023,6 +2023,25 @@ main{
   color: var(--citron-400);
 }
 
+/* Offer response starters (C2-T04) */
+.offer-starters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.offer-starters__label {
+  font: var(--type-caption);
+  color: var(--text-3);
+}
+
+.offer-starters__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
