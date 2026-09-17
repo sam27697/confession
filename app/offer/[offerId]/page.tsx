@@ -10,6 +10,12 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+const RESPONSE_STARTER_PROMPTS = [
+  'بصراحة ومن قلبي، هيدا جوابي...',
+  'ما كنت متوقع تسألني هيك، بس الحقيقة هي...',
+  'لأنه الوعد متبادل، رح قلك بالسر...',
+]
+
 export default async function OfferPage({
   params,
   searchParams,
@@ -54,6 +60,26 @@ export default async function OfferPage({
 
       <form action={acceptOfferAction}>
         <input type="hidden" name="offerId" value={offer.offerId} />
+        <div className="offer-starters" role="group" aria-label="أفكار للإجابة">
+          <span className="offer-starters__label">أفكار للإجابة:</span>
+          <div className="offer-starters__list">
+            {RESPONSE_STARTER_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className="starter-chip"
+                data-response-prompt={prompt}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){document.addEventListener('click',function(e){var b=e.target.closest('button[data-response-prompt]');if(!b)return;var f=b.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="senderAnswer"]');if(!ta)return;ta.value=b.getAttribute('data-response-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
+          }}
+        />
         <div className="field-row">
           <label className="field" htmlFor="senderAnswer">جوابك</label>
           <textarea className="textarea" id="senderAnswer" name="senderAnswer" required minLength={2} maxLength={4000} rows={4} />

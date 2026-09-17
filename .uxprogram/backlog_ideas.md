@@ -45,6 +45,14 @@
 - Swipe-to-Archive Gesture Actions with Off-Screen Tray Management (Score: 3.00) | discarded for outbox-ergonomics
 - Cross-Device Cloud Draft Synchronization via Encrypted Handshake (Score: 2.45) | discarded for draft-persistence
 - Full-Screen Floating Toast Banner on Every Input Keystroke (Score: 2.30) | discarded for ambient-reassurance
+- Fixed Height Increase to 8 Rows (Score: 3.60) | Safe concept for textarea-elasticity
+- Voice-Waveform Animated Adaptive Typing Canvas (Score: 2.95) | Wild concept for textarea-elasticity
+- Static Placeholder Text Rotation in Textarea (Score: 3.60) | Safe concept for compose-starters
+- AI-Powered Predictive Arabic Sentence Completion Engine (Score: 4.45) | Wild spike candidate for compose-starters
+- Static Instruction Text to Long-Press Text to Copy (Score: 2.65) | Safe concept for outbox-copy-action
+- NFC Device-to-Device Tap to Beam Sent Message (Score: 2.30) | Wild concept for outbox-copy-action
+- Detailed Placeholder Guidance in Answer Input (Score: 3.60) | Safe concept for reveal-answer-sparks
+- Biometric Stress-Gated Answer Unlocking Mechanism (Score: 2.20) | Wild concept for reveal-answer-sparks
 
 ## Track D: Emotional connection, delight and retention
 - Plain Text Post-Send Link to Account Creation (Score: 3.75) | runner-up for reciprocal-loop

@@ -23,15 +23,26 @@ const ERROR_COPY: Record<string, string> = {
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
 
+const DAILY_SPARKS = [
+  'شو الشي يلي مغير فيني ومستحي تقوله؟',
+  'شو أول انطباع أخدته عني وطلع غلط؟',
+  'كلمة أو موقف بيننا مستحيل تنساه؟',
+  'شو أكتر صفة بتحبها فيني وما بتعرف تعبر عنها؟',
+  'شو السر يلي كنت حابب تعترفلي فيه من زمان؟',
+  'لو فيك تسألني سؤال واحد وتضمن إني أجاوب بصراحة؟',
+  'شو الشي يلي بتتمنى نتشاركه سوا وما صار فرصة؟',
+]
+
 
 
 function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['reveal']; confessionId: string }) {
   if (reveal.kind === 'resolved') {
     return (
-      <div className="reveal reveal--resolved">
+      <div className="reveal reveal--resolved reveal--glow">
         <div className="reveal-seal">
           <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر</span>
           <strong className="reveal-seal__identity">{reveal.senderDisplayName}</strong>
+          <span className="reveal-seal__affirmation">انكشف السر بينكم، صار فيكم تحكوا براحتكم ✨</span>
         </div>
         <div className="reveal-dialogue">
           <div className="reveal-dialogue__item">
@@ -188,6 +199,8 @@ export default async function InboxPage({
   const now = new Date()
   const totalCount = visible.length
   const isInboxEmpty = totalCount === 0
+  const dayIndex = Math.floor(now.getTime() / 86400000) % DAILY_SPARKS.length
+  const sparkOfTheDay = DAILY_SPARKS[Math.abs(dayIndex)] || DAILY_SPARKS[0]
 
   return (
     <div className="enter">
@@ -206,6 +219,27 @@ export default async function InboxPage({
           {isInboxEmpty ? `جاهز للرسايل ${MOOD_EMOJI.sparkle}` : `${totalCount} ${MOOD_EMOJI.fire}`}
         </span>
       </div>
+
+      <div className="daily-spark" role="region" aria-label="سؤال اليوم">
+        <div className="daily-spark__header">
+          <span className="daily-spark__badge">{MOOD_EMOJI.sparkle} سؤال اليوم</span>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm daily-spark__copy"
+            data-spark-text={sparkOfTheDay}
+            aria-label="نسخ سؤال اليوم"
+          >
+            نسخ السؤال
+          </button>
+        </div>
+        <p className="daily-spark__prompt">«{sparkOfTheDay}»</p>
+        <span className="daily-spark__hint">انشره بستوري أو حالة ليسألوك عنه بالسر</span>
+      </div>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){document.addEventListener('click',function(e){var b=e.target.closest('.daily-spark__copy');if(!b)return;var text=b.getAttribute('data-spark-text')||'';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1600);});}});})();`,
+        }}
+      />
 
       {/* The block breathes while the link is live and is still the moment
           it is switched off (spec §9.10). The state is link.enabled, the
@@ -264,7 +298,6 @@ export default async function InboxPage({
         <div className="empty inbox-empty">
           <p className="inbox-empty__title">{MOOD_EMOJI.emptyInbox} نوّرت الصندوق، لسا عم نستنى أول مصارحة</p>
           <p className="inbox-empty__text">حط رابطك بستوري أو بالبايو، واطلب من رفقاتك يحكولك اللي بقلبهم بالسر.</p>
-          <span className="empty-spark">سؤال مقترح: «اعترف بشي بتحبه فيني ومستحيل تتجرأ تحكيه؟»</span>
         </div>
       )}
 
@@ -307,6 +340,13 @@ export default async function InboxPage({
               validation attribute changes here, which is what lets §0 and
               acceptance item 17 stay true across the restructure. */}
           <div className="msg__actions">
+            <StoryCard
+              url={`${env.appOrigin}/c/${link.slug}`}
+              slug={link.slug}
+              reactionText={m.body}
+              buttonText="شارك ردك بالستوري"
+              buttonClass="btn btn--ghost btn--sm"
+            />
             <details className="msg__more">
               <summary className="btn btn--ghost btn--sm">خيارات</summary>
               <div className="msg__more-body">

@@ -8,6 +8,7 @@ import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
+import { CopyLink } from '../../_components/CopyLink.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
@@ -50,6 +51,13 @@ const ERROR_COPY: Record<string, string> = {
   unavailable: 'الرابط مش متاح هلق.',
   generic: 'صار في مشكلة، جرب لاحقاً.',
 }
+
+const STARTER_PROMPTS = [
+  'صارحني بشي ما بتسترجي تقوله بوجهي...',
+  'شو أكتر موقف حلو ما بتنساه معي؟',
+  'كلمة بقلبك من زمان وحابب توصلني...',
+  'نصيحة صادقة من قلبك بتفيدني بهالفترة...',
+]
 
 function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
   return (
@@ -119,6 +127,14 @@ export default async function SendPage({
             <p className="reciprocal-card__pitch">افتح صندوقك السري وشارك رابطك مع رفقاتك ليصارحوك.</p>
             <a className="btn btn--primary btn--block" href="/inbox">افتح صندوقك السري {ACTION_EMOJI.send}</a>
             <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
+            <div className="friend-challenge">
+              <span className="friend-challenge__label">أو تحدى رفقاتك يصارحوا {link.ownerDisplayName}:</span>
+              <CopyLink
+                url={`${env.appOrigin}/c/${slug}`}
+                label={`انسخ رابط ${link.ownerDisplayName} لتبعتوه بالغروب`}
+                className="btn btn--ghost btn--block"
+              />
+            </div>
           </div>
           <Celebrate />
         </>
@@ -133,6 +149,26 @@ export default async function SendPage({
         </div>
       ) : viewerAccountId ? (
         <form action={action}>
+          <div className="compose-starters" role="group" aria-label="أفكار للبدء">
+            <span className="compose-starters__label">أفكار للبدء:</span>
+            <div className="compose-starters__list">
+              {STARTER_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="starter-chip"
+                  data-starter-prompt={prompt}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
+            }}
+          />
           <div className="field-row">
             {/* The field had a placeholder and no label, so a screen reader
                 announced it as an unnamed text area. The label is visually

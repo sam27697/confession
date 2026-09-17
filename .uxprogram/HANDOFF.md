@@ -1,41 +1,40 @@
-# Handoff after B2, 2026-09-17
-NEXT: row 7, track C, cycle 2
+# Handoff after D2, 2026-09-17
+NEXT: row 9, track A, cycle 3
 
 ## What changed (one line per task, with its commit)
-- B2-T01: Formalize global motion tokens contract in :root and tokens.md (commit 32da87d)
-- B2-T02: Comprehensive A2 component tokenization and strict adoption sweep (commit 8620f26)
-- B2-T03: Luminous citron active tab pill with bottom accent hairline (commit bc208ee)
-- B2-T04: Solid citron step roundels with high-contrast inverted numerals on discovery walk (commit bd67eb6)
-- B2-T05: Spike automated CSS AST token linter in pre-commit pipeline (commit 627ee78 on ux/spike-B-c2-token-linter, verdict: DROP)
+- D2-T01: Anonymized confession reaction story card generator on /inbox (commit 19fdb68, Signature Element)
+- D2-T02: Daily rotating Levantine confession spark and question of the day on /inbox (commit 29a412e)
+- D2-T03: Post-send reciprocal friend challenge and group share accelerator on /c[/slug] (commit e247b51, fix 2f16b38)
+- D2-T04: Celebratory mutual reveal unmasking flourish and symmetric glow on /sent and /inbox (commit 8861a7f)
+- D2-T05: Spike direct canvas 9:16 story image generator with Web Share Target API on branch ux/spike-D-c2-reaction-card (commit 9b014dc, verdict: DROP)
 
 ## Metrics now against baseline and best
 | Metric | Baseline | Best | Now |
 |---|---|---|---|
-| Undefined CSS motion variables | 2 | 2 | 0 |
-| Discovery walk step badge contrast | 1.8:1 (wash) | 1.8:1 (wash) | > 7:1 (solid citron) |
-| Sub-navigation active state indicator | background only | background only | inset citron accent + glow |
-| Total automated test suite pass count | 240 | 322 | 338 |
-| User effort seconds (send-confession) | 13.60s | 13.60s | 13.60s |
+| Confession quote-to-story creation steps | 4 | 4 | 1 tap |
+| Daily inspiration prompts on empty inbox | 0 | 0 | 1 rotating |
+| Post-send friend challenge share gestures | 4 | 4 | 1 tap |
+| Total automated test suite pass count | 240 | 353 | 369 |
+| Project gate status | PASS | PASS | PASS |
 
 ## Weak areas that remain
-- Track C (Cycle 2): Cognitive ergonomics and input friction. The confession compose flow on /c/[slug] still requires 13.60s KLM effort with 40 keystrokes and 2 decisions.
-- Mutual reveal response flow on /offer/[offerId] requires reading through long legal explanations before reaching the decision button.
-- First-time visitors on / have 3 informative discovery steps but could benefit from reduced friction into active anonymous confession link generation.
+- Track A (Cycle 3): Information architecture and navigation recovery. First-time users landing on home screen would benefit from contextual path guidance, and account deletion confirmation flow needs clearer reversibility signaling.
+- Long threads or inbox lists lack progressive batching or chronological landmark headers.
+- Multi-party social links can offer richer OpenGraph previews for shared reaction cards.
 
 ## Ideas carried forward (top 5 from backlog_ideas.md by score)
-- Static Form Labels with Copyable Question Prompt Snippets (Score: 3.75) | runner-up for reveal-inception C1
-- Chronological Pagination with Next/Prev Page Links (Score: 3.75) | runner-up for outbox-ergonomics C1
-- Manual Draft Save Button with Status Badge (Score: 3.75) | runner-up for draft-persistence C1
-- Static Text Disclaimer Below Form Noting Unsaved Status Risk (Score: 3.10) | runner-up for ambient-reassurance C1
-- Unified Segmented Control with Real-Time Activity Badge Counters on Inbox & Outbox Tabs | Bold concept from A2 backlog
+- AI-Powered Predictive Arabic Sentence Completion Engine (Score: 4.45)
+- Pre-formatted Social Story Cards with Quick-Copy Channels (Score: 3.85)
+- Detailed Placeholder Guidance in Answer Input (Score: 3.60)
+- Static Placeholder Text Rotation in Textarea (Score: 3.60)
+- Fixed Height Increase to 8 Rows (Score: 3.60)
 
 ## Traps: what failed and why
-- Inset box-shadow (box-shadow: inset 0 -2px 0 var(--citron-500)) must be used instead of border-bottom to avoid vertical layout jitter on active tab switch.
-- Low-opacity tint washes (e.g. citron-wash) provide poor visual wayfinding on dark indigo backgrounds; solid accent fills with inverted text provide WCAG AAA contrast.
-- Client component island whitelist in spec §9 strictly forbids new client components under app/_components/ without explicit authorization.
-- AST regex token linters in pre-commit can flag legitimate dynamic runtime variables (like celebratory animation bits) as undefined; rely on targeted node:test unit checks instead.
+- In app/c/[slug]/page.tsx, link is typed as LinkForSend which omits the .slug property; use the route parameter slug directly when constructing challenge or share URLs.
+- In app/_components/CopyLink.tsx, test suite regex checks in test/24-share-inbox-friction.test.ts look for static aria-label: keep aria-label="رشاركة الراب��أو نسخه" static while dynamically varying button text content.
+- Bidirectional design system class checks require every CSS class to appear in TSX code under app/; when deprecating UI elements, remove their unused CSS classes simultaneously.
 
-## Claims to verify next session (at least 3, each checkable in the running app)
-1. Navigating to /inbox or /sent renders the active tab with an inset 2px citron bottom accent indicator and glow shadow with zero computed height shift.
-2. Opening the root path / as an unauthenticated visitor displays exactly 3 discovery steps with solid acid-citron roundels and high-contrast dark numerals.
-3. All interactive transitions in app/globals.css reference defined motion tokens (--dur-hover, --ease-standard) with zero undefined variable warnings.
+3# Claims to verify next session (at least 3, each checkable in the running app)
+1. Viewing /inbox with received confessions displays a "شارك ردك بالستوري" button that opens an anonymized 9:16 story card generator with companion copy.
+2. An empty /inbox presents a daily rotating Levantine confession spark with a 1-tap copy trigger.
+3. Submitting a confession on /c/[slug] renders a post-send friend challenge card inviting group sharing.
