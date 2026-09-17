@@ -314,7 +314,11 @@ p{margin:0}
 a{color:var(--link);text-decoration:none}
 a:hover{color:var(--link-hover);text-decoration:underline;text-underline-offset:3px}
 button{font-family:inherit}
-:focus-visible{outline:none;box-shadow:var(--ring-focus)}
+:focus-visible{
+  outline:2px solid var(--citron-500);
+  outline-offset:2px;
+  box-shadow:0 0 0 2px var(--ground-deep),0 0 8px 1px var(--citron-glow);
+}
 ::selection{background:var(--citron-500);color:var(--text-on-accent)}
 ::placeholder{
   color:var(--text-faint);
