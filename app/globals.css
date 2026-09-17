@@ -1810,8 +1810,8 @@ main{
   gap:var(--space-2);
   background:var(--surface-1);
   border:1px solid var(--line);
-  border-radius:9999px;
-  padding:4px;
+  border-radius:var(--radius-pill);
+  padding:var(--space-1);
   margin-bottom:var(--space-4);
   width:100%;
 }
@@ -1823,7 +1823,7 @@ main{
   justify-content:center;
   min-height:44px;
   padding:var(--space-2) var(--space-3);
-  border-radius:9999px;
+  border-radius:var(--radius-pill);
   font:var(--type-caption);
   color:var(--text-2);
   text-decoration:none;
@@ -1886,11 +1886,11 @@ main{
   justify-content:center;
   width:28px;
   height:28px;
-  border-radius:9999px;
+  border-radius:var(--radius-pill);
   background:var(--citron-wash);
   color:var(--citron-500);
   font-weight:700;
-  font-size:0.875rem;
+  font-size:var(--size-caption);
   flex-shrink:0;
 }
 
@@ -1898,7 +1898,7 @@ main{
   margin:0;
   font:var(--type-body);
   color:var(--text-2);
-  line-height:1.6;
+  line-height:var(--lh-tight);
 }
 
 .home-step__text strong{
@@ -1908,8 +1908,8 @@ main{
 .compose-rule{
   font:var(--type-micro);
   color:var(--text-3);
-  padding:2px 8px;
-  border-radius:9999px;
+  padding:var(--space-1) var(--space-2);
+  border-radius:var(--radius-pill);
   background:var(--surface-2);
   border:1px solid var(--line);
   white-space:nowrap;
