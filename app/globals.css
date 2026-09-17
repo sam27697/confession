@@ -1976,6 +1976,53 @@ main{
   transform: scale(var(--press-scale));
 }
 
+/* Outbox copy button & meta row (C2-T03) */
+.msg__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}
+
+.msg__copy-btn {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font: var(--type-micro);
+  padding: 2px 10px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease-standard),
+              background var(--dur-hover) var(--ease-standard),
+              color var(--dur-hover) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+
+.msg__copy-btn:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.msg__copy-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.msg__copy-btn:active {
+  transform: scale(var(--press-scale));
+}
+
+.msg__copy-btn--copied {
+  border-color: var(--citron-500);
+  background: var(--citron-wash);
+  color: var(--citron-400);
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
