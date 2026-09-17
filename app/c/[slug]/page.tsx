@@ -8,6 +8,7 @@ import { personalisedShareMetadata } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
+import { CopyLink } from '../../_components/CopyLink.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
@@ -126,6 +127,14 @@ export default async function SendPage({
             <p className="reciprocal-card__pitch">افتح صندوقك السري وشارك رابطك مع رفقاتك ليصارحوك.</p>
             <a className="btn btn--primary btn--block" href="/inbox">افتح صندوقك السري {ACTION_EMOJI.send}</a>
             <a className="btn btn--secondary btn--block" href="/sent">عرض الرسائل المرسلة</a>
+            <div className="friend-challenge">
+              <span className="friend-challenge__label">أو تحدى رفقاتك يصارحوا {link.ownerDisplayName}:</span>
+              <CopyLink
+                url={`${env.appOrigin}/c/${link.slug}`}
+                label={`انسخ رابط ${link.ownerDisplayName} لتبعتوه بالغروب`}
+                className="btn btn--ghost btn--block"
+              />
+            </div>
           </div>
           <Celebrate />
         </>

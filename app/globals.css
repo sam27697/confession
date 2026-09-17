@@ -2068,6 +2068,22 @@ main{
   gap: var(--space-2);
 }
 
+/* Friend challenge accelerator (D2-T03) */
+.friend-challenge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.friend-challenge__label {
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-align: center;
+}
+
 /* Design tokens contract v1 codified in .uxprogram/tokens.md */
 
 
