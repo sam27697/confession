@@ -1687,6 +1687,18 @@ main{
   font:var(--type-micro);
   color:var(--text-3);
   transition:color var(--dur-hover) var(--ease-standard);
+.reciprocal-card{
+  margin-top:var(--space-4);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+  text-align:center;
+}
+
+.reciprocal-card__pitch{
+  font:var(--type-body);
+  color:var(--text-1);
+  margin:0;
 }
 
 @media (prefers-reduced-motion:reduce){
