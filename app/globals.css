@@ -243,11 +243,13 @@
 :root{
   --dur-instant:90ms; /* @kind other */
   --dur-fast:150ms; /* @kind other */
+  --dur-hover:150ms; /* @kind other */
   --dur-base:220ms; /* @kind other */
   --dur-slow:420ms; /* @kind other */
   --dur-reveal:900ms; /* @kind other */
 
   --ease-out:cubic-bezier(.22,.61,.36,1); /* @kind other */
+  --ease-standard:cubic-bezier(.22,.61,.36,1); /* @kind other */
   --ease-in-out:cubic-bezier(.4,0,.2,1); /* @kind other */
   --ease-enter:cubic-bezier(.16,.84,.44,1); /* @kind other */
   /* The one overshoot in the system, and it is scoped: spec §9.10 permits
@@ -268,7 +270,7 @@
      reverted rather than adopted. */
   --transition-control:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out),transform var(--dur-instant) var(--ease-out); /* @kind other */
 }
-@media (prefers-reduced-motion:reduce){:root{--dur-fast:1ms; /* @kind other */ --dur-base:1ms; /* @kind other */ --dur-slow:1ms; /* @kind other */ --dur-reveal:1ms; /* @kind other */ --press-scale:1 /* @kind other */}}
+@media (prefers-reduced-motion:reduce){:root{--dur-fast:1ms; /* @kind other */ --dur-hover:1ms; /* @kind other */ --dur-base:1ms; /* @kind other */ --dur-slow:1ms; /* @kind other */ --dur-reveal:1ms; /* @kind other */ --press-scale:1 /* @kind other */}}
 
 /* tokens/base.css -- مصارحة base reset. RTL is not a modifier here, it is
    the default. */
@@ -1808,8 +1810,8 @@ main{
   gap:var(--space-2);
   background:var(--surface-1);
   border:1px solid var(--line);
-  border-radius:9999px;
-  padding:4px;
+  border-radius:var(--radius-pill);
+  padding:var(--space-1);
   margin-bottom:var(--space-4);
   width:100%;
 }
@@ -1821,12 +1823,12 @@ main{
   justify-content:center;
   min-height:44px;
   padding:var(--space-2) var(--space-3);
-  border-radius:9999px;
+  border-radius:var(--radius-pill);
   font:var(--type-caption);
   color:var(--text-2);
   text-decoration:none;
   text-align:center;
-  transition:color var(--dur-hover) var(--ease-standard),background var(--dur-hover) var(--ease-standard);
+  transition:color var(--dur-hover) var(--ease-standard),background var(--dur-hover) var(--ease-standard),box-shadow var(--dur-hover) var(--ease-standard);
 }
 
 .app-nav__tab:hover{
@@ -1836,6 +1838,7 @@ main{
 .app-nav__tab--active{
   background:var(--surface-2);
   color:var(--text-1);
+  box-shadow:inset 0 -2px 0 var(--citron-500),0 2px 8px -2px var(--citron-glow);
 }
 
 .offer-actions{
@@ -1871,11 +1874,12 @@ main{
   background:var(--surface-1);
   border:1px solid var(--line);
   border-radius:var(--radius-card);
-  transition:border-color var(--dur-hover) var(--ease-standard);
+  transition:border-color var(--dur-hover) var(--ease-standard),background var(--dur-hover) var(--ease-standard);
 }
 
 .home-step:hover{
   border-color:var(--line-strong);
+  background:var(--surface-2);
 }
 
 .home-step__badge{
@@ -1884,11 +1888,12 @@ main{
   justify-content:center;
   width:28px;
   height:28px;
-  border-radius:9999px;
-  background:var(--citron-wash);
-  color:var(--citron-500);
+  border-radius:var(--radius-pill);
+  background:var(--citron-500);
+  color:var(--text-on-accent);
+  box-shadow:0 0 0 1px var(--citron-300);
   font-weight:700;
-  font-size:0.875rem;
+  font-size:var(--size-caption);
   flex-shrink:0;
 }
 
@@ -1896,7 +1901,7 @@ main{
   margin:0;
   font:var(--type-body);
   color:var(--text-2);
-  line-height:1.6;
+  line-height:var(--lh-tight);
 }
 
 .home-step__text strong{
@@ -1906,8 +1911,8 @@ main{
 .compose-rule{
   font:var(--type-micro);
   color:var(--text-3);
-  padding:2px 8px;
-  border-radius:9999px;
+  padding:var(--space-1) var(--space-2);
+  border-radius:var(--radius-pill);
   background:var(--surface-2);
   border:1px solid var(--line);
   white-space:nowrap;
