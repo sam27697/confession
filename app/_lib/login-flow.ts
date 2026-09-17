@@ -19,7 +19,22 @@ import {
 
 export type ResolvedIdentity = { provider: 'facebook'; providerUserId: string; displayName: string }
 
-export async function resolveLoginAndRedirect(identity: ResolvedIdentity): Promise<never> {
+export function sanitizeNextDestination(destination?: string | null): string {
+  if (
+    typeof destination === 'string' &&
+    destination.startsWith('/') &&
+    !destination.startsWith('//') &&
+    !destination.includes(':')
+  ) {
+    return destination
+  }
+  return '/inbox'
+}
+
+export async function resolveLoginAndRedirect(
+  identity: ResolvedIdentity,
+  destination?: string | null,
+): Promise<never> {
   const db = getDb()
   const account = await findAccountByProvider(db, {
     provider: identity.provider,
@@ -35,7 +50,8 @@ export async function resolveLoginAndRedirect(identity: ResolvedIdentity): Promi
     if (account.termsVersion < TERMS_VERSION) {
       redirect('/onboarding')
     }
-    redirect('/inbox')
+    const target = sanitizeNextDestination(destination)
+    redirect(target)
   }
 
   // No accounts row yet — no row is written here (spec §3.4 step 3). The

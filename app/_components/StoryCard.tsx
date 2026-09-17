@@ -30,6 +30,9 @@ const PROMPTS = [
   'شي بقلبك عليي ومستحي تقوله بوجهي؟',
   'اعترف بشي بتحبه فيني ومستحيل تتجرأ تحكيه؟',
   'شو أكتر حركة بعملها وبتستفزك بالسر؟',
+  'شو الانطباع الأول يلي أخدته عني؟',
+  'رسالة من قلبك إلي ومستحيل أعرف مين إنت؟',
+  'كلمة أو ذكرى معي لهلق ما نسيتها؟',
 ]
 
 const CARD_W = 1080
@@ -289,6 +292,20 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
     }, 'image/png')
   }, [slug, shareUrl, toast])
 
+  const handleCopyCaption = useCallback(() => {
+    const activePrompt = PROMPTS[prompt] || ''
+    const caption = `حطيت رابط الصندوق بالستيكر فوق، احكولي بصراحة وبالسر وبدون ما اعرف مين انتو ✨\n«${activePrompt}»\n${shareUrl}`
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(caption)
+        .then(() => {
+          toast('تم نسخ كابشن الستوري.', 'citron')
+        })
+        .catch(() => {
+          toast('ما قدرنا ننسخ الكابشن.', 'danger')
+        })
+    }
+  }, [prompt, shareUrl, toast])
+
   if (!ready) return null
 
   return (
@@ -352,9 +369,14 @@ export function StoryCard({ url, slug }: { url: string; slug: string }) {
               <canvas ref={canvasRef} aria-label="معاينة بطاقة الستوري" />
             </div>
 
-            <button type="button" className="btn btn--primary btn--block" onClick={handleShare}>
-              نزّل وشارك
-            </button>
+            <div className="story-actions">
+              <button type="button" className="btn btn--primary btn--block" onClick={handleShare}>
+                نزّل وشارك
+              </button>
+              <button type="button" className="btn btn--secondary btn--block" onClick={handleCopyCaption}>
+                نسخ كابشن الستوري
+              </button>
+            </div>
           </div>
         </div>,
         document.body,

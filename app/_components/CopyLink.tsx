@@ -35,7 +35,9 @@ export function CopyLink({ url }: { url: string }) {
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    setCanCopy(typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function')
+    const hasClipboard = typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function'
+    const hasShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+    setCanCopy(hasClipboard || hasShare)
   }, [])
 
   useEffect(() => () => {
@@ -43,9 +45,16 @@ export function CopyLink({ url }: { url: string }) {
     if (celebrateTimer.current) clearTimeout(celebrateTimer.current)
   }, [])
 
-  if (!canCopy) return null
+  const handleAction = async () => {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'صارحني', url })
+        return
+      } catch {
+        // Fallback to clipboard when share dialog is dismissed
+      }
+    }
 
-  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(url)
       toast('اننسخ الرابط.', 'citron')
@@ -64,14 +73,24 @@ export function CopyLink({ url }: { url: string }) {
     }
   }
 
+  // Fallback: selectable raw URL container when clipboard or share API is absent
+  if (!canCopy) {
+    return (
+      <span className="hint" tabIndex={0}>
+        {url}
+      </span>
+    )
+  }
+
   return (
     <>
       <button
         type="button"
         className={copied ? 'btn btn--secondary btn--sm btn--copied' : 'btn btn--secondary btn--sm'}
-        onClick={handleCopy}
+        onClick={handleAction}
+        aria-label="مشاركة الرابط أو نسخه"
       >
-        {copied ? 'اننسخ ✅' : 'انسخ الرابط 🔗'}
+        {copied ? 'تم النسخ ✅' : 'انسخ الرابط 🔗'}
       </button>
       {celebrating && <Celebrate />}
     </>

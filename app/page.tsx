@@ -6,7 +6,7 @@ import { env } from './_lib/domain/env.js'
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ deleted?: string }>
+  searchParams?: Promise<{ deleted?: string; next?: string }>
 }) {
   // Resolved against the database, not the cookie alone (spec §8.3): a
   // cookie whose account is missing, disabled or deleted renders the
@@ -18,15 +18,29 @@ export default async function HomePage({
     redirect('/inbox')
   }
 
-  const { deleted } = await searchParams
+  const { deleted, next } = (await searchParams) ?? {}
 
   return (
     <div className="veil enter">
-      <p>
-        تطبيق مصارحة سرية.{'\n'}
-        الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.{'\n'}
-        سجل دخول تبلش.
-      </p>
+      <div className="home-hero">
+        <h1>مصارحة سرية بصدق وأمان</h1>
+        <p className="hint">شارك أفكارك ومشاعرك بحرية تامة وبدون أي خوف من كشف الهوية</p>
+      </div>
+
+      <div className="home-steps">
+        <div className="home-step">
+          <span className="home-step__badge">1</span>
+          <p className="home-step__text"><strong>شارك رابطك:</strong> انشر رابط صندوقك السري على ستوري انستغرام أو وتساب لتستقبل رسايل من أصحابك.</p>
+        </div>
+        <div className="home-step">
+          <span className="home-step__badge">2</span>
+          <p className="home-step__text"><strong>استقبل بصراحة:</strong> توصلك رسايل صادقة ومجهولة 100% بدون أي تتبع أو تسجيل لبيانات المرسل.</p>
+        </div>
+        <div className="home-step">
+          <span className="home-step__badge">3</span>
+          <p className="home-step__text"><strong>صارحني بدورك:</strong> إذا حبيتوا تكشفوا مين المرسل، ميزة «صارحني بدورك» بتكشف الهوية بس بالتراضي بين الطرفين.</p>
+        </div>
+      </div>
 
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 
@@ -39,6 +53,7 @@ export default async function HomePage({
 
         {env.allowDevLogin && (
           <form action="/auth/dev" method="post">
+            {next && <input type="hidden" name={'next'} value={next} />}
             <div className="field-row">
               <label className="field" htmlFor="displayName">اسم تجريبي (وضع تجربة فقط)</label>
               <input className="input" id="displayName" type="text" name="displayName" required minLength={1} maxLength={80} />

@@ -19,11 +19,13 @@ export async function POST(request: Request) {
     return new Response('display name required', { status: 400 })
   }
 
+  const next = form.get('next') ? String(form.get('next')) : new URL(request.url).searchParams.get('next')
+
   // Marker prefix: every dev identity is greppable in one query, and no real
   // Facebook user id can collide with it, because Facebook ids are digits
   // (spec §3.2).
   const providerUserId = `devlogin:${randomBytes(12).toString('hex')}`
 
-  await resolveLoginAndRedirect({ provider: 'facebook', providerUserId, displayName })
+  await resolveLoginAndRedirect({ provider: 'facebook', providerUserId, displayName }, next)
   return new Response(null, { status: 302 })
 }

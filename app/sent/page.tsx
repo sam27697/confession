@@ -34,19 +34,29 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   // the inbox link block. The rose tint is the signal here.
   return (
     <div className="card card--rose card--bubble sent-resolved">
-      <div className="sent-resolved__item">
-        <p className="hint">جوابك</p>
-        <p className="sent-resolved__text">{offer.senderAnswer}</p>
+      <div className="sent-resolved__seal">
+        <span className="chip chip--resolved">{STATE_EMOJI.resolved} انكشف السر بينكم</span>
       </div>
-      <div className="sent-resolved__item">
-        <p className="hint">جوابها</p>
-        <p className="sent-resolved__text">{offer.recipientAnswer}</p>
+      <div className="sent-resolved__dialogue">
+        <div className="sent-resolved__item">
+          <span className="hint">جوابك</span>
+          <p className="sent-resolved__text">{offer.senderAnswer}</p>
+        </div>
+        <div className="sent-resolved__item">
+          <span className="hint">جوابها</span>
+          <p className="sent-resolved__text">{offer.recipientAnswer}</p>
+        </div>
       </div>
     </div>
   )
 }
 
-export default async function SentPage() {
+export default async function SentPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ filter?: string }>
+}) {
+  const { filter = 'all' } = (await searchParams) || {}
   const db = getDb()
   const senderAccountId = await requireActiveViewerAccountId(db)
   const messages = await getSentForSender(db, { senderAccountId })
@@ -54,8 +64,30 @@ export default async function SentPage() {
   const totalSent = messages.length
   const isSentEmpty = totalSent === 0
 
+  const pendingCount = messages.filter((m) => m.offer.kind === 'pending').length
+  const resolvedCount = messages.filter((m) => m.offer.kind === 'resolved').length
+
+  const filteredMessages = messages.filter((m) => {
+    if (filter === 'pending') return m.offer.kind === 'pending'
+    if (filter === 'resolved') return m.offer.kind === 'resolved'
+    return true
+  })
+
+  const isAllFilter = filter === 'all'
+  const isPendingFilter = filter === 'pending'
+  const isResolvedFilter = filter === 'resolved'
+
   return (
     <div className="enter">
+      <nav className="app-nav" aria-label="التنقل الرئيسي">
+        <a href="/inbox" className="app-nav__tab">
+          صندوقي
+        </a>
+        <a href="/sent" className="app-nav__tab app-nav__tab--active" aria-current="page">
+          الرسائل المرسلة
+        </a>
+      </nav>
+
       <div className="sent-header">
         <h1>يلي بعتها</h1>
         <span className={isSentEmpty ? 'sent-badge sent-badge--empty' : 'sent-badge'}>
@@ -63,15 +95,58 @@ export default async function SentPage() {
         </span>
       </div>
 
-      {isSentEmpty && (
+      {!isSentEmpty && (
+        <div className="sent-filters" role="tablist" aria-label="تصفية الرسائل المرسلة">
+          <a
+            href="/sent"
+            className={isAllFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isAllFilter}
+          >
+            الكل ({totalSent})
+          </a>
+          <a
+            href="/sent?filter=pending"
+            className={isPendingFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isPendingFilter}
+          >
+            معلّق ({pendingCount})
+          </a>
+          <a
+            href="/sent?filter=resolved"
+            className={isResolvedFilter ? 'sent-filter sent-filter--active' : 'sent-filter'}
+            role="tab"
+            aria-selected={isResolvedFilter}
+          >
+            مكشوف ({resolvedCount})
+          </a>
+        </div>
+      )}
+
+      {totalSent === 0 && (
         <div className="sent-empty">
           <div className="sent-empty__icon" aria-hidden="true">{MOOD_EMOJI.nothingSent}</div>
           <p className="sent-empty__title">لسا ما بعتّ شي.</p>
           <p className="sent-empty__desc">أي اعتراف بتبعته لحدا رح يظهر هون، وتشوف إذا وصل أو وصلك رد عليه.</p>
+          <a className="btn btn--secondary btn--sm" href="/inbox">صندوقي السري</a>
         </div>
       )}
 
-      {messages.map((m) => {
+      {!isSentEmpty && filteredMessages.length === 0 && (
+        <div className="sent-empty filter-empty">
+          <p className="sent-empty__title">
+            {isPendingFilter ? 'ما في رسائل معلّقة عم تستنى رد هلق.' : 'لسا ما في مصارحات انكشفت.'}
+          </p>
+          <p className="sent-empty__desc">
+            {isPendingFilter
+              ? 'لما حدا يبعتلك عرض مصارحة أو تبعت عرض لحدا، بتلاقيه هون.'
+              : 'المصارحات اللي وافق الطرفين على كشفها بتظهر هون.'}
+          </p>
+        </div>
+      )}
+
+      {filteredMessages.map((m) => {
         const isPending = m.offer.kind === 'pending'
         const isDeclined = m.offer.kind === 'declined'
         const isResolved = m.offer.kind === 'resolved'

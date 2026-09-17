@@ -43,11 +43,11 @@ export default async function OfferPage({
         إلو، وبس على هالرسالة.
       </p>
 
-      <div className="reveal">
+      <div className="card card--raised card--bubble reveal">
         <p className="hint">شو بدها تعرف</p>
-        <p>{offer.questionForSender}</p>
+        <p className="sent-resolved__text">{offer.questionForSender}</p>
         <p className="hint">شو رح تحكيلك عن حالها</p>
-        <p>{offer.stakePrompt}</p>
+        <p className="sent-resolved__text">{offer.stakePrompt}</p>
       </div>
 
       {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
@@ -61,10 +61,16 @@ export default async function OfferPage({
         <SubmitButton className="btn btn--reveal btn--block" loadingText="عم ينزل الجوابين...">وافق وجاوب</SubmitButton>
       </form>
 
-      <form action={declineOfferAction}>
-        <input type="hidden" name="offerId" value={offer.offerId} />
-        <SubmitButton className="btn btn--secondary btn--block">لأ، مو هلق</SubmitButton>
-      </form>
+      <div className="offer-actions">
+        <a href="/sent" className="btn btn--secondary btn--block">
+          الرجوع للمرسلة
+        </a>
+
+        <form action={declineOfferAction}>
+          <input type="hidden" name="offerId" value={offer.offerId} />
+          <SubmitButton className="btn btn--danger btn--block">رفض العرض نهائياً</SubmitButton>
+        </form>
+      </div>
     </div>
   )
 }

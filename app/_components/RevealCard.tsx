@@ -1,0 +1,42 @@
+import type { ReactNode } from 'react'
+
+export const QUESTION_SUGGESTIONS = [
+  'شو يلي خلاك تبعتلي هالرسالة هلق بالذات؟',
+  'شو الشي يلي دايماً بتحس إني ما فهمته عنك؟',
+  'إيمتى كانت آخر مرة زعلت مني وما حكيت؟',
+  'شو الشي يلي ندمان عليه معي؟',
+  'لو كنت محلي، شو كنت عملت غير؟',
+  'شو الشي يلي بتخاف قلّي ياه؟',
+  'شو أكتر شي بتتذكره عنّي؟',
+  'شو الشي يلي بتمنى لو رجعنا مثل قبل فيه؟',
+  'وين كنت غلطان معي وما اعترفت؟',
+  'شو بتتمنى إني اعرفه عنك بس ما بتعرف تحكيه؟',
+]
+
+export const STAKE_SUGGESTIONS = [
+  'رح قلك شو كان رأيي فيك بالحقيقة أول ما تعرفنا.',
+  'رح قلك الشي يلي زعلني منك وما حكيته.',
+  'رح قلك شو الشي يلي ندمانة/ندمان عليه معك.',
+  'رح قلك مين الشخص يلي كنت عم فكر فيه لما وصلتني رسالتك.',
+  'رح قلك شو أكتر شي بيخوفني هالفترة.',
+  'رح قلك شي عني ما بيعرفه غير شخص واحد.',
+  'رح قلك ليش بعدت.',
+  'رح قلك شو الشي يلي بتمنى لو قلتلك ياه بوقتو.',
+]
+
+export function RevealCard({ children }: { children?: ReactNode }) {
+  return (
+    <div className="card card--bubble reveal">
+      <p>
+        بتحكيلو شي عن حالك، وبتطلب منه شي بالمقابل. ما حدا بيشوف جواب التاني قبل ما ينزلوا الاتنين سوا.
+      </p>
+      {children}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if(!window.__revealChipInit){window.__revealChipInit=true;document.addEventListener('click',function(e){var b=e.target&&e.target.closest('button[data-target][data-prompt]');if(b){var el=document.getElementById(b.getAttribute('data-target'));if(el){el.value=b.getAttribute('data-prompt');el.dispatchEvent(new Event('input',{bubbles:true}));el.focus();}}});}`,
+        }}
+      />
+    </div>
+  )
+}
+
