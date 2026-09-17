@@ -22,11 +22,25 @@ export default async function HomePage({
 
   return (
     <div className="veil enter">
-      <p>
-        تطبيق مصارحة سرية.{'\n'}
-        الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.{'\n'}
-        سجل دخول تبلش.
-      </p>
+      <div className="home-hero">
+        <h1>مصارحة سرية بصدق وأمان</h1>
+        <p className="hint">شارك أفكارك ومشاعرك بحرية تامة وبدون أي خوف من كشف الهوية</p>
+      </div>
+
+      <div className="home-steps">
+        <div className="home-step">
+          <span className="home-step__badge">1</span>
+          <p className="home-step__text"><strong>شارك رابطك:</strong> انشر رابط صندوقك السري على ستوري انستغرام أو وتساب لتستقبل رسايل من أصحابك.</p>
+        </div>
+        <div className="home-step">
+          <span className="home-step__badge">2</span>
+          <p className="home-step__text"><strong>استقبل بصراحة:</strong> توصلك رسايل صادقة ومجهولة 100% بدون أي تتبع أو تسجيل لبيانات المرسل.</p>
+        </div>
+        <div className="home-step">
+          <span className="home-step__badge">3</span>
+          <p className="home-step__text"><strong>صارحني بدورك:</strong> إذا حبيتوا تكشفوا مين المرسل، ميزة «صارحني بدورك» بتكشف الهوية بس بالتراضي بين الطرفين.</p>
+        </div>
+      </div>
 
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 

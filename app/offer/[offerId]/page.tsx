@@ -61,10 +61,16 @@ export default async function OfferPage({
         <SubmitButton className="btn btn--reveal btn--block" loadingText="عم ينزل الجوابين...">وافق وجاوب</SubmitButton>
       </form>
 
-      <form action={declineOfferAction}>
-        <input type="hidden" name="offerId" value={offer.offerId} />
-        <SubmitButton className="btn btn--secondary btn--block">لأ، مو هلق</SubmitButton>
-      </form>
+      <div className="offer-actions">
+        <a href="/sent" className="btn btn--secondary btn--block">
+          الرجوع للمرسلة
+        </a>
+
+        <form action={declineOfferAction}>
+          <input type="hidden" name="offerId" value={offer.offerId} />
+          <SubmitButton className="btn btn--danger btn--block">رفض العرض نهائياً</SubmitButton>
+        </form>
+      </div>
     </div>
   )
 }

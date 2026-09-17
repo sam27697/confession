@@ -79,6 +79,15 @@ export default async function SentPage({
 
   return (
     <div className="enter">
+      <nav className="app-nav" aria-label="التنقل الرئيسي">
+        <a href="/inbox" className="app-nav__tab">
+          صندوقي
+        </a>
+        <a href="/sent" className="app-nav__tab app-nav__tab--active" aria-current="page">
+          الرسائل المرسلة
+        </a>
+      </nav>
+
       <div className="sent-header">
         <h1>يلي بعتها</h1>
         <span className={isSentEmpty ? 'sent-badge sent-badge--empty' : 'sent-badge'}>
