@@ -1681,7 +1681,7 @@ main{
   box-shadow:none;
 }
 
-/* Sent screen empty state (No veil, no glow - spec §3.5) */
+/* Sent screen empty state — atmospheric citron-wash vignette (B3-T03) */
 .sent-empty{
   display:flex;
   flex-direction:column;
@@ -1690,7 +1690,10 @@ main{
   gap:var(--space-3);
   padding:var(--space-10) var(--space-5);
   background:var(--bg-card);
-  border:1px solid var(--border-card);
+  background-image:
+    radial-gradient(circle at 20% 40%, var(--citron-wash), transparent 55%),
+    radial-gradient(circle at 80% 70%, var(--citron-wash), transparent 55%);
+  border:1px solid var(--line-strong);
   border-radius:var(--radius-card);
   box-shadow:var(--shadow-card);
   margin:0 0 var(--stack-card);
