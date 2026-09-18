@@ -847,7 +847,16 @@ main{
 .textarea--hero:focus-visible {
   border-color:var(--citron-500);
   background:rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 40px -8px var(--citron-glow), inset 0 2px 6px rgba(0,0,0,0.4);
+  /* concentric glow: outer atmospheric + inset citron wash */
+  box-shadow:
+    0 0 40px -8px var(--citron-glow),
+    inset 0 0 0 1px var(--citron-500),
+    inset 0 0 16px 2px var(--citron-glow),
+    inset 0 2px 6px rgba(0,0,0,0.4);
+  transition:
+    border-color var(--dur-hover) var(--ease-standard),
+    box-shadow   var(--dur-hover) var(--ease-standard),
+    background   var(--dur-hover) var(--ease-standard);
 }
 
 .hint{
