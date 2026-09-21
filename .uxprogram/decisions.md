@@ -58,3 +58,17 @@ WHY: Users navigating to /terms and /privacy currently encounter dead ends with 
 ALTERNATIVES: Rely on browser back buttons and keep deletion warnings unstructured (rejected: violates Principle 6 and increases cognitive anxiety).
 REVERSIBLE: yes.
 REVERSES: none.
+
+## D-010 2026-09-17 B3 Step 3
+DECISION: Focus Cycle B3 on unified high-contrast keyboard focus indicators, luminous compose well focus elevation, and atmospheric dark mode empty state depth
+WHY: Screen inspection and accessibility evaluation reveal inconsistent focus rings across interactive elements on dark backgrounds, a flat compose well experience on /c/[slug], and flat empty state containers on /inbox and /sent. Codifying a unified :focus-visible double-ring halo, luminous inner glow on textarea focus, and atmospheric ambient depth on empty cards enhances keyboard accessibility (WCAG 2.4.11) and visual polish without expanding client JavaScript.
+ALTERNATIVES: Rely on default browser focus outlines and flat containers (rejected: low contrast on dark themes and visual sterility).
+REVERSIBLE: yes.
+REVERSES: none.
+
+## D-011 2026-09-21 B3 Step 10
+DECISION: The empty state of /sent keeps the citron vignette B3-T03 gave it, and the departure from spec section 3.5 is written into app/globals.css and recorded here.
+WHY: Section 3.5 says of /sent, in bold, "No veil, no glow." B3-T03 added two citron-wash radial gradients to .sent-empty and, in the same commit, replaced the comment that carried the rule. The visual change is defensible on its own terms: section 3.5 describes /sent as "a list. Each row is a .msg in its outgoing form", and the empty state is the case where there is no list, the same surface the empty /inbox has washed with var(--veil-citron) since week 11. Nothing in the list itself gained a veil or a glow. What was not defensible was deleting the rule's only comment, which is how a rule stops being known. The comment is restored and expanded in place.
+ALTERNATIVES: Revert the gradients and rewrite test/61 AC1 (rejected: the change passed its acceptance checks, reads well, and the rule it bends is written about the populated list). Leave the contradiction silent (rejected: a frozen design of record that disagrees with the code and says so nowhere is worse than either choice made openly).
+REVERSIBLE: yes. Drop the background-image on .sent-empty and test/61's AC1 with it.
+REVERSES: none.

@@ -252,3 +252,32 @@
 | ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260917-204740-a3-gate.log.log |
 | project gate | full suite | PASS | PASS | .uxprogram/logs/20260917-204740-a3-gate.log.log |
 
+
+## cycle B3 2026-09-21
+| Metric | Scope | Value | Best so far | Evidence |
+|---|---|---|---|---|
+| taps | send-confession | 2 | 2 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| decisions | send-confession | 2 | 2 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| effort s | send-confession | 13.60 | 13.60 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| taps | view-inbox | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| decisions | view-inbox | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| effort s | view-inbox | 2.55 | 2.55 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| taps | offer-mutual-reveal | 2 | 2 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| decisions | offer-mutual-reveal | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| effort s | offer-mutual-reveal | 4.25 | 4.25 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| taps | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| decisions | respond-mutual-reveal | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| effort s | respond-mutual-reveal | 3.05 | 3.05 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| taps | onboarding-terms | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| decisions | onboarding-terms | 1 | 1 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| effort s | onboarding-terms | 3.05 | 3.05 | .uxprogram/logs/20260921-125728-b3-effort.log |
+| interactive elements with a high-contrast focus indicator | product wide | all, one rule | all, one rule | .uxprogram/logs/20260917-211022-b3-t01-checks-pass.log.log |
+| raw white-overlay literals in the class layer | app/globals.css | 0 | 0 | .uxprogram/logs/20260921-125732-b3-close-tokens-scan.log |
+| raw backdrop blur literals in the class layer | app/globals.css | 0 | 0 | .uxprogram/logs/20260921-125732-b3-close-tokens-scan.log |
+| token adoption, cycle scanner | app/globals.css | 50.3% | 50.3% | .uxprogram/logs/20260921-125732-b3-close-tokens-scan.log |
+| token adoption, test/27 ratio | app/globals.css | 67.4% | 67.4% | .uxprogram/logs/20260921-125704-b3-gate.log |
+| CSS variables defined | app/globals.css | 167 | 167 | .uxprogram/logs/20260921-125732-b3-close-tokens-scan.log |
+| client components | app/ | 5 | 5 | .uxprogram/logs/20260921-125520-b3-t05-spike-measure.log |
+| total tests passing | test suite | 415 | 415 | .uxprogram/logs/20260921-125704-b3-gate.log |
+| ethics gate violations | product wide | 0 | 0 | .uxprogram/logs/20260921-125704-b3-gate.log |
+| project gate | full suite | PASS | PASS | .uxprogram/logs/20260921-125704-b3-gate.log |

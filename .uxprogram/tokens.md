@@ -21,6 +21,7 @@ BASELINE_TOKEN_ADOPTION: 60.1%
 - --line: #282142 (default 1px container border)
 - --line-strong: #3A315C (border on raised or focused cards)
 - --line-faint: #1A142D (dividers inside cards)
+- --danger-line: rgba(255,92,77,0.25) (hairline on a destructive panel; the step between --danger-wash and --danger-700)
 
 ### Text hierarchy
 - --text-1: #F2EFFF (primary body and headings)
@@ -127,6 +128,8 @@ BASELINE_TOKEN_ADOPTION: 60.1%
 - --control-h: 52px (primary button and input height)
 - --control-h-sm: 40px (compact action button)
 - --safe-bottom: 28px (home-bar avoidance padding on modern iOS/Android)
+- --tap-compact: 44px (iOS HIG floor, for secondary in-line navigation: nav tabs and breadcrumbs)
+- --space-hair: 2px (sub-4px inset used by pill badges; not part of the 4px scale, which is why it is named)
 
 ---
 
@@ -164,6 +167,24 @@ BASELINE_TOKEN_ADOPTION: 60.1%
 - --glow-rose: 0 0 0 1px var(--rose-700), 0 12px 36px -12px var(--rose-glow)
 - --glow-danger: 0 0 0 1px var(--danger-700), 0 10px 30px -14px rgba(255,92,77,.3)
 - --ring-focus: 0 0 0 2px var(--ground), 0 0 0 4px var(--citron-500)
+
+### Frost overlays and backdrop blur (B3-T04)
+The white wash that lifts a glass surface off the indigo ground, named for its
+alpha because the alpha is the only thing that varies.
+- --frost-05: rgba(255,255,255,0.05) (notice, chip, secondary button fill)
+- --frost-06: rgba(255,255,255,0.06) (card hairline, empty-state hairline)
+- --frost-08: rgba(255,255,255,0.08) (sticky header hairline, panel hairline)
+- --frost-10: rgba(255,255,255,0.1) (chip and notice hairline, nav hover fill)
+- --frost-12: rgba(255,255,255,0.12) (selected row hairline)
+- --frost-20: rgba(255,255,255,0.2) (nav hover hairline)
+- --frost-40: rgba(255,255,255,0.4) (inset top highlight on a filled button)
+
+Backdrop blur scale. Used only with a frost fill; the admin surfaces set
+`backdrop-filter: none` and take neither.
+- --blur-sm: blur(8px) (chip, compose scrim)
+- --blur-md: blur(12px) (secondary button)
+- --blur-lg: blur(16px) (notice)
+- --blur-glass: blur(24px) saturate(180%) (card, sticky header, empty state)
 
 ### Atmospheric veils (Mathematical radial washes, zero assets)
 - --veil-citron: radial-gradient(circle at 15% 50%, rgba(214,242,91,0.2), transparent 50%), radial-gradient(circle at 85% 30%, rgba(227,155,168,0.15), transparent 50%), radial-gradient(circle at 50% 80%, rgba(214,242,91,0.1), transparent 50%)
@@ -208,4 +229,4 @@ Under @media (prefers-reduced-motion: reduce):
 - Theme: Strict Dark Mode only (color-scheme: dark). Light mode is deliberately disabled.
 - Direction: Native Right-to-Left (dir=rtl). Directional arrows, icons, and notch positions are mirrored by construction.
 - Network Privacy: Absolute zero third-party font, icon, or tracking stylesheet requests.
-- Token adoption: Current measured adoption across global CSS rules is 60.1%.
+- Token adoption: Current measured adoption across global CSS rules is 50.3% by the cycle scanner (.uxprogram/kit/tools/token_scan.py, every `prop: value;` declaration) and 67.4% by the test/27 ratio (var() references over declarations). B3-T04 raised the first from 48.1% and the second from 64.7%.
