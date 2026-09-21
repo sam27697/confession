@@ -5,6 +5,7 @@ import { getLinkForOwner } from '../_lib/domain/links.js'
 import type { SentConfession } from '../_lib/domain/views.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
+import { Stardust } from '../_components/Stardust.js'
 
 function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   if (offer.kind === 'none') return null
@@ -136,6 +137,7 @@ export default async function SentPage({
 
       {totalSent === 0 && (
         <div className="sent-empty">
+          <Stardust />
           <div className="sent-empty__icon" aria-hidden="true">{MOOD_EMOJI.nothingSent}</div>
           <p className="sent-empty__title">لسا ما بعتّ شي.</p>
           <p className="sent-empty__desc">أي اعتراف بتبعته لحدا رح يظهر هون، وتشوف إذا وصل أو وصلك رد عليه.</p>

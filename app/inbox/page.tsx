@@ -13,6 +13,7 @@ import {
   hideConfessionAction,
 } from './actions.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
+import { Stardust } from '../_components/Stardust.js'
 import { CopyLink } from '../_components/CopyLink.js'
 import { StoryCard } from '../_components/StoryCard.js'
 import { SubmitButton } from '../_components/SubmitButton.js'
@@ -300,6 +301,7 @@ export default async function InboxPage({
 
       {(confessions.length === 0 || visible.length === 0) && (
         <div className="empty inbox-empty">
+          <Stardust />
           <p className="inbox-empty__title">{MOOD_EMOJI.emptyInbox} نوّرت الصندوق، لسا عم نستنى أول مصارحة</p>
           <p className="inbox-empty__text">حط رابطك بستوري أو بالبايو، واطلب من رفقاتك يحكولك اللي بقلبهم بالسر.</p>
         </div>
