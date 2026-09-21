@@ -80,11 +80,13 @@ test('AC3: tab items display contextual Arabic labels and responsive 44px min-he
     'sent nav must contain Arabic label for sent messages (المرسلة)'
   )
 
-  // Check CSS rule for min-height 44px touch target and flex-wrap / flex behavior preventing overflow
+  // Check CSS rule for min-height 44px touch target and flex-wrap / flex behavior preventing overflow.
+  // B3-T04 codified the 44px literal as --tap-compact; test/62 asserts that token is 44px.
+  const TAP = '(?:44px|2\\.75rem|var\\(--tap-compact\\)|var\\(--tap-min\\))'
   assert.ok(
-    /\.app-nav__tab[^{]*\{[^}]*min-height:\s*(?:44px|2\.75rem)/.test(cssSrc) ||
-    /\.app-nav__link[^{]*\{[^}]*min-height:\s*(?:44px|2\.75rem)/.test(cssSrc) ||
-    /\.app-nav[^{]*\{[^}]*min-height:\s*(?:44px|2\.75rem)/.test(cssSrc),
+    new RegExp('\\.app-nav__tab[^{]*\\{[^}]*min-height:\\s*' + TAP).test(cssSrc) ||
+    new RegExp('\\.app-nav__link[^{]*\\{[^}]*min-height:\\s*' + TAP).test(cssSrc) ||
+    new RegExp('\\.app-nav[^{]*\\{[^}]*min-height:\\s*' + TAP).test(cssSrc),
     'globals.css must ensure app-nav items have minimum 44px touch target height'
   )
 })

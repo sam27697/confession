@@ -272,6 +272,43 @@
 }
 @media (prefers-reduced-motion:reduce){:root{--dur-fast:1ms; /* @kind other */ --dur-hover:1ms; /* @kind other */ --dur-base:1ms; /* @kind other */ --dur-slow:1ms; /* @kind other */ --dur-reveal:1ms; /* @kind other */ --press-scale:1 /* @kind other */}}
 
+/* frost & depth -- this app's own, not the design system's (B3-T04).
+
+   The class layer below had been writing the same three families of value as
+   raw literals: a white overlay wash that lifts a surface off the indigo
+   ground, the backdrop blur that goes with it, and a 44px tap target for
+   secondary in-line navigation. Naming them here is the whole of B3-T04: the
+   rendered values are unchanged to the byte, so this block is a rename, not a
+   restyle.
+
+   The scale is named for its alpha, because that is the only thing that
+   varies and a name like `--frost-subtle` would need a second lookup to use.
+   `--tap-compact` sits deliberately beside the design system's `--tap-min`
+   (48px) rather than replacing it: 48px is the floor for a primary control
+   under a thumb, 44px is the iOS HIG floor and is what the tab strip and the
+   breadcrumb have always rendered. Two names, because they are two rules. */
+:root{
+  --frost-05:rgba(255,255,255,0.05); /* @kind color */
+  --frost-06:rgba(255,255,255,0.06); /* @kind color */
+  --frost-08:rgba(255,255,255,0.08); /* @kind color */
+  --frost-10:rgba(255,255,255,0.1);  /* @kind color */
+  --frost-12:rgba(255,255,255,0.12); /* @kind color */
+  --frost-20:rgba(255,255,255,0.2);  /* @kind color */
+  --frost-40:rgba(255,255,255,0.4);  /* @kind color */
+
+  --blur-sm:blur(8px);   /* @kind other */
+  --blur-md:blur(12px);  /* @kind other */
+  --blur-lg:blur(16px);  /* @kind other */
+  --blur-glass:blur(24px) saturate(180%); /* @kind other */
+
+  --tap-compact:44px; /* @kind spacing */
+  --space-hair:2px;   /* @kind spacing */
+
+  /* The hairline on a destructive panel. --danger-wash (.12) is its fill and
+     --danger-700 its solid edge; this is the step between them. */
+  --danger-line:rgba(255,92,77,0.25); /* @kind color */
+}
+
 /* tokens/base.css -- مصارحة base reset. RTL is not a modifier here, it is
    the default. */
 *,*::before,*::after{box-sizing:border-box}
@@ -289,8 +326,8 @@ body::before {
 }
 body:has(.input:focus-visible, .textarea:focus-visible)::before {
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
 }
 /* The full-page film grain is deliberately not here.
    The week-12 recolour drew it with an SVG data URI running fractal noise.
@@ -367,9 +404,9 @@ main{
   gap:var(--space-2);
   padding:8px 12px;
   background:rgba(20,15,14,0.6);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border:1px solid rgba(255,255,255,0.08);
+  -webkit-backdrop-filter: var(--blur-glass);
+  backdrop-filter: var(--blur-glass);
+  border:1px solid var(--frost-08);
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 
@@ -453,8 +490,8 @@ main{
 .nav__item:hover{
   color:var(--text-1);
   text-decoration:none;
-  background:rgba(255,255,255,0.1);
-  border-color:rgba(255,255,255,0.2);
+  background:var(--frost-10);
+  border-color:var(--frost-20);
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
@@ -495,13 +532,13 @@ main{
 
 .card{
   background:rgba(30, 23, 21, 0.4);
-  border:1px solid rgba(255,255,255,0.06);
+  border:1px solid var(--frost-06);
   border-radius:var(--radius-card);
   padding:var(--card-pad);
   box-shadow:var(--shadow-card);
   margin:0 0 var(--stack-card);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-glass);
+  backdrop-filter: var(--blur-glass);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .card:hover{
@@ -542,15 +579,15 @@ main{
 }
 
 .notice{
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.1);
+  background:var(--frost-05);
+  border:1px solid var(--frost-10);
   border-radius:var(--radius-md);
   padding:13px 15px;
   color:var(--text-1);
   font:var(--type-body-sm);
   margin:0 0 var(--stack-card);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: var(--blur-lg);
+  backdrop-filter: var(--blur-lg);
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 @keyframes float {
@@ -587,11 +624,11 @@ main{
   font:var(--type-caption);
   border-radius:var(--radius-chip);
   padding:4px 11px;
-  border:1px solid rgba(255,255,255,0.1);
-  background:rgba(255,255,255,0.05);
+  border:1px solid var(--frost-10);
+  background:var(--frost-05);
   color:var(--text-1);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: var(--blur-sm);
+  backdrop-filter: var(--blur-sm);
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   transition:var(--transition-control);
 }
@@ -650,19 +687,19 @@ main{
 .btn--primary{
   background:linear-gradient(135deg, var(--action-primary), var(--citron-300));
   color:var(--text-on-accent);
-  box-shadow: 0 12px 30px -10px var(--citron-700), inset 0 2px 0 rgba(255,255,255,0.4);
+  box-shadow: 0 12px 30px -10px var(--citron-700), inset 0 2px 0 var(--frost-40);
 }
 .btn--reveal{
   background:linear-gradient(135deg, var(--action-reveal), var(--rose-300));
   color:var(--text-on-reveal);
-  box-shadow: 0 12px 30px -10px var(--rose-700), inset 0 2px 0 rgba(255,255,255,0.4);
+  box-shadow: 0 12px 30px -10px var(--rose-700), inset 0 2px 0 var(--frost-40);
 }
 .btn--secondary{
-  background:rgba(255,255,255,0.05);
+  background:var(--frost-05);
   color:var(--text-1);
-  border: 1px solid rgba(255,255,255,0.1);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--frost-10);
+  -webkit-backdrop-filter: var(--blur-md);
+  backdrop-filter: var(--blur-md);
 }
 .btn--ghost{background:transparent;color:var(--text-2);border-color:transparent}
 .btn--danger{background:transparent;color:var(--danger-500);border-color:var(--danger-700)}
@@ -683,9 +720,9 @@ main{
   background-size: 200% 200%;
   border-radius:var(--radius-card);
   margin:0 0 var(--stack-card);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: var(--blur-glass);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--frost-06);
 }
 .empty::before{
   content:'م';
@@ -797,7 +834,7 @@ main{
   width:100%;
   background:rgba(0, 0, 0, 0.2);
   color:var(--text-1);
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--frost-08);
   border-radius:var(--radius-field);
   font:var(--type-body);
   padding:0 15px;
@@ -818,7 +855,7 @@ main{
   resize:none;
   background:rgba(0, 0, 0, 0.2);
   color:var(--text-1);
-  border:1px solid rgba(255,255,255,0.08);
+  border:1px solid var(--frost-08);
   border-radius:var(--radius-field);
   font:var(--type-body);
   padding:14px 15px;
@@ -1466,8 +1503,8 @@ main{
   animation:badge-pop var(--dur-base) var(--ease-bounce) both;
 }
 .inbox-badge--empty{
-  background:rgba(255,255,255,0.05);
-  border-color:rgba(255,255,255,0.12);
+  background:var(--frost-05);
+  border-color:var(--frost-12);
   color:var(--text-2);
   box-shadow:none;
 }
@@ -1675,8 +1712,8 @@ main{
   animation:badge-pop var(--dur-base) var(--ease-bounce) both;
 }
 .sent-badge--empty{
-  background:rgba(255,255,255,0.05);
-  border-color:rgba(255,255,255,0.12);
+  background:var(--frost-05);
+  border-color:var(--frost-12);
   color:var(--text-2);
   box-shadow:none;
 }
@@ -1720,7 +1757,7 @@ main{
 /* Outgoing message bubble: notch is on bottom-trailing (RTL bottom-right) */
 .msg--out{
   border-radius:var(--radius-bubble-out);
-  border-color:rgba(255,255,255,0.08);
+  border-color:var(--frost-08);
 }
 
 /* Sent message top row with recipient tag and chip */
@@ -1898,7 +1935,7 @@ main{
   align-items:center;
   justify-content:center;
   gap:var(--space-2);
-  min-height:44px;
+  min-height:var(--tap-compact);
   padding:var(--space-2) var(--space-3);
   border-radius:var(--radius-pill);
   font:var(--type-caption);
@@ -1949,7 +1986,7 @@ main{
   display:inline-flex;
   align-items:center;
   gap:var(--space-2);
-  min-height:44px;
+  min-height:var(--tap-compact);
   padding:var(--space-2) var(--space-3);
   border-radius:var(--radius-pill);
   font:var(--type-caption);
@@ -2191,7 +2228,7 @@ main{
 
 .sovereignty-card__section--purged {
   background: var(--danger-wash);
-  border-color: rgba(255, 92, 77, 0.25);
+  border-color: var(--danger-line);
 }
 
 .sovereignty-card__section--preserved {
@@ -2207,7 +2244,7 @@ main{
 
 .sovereignty-card__badge {
   font: var(--type-caption);
-  padding: 2px 8px;
+  padding: var(--space-hair) var(--space-2);
   border-radius: var(--radius-pill);
 }
 

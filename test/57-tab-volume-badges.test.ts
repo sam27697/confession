@@ -62,8 +62,9 @@ test('AC3 (KEEP): Tab navigation links, active tab indicators, and mobile touch 
     sentSrc.includes('app-nav') && sentSrc.includes('href="/inbox"') && sentSrc.includes('href="/sent"'),
     'sent nav must preserve links to /inbox and /sent',
   )
+  // B3-T04 codified the 44px literal as --tap-compact; test/62 asserts that token is 44px.
   assert.ok(
-    /min-height:\s*44px/.test(css),
+    /min-height:\s*(?:44px|var\(--tap-compact\))/.test(css),
     'touch target 44px preserved in CSS',
   )
 })
