@@ -58,7 +58,7 @@ test('AC2 (NEW): Breadcrumb return link provides accessible aria-label and touch
 
   assert.match(
     css,
-    /\.view-breadcrumb__link\s*\{[^}]*min-height:\s*(?:44px|var\(--tap-min\))/,
+    /\.view-breadcrumb__link\s*\{[^}]*min-height:\s*(?:44px|var\(--tap-min\)|var\(--tap-compact\))/,
     'globals.css must specify min-height >= 44px for .view-breadcrumb__link',
   )
 })

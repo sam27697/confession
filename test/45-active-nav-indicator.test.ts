@@ -26,6 +26,7 @@ test('AC3: .app-nav__tab transitions smoothly via motion tokens', () => {
 });
 
 test('AC4: sub-navigation geometry and touch target strictly preserved (KEEP)', () => {
-  assert.match(globalsCss, /min-height:\s*44px/, 'min-height 44px touch target preserved');
+  // B3-T04 codified the 44px literal as --tap-compact; test/62 asserts that token is 44px.
+  assert.match(globalsCss, /min-height:\s*(?:44px|var\(--tap-compact\))/, 'min-height 44px touch target preserved');
   assert.match(globalsCss, /border-radius:\s*var\(--radius-pill\)/, 'pill radius preserved');
 });
