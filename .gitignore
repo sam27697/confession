@@ -13,3 +13,7 @@ cookies.txt
 
 # local Claude Code tooling (launch config for the preview server)
 .claude/
+
+# the program tools are Python; their bytecode is not repository content
+__pycache__/
+*.py[cod]
