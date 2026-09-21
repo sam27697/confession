@@ -1,5 +1,5 @@
 /**
- * B3-T03 — Atmospheric empty-state vignette
+ * B3-T03 -- Atmospheric empty-state vignette
  * Acceptance checks for /inbox and /sent empty state framing
  */
 import { describe, it } from 'node:test';
@@ -28,7 +28,7 @@ function extractBlock(src: string, selector: string): string {
 const sentEmptyBlock  = extractBlock(css, '.sent-empty{') || extractBlock(css, '.sent-empty {\n') || extractBlock(css, '.sent-empty\n{');
 const inboxEmptyBlock = extractBlock(css, '.empty{') || extractBlock(css, '.empty {\n');
 
-describe('B3-T03 — atmospheric empty state vignette', () => {
+describe('B3-T03 -- atmospheric empty state vignette', () => {
 
   // AC1: citron-wash vignette on sent-empty and inbox-empty
   it('AC1: .sent-empty applies radial vignette framing with citron-wash token', () => {

@@ -1,5 +1,5 @@
 /**
- * B3-T02 — Luminous compose well focus elevation
+ * B3-T02 -- Luminous compose well focus elevation
  * Acceptance checks for /c/[slug] textarea focus state
  */
 import { describe, it } from 'node:test';
@@ -30,7 +30,7 @@ const heroFocusBlock = extractBlock(css, '.textarea--hero:focus-visible');
 const heroBaseBlock  = extractBlock(css, '.textarea--hero{') || extractBlock(css, '.textarea--hero {\n') || extractBlock(css, '.textarea--hero\n{');
 const baseBlock      = extractBlock(css, '.textarea{') || extractBlock(css, '.textarea {\n');
 
-describe('B3-T02 — compose well focus elevation', () => {
+describe('B3-T02 -- compose well focus elevation', () => {
 
   // AC1: citron-500 border highlight + citron-glow concentric inner wash
   it('AC1: .textarea--hero:focus-visible applies citron-500 border and citron-glow inner wash', () => {

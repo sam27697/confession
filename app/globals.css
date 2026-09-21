@@ -1681,7 +1681,7 @@ main{
   box-shadow:none;
 }
 
-/* Sent screen empty state — atmospheric citron-wash vignette (B3-T03) */
+/* Sent screen empty state -- atmospheric citron-wash vignette (B3-T03) */
 .sent-empty{
   display:flex;
   flex-direction:column;
