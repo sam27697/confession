@@ -69,3 +69,10 @@
 - W3C Web Accessibility Initiative (WAI). (2023). Understanding Success Criterion 2.4.5: Multiple Ways. [VERIFIED https://www.w3.org/WAI/WCAG22/Understanding/multiple-ways.html 2026-09-18]
 - W3C Web Accessibility Initiative (WAI). (2023). Understanding Success Criterion 2.4.8: Location. [VERIFIED https://www.w3.org/WAI/WCAG22/Understanding/location.html 2026-09-18]
 - Google LLC. (2024). Material Design 3: Top app bar specifications and hierarchical wayfinding. [VERIFIED https://m3.material.io/components/top-app-bar/overview 2026-09-18]
+- W3C Web Accessibility Initiative (WAI). (2023). Understanding Success Criterion 2.4.7: Focus Visible. [VERIFIED https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html 2026-09-18]
+- Mozilla Developer Network (MDN). (2024). :focus-visible CSS pseudo-class. [VERIFIED https://developer.mozilla.org/en-US/docs/Web/CSS/:focus-visible 2026-09-18]
+- UK Government Digital Service. (2024). GOV.UK Design System: Focus state styling and accessibility guidelines. [VERIFIED https://design-system.service.gov.uk/styles/focus-state/ 2026-09-18]
+- Apple Inc. (2024). Human Interface Guidelines: Focus and Selection. [VERIFIED https://developer.apple.com/design/human-interface-guidelines/focus-and-selection 2026-09-18]
+- Google LLC. (2024). Material Design 3: State layers, focus states, and elevation overlays. [VERIFIED https://m3.material.io/foundations/interaction/states 2026-09-18]
+- Nielsen Norman Group (NNG). (2022). Keyboard-Only Users: Focus Indicators and Visual Clarity. [VERIFIED https://www.nngroup.com/articles/focus-indicators/ 2026-09-18]
+
