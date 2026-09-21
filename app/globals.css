@@ -1718,7 +1718,22 @@ main{
   box-shadow:none;
 }
 
-/* Sent screen empty state -- atmospheric citron-wash vignette (B3-T03) */
+/* Sent screen empty state -- atmospheric citron-wash vignette (B3-T03).
+
+   This carries a veil, and spec section 3.5 says of /sent, in bold, "No veil,
+   no glow." The rule stands for the screen it was written about: /sent is a
+   list, each row a .msg in its outgoing form, and nothing below this rule puts
+   a wash behind a row or a glow on a resolved reveal. What it does not cover
+   is the state where there is no list at all. An empty /sent is not a list; it
+   is the same kind of surface as the empty /inbox, which has carried
+   var(--veil-citron) on .empty since week 11. Two washes at 10% citron, and
+   the copy reads at the same contrast over them.
+
+   Recorded in .uxprogram/decisions.md as D-011 rather than left as a silent
+   contradiction. The line the B3-T03 commit replaced said "(No veil, no glow -
+   spec section 3.5)"; deleting a rule's only comment is how a rule gets lost,
+   so it is written out here instead. Reverting is one edit: drop the
+   background-image below and test/61's AC1 with it. */
 .sent-empty{
   display:flex;
   flex-direction:column;
