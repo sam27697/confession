@@ -1,5 +1,5 @@
 export interface LinkBlockProps {
-  /** Everything before the slug, e.g. "confession.fayad.app/c/". Rendered LTR inside the RTL page. */
+  /** Everything before the slug, e.g. "masaraha.provefair.app/c/". Rendered LTR inside the RTL page. */
   origin?: string
   /** The 12-character slug from the alphabet 23456789abcdefghjkmnpqrstuvwxyz. */
   slug?: string

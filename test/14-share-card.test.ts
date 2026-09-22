@@ -419,7 +419,7 @@ test('§6.9 (source-level) app/c/[slug]/opengraph-image.tsx does not exist, per 
 
 test('§6.10 / §5.1 the production robots body is the exact three groups, in order', async () => {
   const { robotsBody } = await import('../src/robots.js')
-  const PRODUCTION_ORIGIN = 'https://confession.fayad.app'
+  const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
 
   // Transcribed from spec §5.1's fenced code block, verbatim, not from
   // src/robots.ts.
@@ -450,7 +450,7 @@ test('§6.10 / §5.1 the production robots body is the exact three groups, in or
 
 test('§6.10 / §5.1 staging is still fully closed: User-agent: * / Disallow: /', async () => {
   const { robotsBody } = await import('../src/robots.js')
-  const STAGING_ORIGIN = 'https://stg.confession.fayad.app'
+  const STAGING_ORIGIN = 'https://stg.masaraha.provefair.app'
   const body = robotsBody(STAGING_ORIGIN)
   const lines = body.split('\n').map((l) => l.trimEnd())
   assert.equal(lines[0], 'User-agent: *')

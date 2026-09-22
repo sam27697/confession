@@ -62,14 +62,14 @@ test('buildAuthorizeUrl targets Google and carries scope, state and response_typ
   const url = new URL(
     buildAuthorizeUrl({
       clientId: 'client-123',
-      redirectUri: 'https://confession.fayad.app/auth/google/callback',
+      redirectUri: 'https://masaraha.provefair.app/auth/google/callback',
       state: 'state-abc',
     }),
   )
 
   assert.equal(`${url.origin}${url.pathname}`, GOOGLE_AUTHORIZE_ENDPOINT)
   assert.equal(url.searchParams.get('client_id'), 'client-123')
-  assert.equal(url.searchParams.get('redirect_uri'), 'https://confession.fayad.app/auth/google/callback')
+  assert.equal(url.searchParams.get('redirect_uri'), 'https://masaraha.provefair.app/auth/google/callback')
   assert.equal(url.searchParams.get('state'), 'state-abc')
   assert.equal(url.searchParams.get('scope'), GOOGLE_SCOPE)
   assert.equal(url.searchParams.get('response_type'), 'code')
@@ -85,7 +85,7 @@ test('exchangeCodeForToken POSTs a form and never puts the secret in the URL', a
     const result = await exchangeCodeForToken({
       clientId: 'client-123',
       clientSecret: 'secret-xyz',
-      redirectUri: 'https://confession.fayad.app/auth/google/callback',
+      redirectUri: 'https://masaraha.provefair.app/auth/google/callback',
       code: 'code-1',
     })
     assert.deepEqual(result, { accessToken: 'tok-1' })
@@ -114,7 +114,7 @@ test('exchangeCodeForToken reports status only, never the response body', async 
         exchangeCodeForToken({
           clientId: 'c',
           clientSecret: 's',
-          redirectUri: 'https://confession.fayad.app/auth/google/callback',
+          redirectUri: 'https://masaraha.provefair.app/auth/google/callback',
           code: 'bad',
         }),
       (err: Error) => {
@@ -135,7 +135,7 @@ test('exchangeCodeForToken rejects a 200 with no access_token', async () => {
       exchangeCodeForToken({
         clientId: 'c',
         clientSecret: 's',
-        redirectUri: 'https://confession.fayad.app/auth/google/callback',
+        redirectUri: 'https://masaraha.provefair.app/auth/google/callback',
         code: 'c',
       }),
     )

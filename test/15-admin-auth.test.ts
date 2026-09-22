@@ -213,7 +213,7 @@ const ADMIN_ENV_BASE: NodeJS.ProcessEnv = {
   NODE_ENV: 'test',
   DATABASE_URL: 'postgres://user:pass@localhost:5432/confession',
   SESSION_SECRET: 'y'.repeat(32),
-  APP_ORIGIN: 'https://stg.confession.fayad.app',
+  APP_ORIGIN: 'https://stg.masaraha.provefair.app',
 }
 
 test('7.6.11 loadEnv throws when ADMIN_BOOTSTRAP_USERNAME is set without ADMIN_BOOTSTRAP_PASSWORD_HASH', () => {

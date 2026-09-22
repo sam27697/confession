@@ -489,7 +489,7 @@ const KILL_SWITCH_ENV_BASE: NodeJS.ProcessEnv = {
   NODE_ENV: 'test',
   DATABASE_URL: 'postgres://user:pass@localhost:5432/confession',
   SESSION_SECRET: 'z'.repeat(32),
-  APP_ORIGIN: 'https://stg.confession.fayad.app',
+  APP_ORIGIN: 'https://stg.masaraha.provefair.app',
 }
 
 test('7.6.20 env.adminEnabled, the guard every /admin route is specified to check, is false with no bootstrap username configured and true once one is', () => {

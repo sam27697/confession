@@ -19,13 +19,13 @@ function run(args: string[]): { status: number | null; stderr: string } {
 const STAGING = {
   stack: 'confession',
   port: '8182',
-  origin: 'https://stg.confession.fayad.app',
+  origin: 'https://stg.masaraha.provefair.app',
   dir: '/srv/apps/confession',
 }
 const PROD = {
   stack: 'confession-prod',
   port: '8082',
-  origin: 'https://confession.fayad.app',
+  origin: 'https://masaraha.provefair.app',
   dir: '/srv/apps/confession-prod',
 }
 
