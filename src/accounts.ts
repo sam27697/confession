@@ -12,7 +12,7 @@ import { accounts, links, termsAcceptances } from './schema.js'
 import { AgeAttestationRequiredError } from './errors.js'
 import { generateSlug } from './slug.js'
 
-export type Provider = 'facebook'
+export type Provider = 'facebook' | 'google'
 export type Locale = 'ar' | 'en'
 
 export type Account = {
