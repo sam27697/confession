@@ -22,9 +22,14 @@ export default async function HomePage({
 
   return (
     <div className="veil enter">
+      {/* The two sentences below are Sam's own, approved 2026-08-25 and frozen
+          by SPEC-week13-landing.md section 2. They are pinned byte for byte by
+          test/63-copy-contract.test.ts. Do not reword them here: the wording of
+          a product claim is his decision, and the last pass that rewrote them
+          put a promise on this page that terms clause 1 denies. */}
       <div className="home-hero">
-        <h1>مصارحة سرية بصدق وأمان</h1>
-        <p className="hint">شارك أفكارك ومشاعرك بحرية تامة وبدون أي خوف من كشف الهوية</p>
+        <h1>تطبيق مصارحة سرية.</h1>
+        <p className="hint">الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.</p>
       </div>
 
       <div className="home-steps">
@@ -34,7 +39,11 @@ export default async function HomePage({
         </div>
         <div className="home-step">
           <span className="home-step__badge">2</span>
-          <p className="home-step__text"><strong>استقبل بصراحة:</strong> توصلك رسايل صادقة ومجهولة 100% بدون أي تتبع أو تسجيل لبيانات المرسل.</p>
+          {/* Terms clause 1 restated in one breath: hidden from the recipient,
+              visible to the operator. The anonymity half and the operator half
+              belong in the same sentence, never in two paragraphs, because a
+              stranger reads the first one and signs up. */}
+          <p className="home-step__text"><strong>استقبل بصراحة:</strong> الرسائل توصلك بلا اسم المرسل، وهويته مخفية عنك. إدارة التطبيق بس فيها تشوف مين بعت، ومنستخدمها لمنع الإساءة.</p>
         </div>
         <div className="home-step">
           <span className="home-step__badge">3</span>

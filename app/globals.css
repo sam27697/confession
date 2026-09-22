@@ -578,6 +578,37 @@ main{
   overflow-y:auto;
 }
 
+/* The terms card's scroll affordance (SPEC-week13-landing.md section 4.2,
+   carried forward by SPEC-week14-copy-contract.md section 2.4). The fade has
+   to live outside the box that scrolls: a pseudo-element on `.card--inset`
+   itself would be an absolutely positioned descendant of the very element
+   whose overflow it is drawn against, so it would scroll away with the clause
+   it is meant to be warning about. This wrapper is the positioned ancestor
+   instead, and the fade is its sibling, not its child.
+
+   Unconditional, not scroll-state-aware: the terms run 2056px in Arabic and
+   English combined, so the box is taller than its 52vh cap on every viewport
+   this app supports, and CSS alone cannot ask "is there more below" without
+   JavaScript, which the signup chrome deliberately avoids on its critical
+   path (app/layout.tsx: plain anchors and a plain submit button, both of
+   which work with JavaScript off).
+
+   `pointer-events:none` is load-bearing. Without it the strip is a dead band
+   a thumb cannot scroll through, which would make the affordance worse than
+   the absence it replaces. */
+.terms-scroll{
+  position:relative;
+}
+.terms-scroll__fade{
+  position:absolute;
+  inset-inline:0;
+  bottom:0;
+  height:var(--space-16);
+  border-radius:0 0 var(--radius-card) var(--radius-card);
+  background:var(--veil-fade-bottom);
+  pointer-events:none;
+}
+
 .notice{
   background:var(--frost-05);
   border:1px solid var(--frost-10);
