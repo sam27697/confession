@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { resolveActiveViewerAccountId } from './_lib/auth.js'
 import { getDb } from './_lib/domain/db.js'
 import { env } from './_lib/domain/env.js'
+import { OpenInBrowser } from './_components/OpenInBrowser.js'
 
 export default async function HomePage({
   searchParams,
@@ -53,6 +54,7 @@ export default async function HomePage({
 
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 
+      <OpenInBrowser>
       <div className="card card--citron">
         {/* Google first, deliberately. It is the path that is actually
             published to everyone; the Facebook button is only live for
@@ -81,6 +83,7 @@ export default async function HomePage({
           </form>
         )}
       </div>
+      </OpenInBrowser>
 
       <p className="hint">
         <a href="/terms">الشروط والأحكام</a> · <a href="/privacy">سياسة الخصوصية</a>

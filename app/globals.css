@@ -190,6 +190,8 @@
   --radius-md:18px;
   --radius-lg:28px;
   --radius-xl:36px;
+  /* Narrowest a share chip may be before its label wraps. */
+  --share-chip-min: 7.5rem;
   --radius-pill:999px;
 
   --radius-notch:10px;
@@ -2347,3 +2349,52 @@ main{
 
 
 
+
+
+/* The share panel on the story card, and the escape hatch out of an in-app
+   browser. Tokens only: no literal colour, radius, spacing or duration
+   appears below, so these follow the theme like every other class here. */
+.sharerow{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+}
+.sharerow__grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(var(--share-chip-min), 1fr));
+  gap:var(--space-2);
+  margin-top:var(--space-2);
+}
+.sharechip{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* A thumb target, not a link: the same height every other control uses. */
+  min-height:var(--control-h-sm);
+  padding:var(--space-2) var(--space-3);
+  border:var(--space-hair) solid var(--line);
+  border-radius:var(--radius-pill);
+  background:var(--surface-1);
+  color:var(--text-1);
+  font:inherit;
+  font-size:var(--size-body-sm);
+  text-align:center;
+  text-decoration:none;
+  cursor:pointer;
+  transition:border-color var(--dur-hover) var(--ease-out);
+}
+.sharechip:hover{ border-color:var(--citron-500); }
+.sharechip:active{ box-shadow:var(--shadow-press); }
+.sharechip:focus-visible{ outline:var(--focus-ring); }
+.hint--tight{ margin-top:var(--space-1); }
+.linkish{
+  background:none;
+  border:0;
+  padding-top:var(--space-2);
+  color:var(--text-3);
+  font:inherit;
+  font-size:var(--size-caption);
+  text-decoration:underline;
+  cursor:pointer;
+}
+.linkish:focus-visible{ outline:var(--focus-ring); }

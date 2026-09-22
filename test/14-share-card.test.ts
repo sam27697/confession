@@ -371,7 +371,13 @@ test('§6.9 / §2.4 the header-read tripwire: app/ and src/ contain no request-h
   const unexpected = matches.filter((m) => {
     const isPrivacyPageCopy = m.file === 'app/privacy/page.tsx' && /ip address/i.test(m.text)
     const isRobotsLiteral = m.file === 'src/robots.ts' && /User-agent:/.test(m.text)
-    return !isPrivacyPageCopy && !isRobotsLiteral
+    // Third allowance, added 2026-09-23. `rel="noopener noreferrer"` on the
+    // outbound share links matches /referrer/ but is the exact OPPOSITE of
+    // what this tripwire guards: it STOPS a header being sent, and reads
+    // nothing. Narrowed to that literal so a genuine referrer READ anywhere
+    // -- including in the same file -- still trips the wire.
+    const isNoReferrerAttribute = /^rel="noopener noreferrer"$/.test(m.text)
+    return !isPrivacyPageCopy && !isRobotsLiteral && !isNoReferrerAttribute
   })
 
   assert.deepEqual(
