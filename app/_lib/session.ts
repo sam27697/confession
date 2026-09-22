@@ -20,6 +20,10 @@ import { env } from './domain/env.js'
 export const SID_COOKIE = 'sid'
 export const PENDING_IDENTITY_COOKIE = 'pending_identity'
 export const FB_OAUTH_STATE_COOKIE = 'fb_oauth_state'
+// One cookie per provider, not one shared 'oauth_state'. Two tabs, two
+// half-finished logins, and a shared name turns the second callback into a
+// 400 that looks like a CSRF failure and is not one.
+export const GOOGLE_OAUTH_STATE_COOKIE = 'google_oauth_state'
 
 const SESSION_MAX_AGE_SECONDS = SESSION_MAX_AGE_MS / 1000
 const PENDING_IDENTITY_MAX_AGE_SECONDS = PENDING_IDENTITY_MAX_AGE_MS / 1000
@@ -44,8 +48,15 @@ export function verifySessionCookieValue(value: string): { accountId: string } |
   return { accountId: data.accountId }
 }
 
+// Kept in step with src/accounts.ts's Provider. Widening this type is what
+// lets a second provider through /onboarding; the verify function below is
+// what stops anything else getting in.
+export type PendingProvider = 'facebook' | 'google'
+
+const PENDING_PROVIDERS: readonly PendingProvider[] = ['facebook', 'google']
+
 export type PendingIdentity = {
-  provider: 'facebook'
+  provider: PendingProvider
   providerUserId: string
   displayName: string
 }
@@ -54,12 +65,21 @@ export function createPendingIdentityCookieValue(identity: PendingIdentity): str
   return sign(identity satisfies PendingIdentity)
 }
 
-export function verifyPendingIdentityCookieValue(
-  value: string,
-): { provider: 'facebook'; providerUserId: string; displayName: string } | null {
+export function verifyPendingIdentityCookieValue(value: string): PendingIdentity | null {
   const data = verify<PendingIdentity>(value, PENDING_IDENTITY_MAX_AGE_MS)
   if (!data || typeof data.providerUserId !== 'string' || typeof data.displayName !== 'string') return null
-  return { provider: 'facebook', providerUserId: data.providerUserId, displayName: data.displayName }
+  // Previously this returned a hard-coded 'facebook' regardless of what the
+  // payload said, which was harmless while one provider existed and is a
+  // provider-confusion bug the moment a second one does: a Google sub would
+  // have been written into the accounts row as a Facebook id, colliding in
+  // a namespace it does not belong to. The provider now comes from the
+  // signed payload and is checked against the list rather than trusted.
+  if (!PENDING_PROVIDERS.includes(data.provider as PendingProvider)) return null
+  return {
+    provider: data.provider as PendingProvider,
+    providerUserId: data.providerUserId,
+    displayName: data.displayName,
+  }
 }
 
 export const sidCookieOptions = {
@@ -78,10 +98,16 @@ export const pendingIdentityCookieOptions = {
   maxAge: PENDING_IDENTITY_MAX_AGE_SECONDS,
 }
 
-export const fbOauthStateCookieOptions = {
+// One set of options, both providers: the state cookie's security
+// properties have nothing to do with which provider issued the redirect.
+export const oauthStateCookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: 'lax' as const,
   path: '/',
   maxAge: 10 * 60,
 }
+
+// The original name, kept so app/auth/facebook/* and its tests are not
+// touched by a change that is not about them.
+export const fbOauthStateCookieOptions = oauthStateCookieOptions

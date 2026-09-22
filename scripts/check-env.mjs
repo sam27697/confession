@@ -76,6 +76,15 @@ function checkEnv(source) {
 
   const appOrigin = required(source, 'APP_ORIGIN')
 
+  const googleClientId = source.GOOGLE_CLIENT_ID?.trim() || null
+  const googleClientSecret = source.GOOGLE_CLIENT_SECRET?.trim() || null
+
+  if ((googleClientId === null) !== (googleClientSecret === null)) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both be left unset',
+    )
+  }
+
   const allowDevLogin = source.ALLOW_DEV_LOGIN === '1'
   if (allowDevLogin && !(appOrigin.startsWith('https://stg.') || appOrigin.startsWith('http://localhost'))) {
     throw new Error(

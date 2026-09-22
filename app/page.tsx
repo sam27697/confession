@@ -54,10 +54,20 @@ export default async function HomePage({
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 
       <div className="card card--citron">
-        {env.facebookAppId ? (
-          <a className="btn btn--primary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
-        ) : (
-          <p className="hint">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
+        {/* Google first, deliberately. It is the path that is actually
+            published to everyone; the Facebook button is only live for
+            people with a role on the unpublished Meta app. Ordering the
+            buttons by what works avoids a first-run dead end. */}
+        {env.googleClientId && (
+          <a className="btn btn--primary btn--block" href="/auth/google/start">تسجيل دخول بحساب غوغل</a>
+        )}
+
+        {env.facebookAppId && (
+          <a className="btn btn--secondary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
+        )}
+
+        {!env.googleClientId && !env.facebookAppId && (
+          <p className="hint">تسجيل الدخول مش متاح هلق.</p>
         )}
 
         {env.allowDevLogin && (
