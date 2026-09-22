@@ -14,8 +14,23 @@
 // So the card's primary action is the native share sheet, and these links
 // are the secondary row for the platforms that do accept a link from the web.
 
+// The glyph a tile draws. Deliberately generic shapes that describe the
+// ACTION -- send, post, save a link -- and not any platform's mark. The
+// platforms' logos are their trademarks to license; drawing a lookalike is
+// the kind of thing that gets a takedown rather than a compliment. If
+// official brand assets are ever added they slot in beside this, keyed by
+// the same id.
+export type ShareGlyph = 'bubble' | 'plane' | 'globe' | 'spark' | 'link' | 'image'
+
 export type ShareTarget = {
   id: string
+  glyph: ShareGlyph
+  // The design token this tile's glow and glyph are tinted with. A token
+  // NAME rather than a class, so the tile needs no per-destination CSS rule
+  // -- adding a destination is one line here and nothing in the stylesheet.
+  // The colours are this app's own palette on purpose: a tile tinted with
+  // nobody's trade dress cannot be mistaken for an endorsement.
+  accent: string
   // Shown to the user. Says what the tap actually does, because "شارك على
   // انستغرام" on a button that cannot do that is the kind of copy that gets
   // an app called broken.
@@ -26,6 +41,8 @@ export type ShareTarget = {
 export const LINK_TARGETS: readonly ShareTarget[] = [
   {
     id: 'whatsapp',
+    accent: '--citron-500',
+    glyph: 'bubble',
     label: 'واتساب',
     // Opens a chat picker with the message prefilled. WhatsApp Status is not
     // reachable this way — that is the share sheet's job.
@@ -33,17 +50,23 @@ export const LINK_TARGETS: readonly ShareTarget[] = [
   },
   {
     id: 'telegram',
+    accent: '--action-reveal',
+    glyph: 'plane',
     label: 'تيليغرام',
     href: ({ url, text }) =>
       `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
   },
   {
     id: 'facebook',
+    accent: '--citron-300',
+    glyph: 'globe',
     label: 'فيسبوك (منشور)',
     href: ({ url }) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
   },
   {
     id: 'x',
+    accent: '--text-2',
+    glyph: 'spark',
     label: 'إكس',
     href: ({ url, text }) =>
       `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
