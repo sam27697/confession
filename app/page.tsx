@@ -21,16 +21,14 @@ export default async function HomePage({
   const { deleted } = await searchParams
 
   return (
-    <div className="veil enter">
-      <p>
-        تطبيق مصارحة سرية.{'\n'}
-        الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.{'\n'}
-        سجل دخول تبلش.
-      </p>
+    <div className="veil enter landing">
+      <h1>تطبيق مصارحة سرية.</h1>
+      <p className="landing-pitch">الناس تقدر تبعتلك أي شي وهي متخفية عنك. وإذا حدا حب يصارحك أكتر، فيه ميزة اسمها «صارحني بدورك» بتكشف مين هو، بس إذا هو وافق.</p>
 
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 
       <div className="card card--citron">
+        <p className="hint">سجل دخول تبلش.</p>
         {env.facebookAppId ? (
           <a className="btn btn--primary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
         ) : (
