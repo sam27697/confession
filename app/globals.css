@@ -470,18 +470,29 @@ main{
 .veil--rose{
   background-image:var(--veil-rose);
 }
-/* the landing pitch: the hero of the one screen that carries a bare
-   paragraph directly inside `.veil` with no heading before it. */
-.veil > p:first-child{
+/* the landing hero (spec §4.1): `/` is the only screen whose `.veil` wrapper
+   carries `.landing`, so the display treatment attaches to "this is that
+   screen's heading" rather than to whichever element happened to come
+   first inside a veil. The three other veils (`/offer/[offerId]`,
+   `/c/[slug]` enabled, `/c/[slug]` disabled) open on an `<h1>` or a `<div>`
+   and none of them carries this class, so none of them takes this rule. */
+.landing h1{
   font:var(--type-display);
   background: linear-gradient(135deg, #fff 0%, var(--citron-300) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   color: transparent;
-  white-space:pre-line;
-  margin:0 0 var(--space-6);
+  margin:0 0 var(--space-4);
   line-height: 1.15;
+}
+/* the explainer: body prose, not a second headline. Sits under the hero
+   and above the card, at the same 17px as every other paragraph on the
+   app (spec §0.1's whole complaint was that this text was set a step
+   above the app's real headings). */
+.landing-pitch{
+  font:var(--type-body);
+  margin:0 0 var(--space-6);
 }
 
 /* ---- core (Card.jsx, Notice.jsx, StateChip.jsx, Button.jsx,
@@ -533,6 +544,31 @@ main{
   box-shadow:none;
   max-height:52vh;
   overflow-y:auto;
+}
+
+/* the terms card's scroll affordance (spec §4.2). The fade has to live
+   outside the box that scrolls -- a pseudo-element on `.card--inset`
+   itself would be an absolutely positioned descendant of the very element
+   whose overflow it is drawn against, so it would scroll away with the
+   clause it is meant to be warning about. This wrapper is the positioned
+   ancestor instead, and the fade is its sibling, not its child.
+   Unconditional, not scroll-state-aware: the terms run 2056px in Arabic
+   and English combined, so the box is taller than its 52vh cap on every
+   viewport this app supports, and CSS alone cannot ask "is there more
+   below" without JavaScript, which the signup chrome deliberately avoids
+   on its critical path (app/layout.tsx: "plain anchors and a plain submit
+   button, both of which work with JavaScript off"). */
+.terms-scroll{
+  position:relative;
+}
+.terms-scroll__fade{
+  position:absolute;
+  inset-inline:0;
+  bottom:0;
+  height:var(--space-16);
+  border-radius:0 0 var(--radius-card) var(--radius-card);
+  background:var(--veil-fade-bottom);
+  pointer-events:none;
 }
 
 .notice{

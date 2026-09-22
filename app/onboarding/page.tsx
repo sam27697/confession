@@ -42,11 +42,15 @@ export default async function OnboardingPage({
       <h1>الشروط والأحكام</h1>
       <p className="hint">أهلا {displayName}، لازم توافق على هالشروط قبل ما تبلش.</p>
 
-      <div className="card card--inset">
-        <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
-        <hr />
-        <TermsBlock text={TERMS_TEXT_EN} dir="ltr" />
+      <div className="terms-scroll">
+        <div className="card card--inset">
+          <TermsBlock text={TERMS_TEXT_AR} dir="rtl" />
+          <hr />
+          <TermsBlock text={TERMS_TEXT_EN} dir="ltr" />
+        </div>
+        <div className="terms-scroll__fade" aria-hidden="true"></div>
       </div>
+      <p className="hint">مرّر لتقرا كل الشروط.</p>
 
       {error === 'required' && <p className="notice notice--danger">لازم توافق على الشروط وتأكد إنك فوق ١٨.</p>}
 
