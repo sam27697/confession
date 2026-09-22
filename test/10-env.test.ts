@@ -6,21 +6,21 @@ const BASE: NodeJS.ProcessEnv = {
   NODE_ENV: 'test',
   DATABASE_URL: 'postgres://user:pass@localhost:5432/confession',
   SESSION_SECRET: 'x'.repeat(32),
-  APP_ORIGIN: 'https://stg.confession.fayad.app',
+  APP_ORIGIN: 'https://stg.masaraha.provefair.app',
 }
 
 test('§2 ALLOW_DEV_LOGIN=1 with a production-looking APP_ORIGIN refuses to start', () => {
   assert.throws(() =>
     loadEnv({
       ...BASE,
-      APP_ORIGIN: 'https://confession.fayad.app',
+      APP_ORIGIN: 'https://masaraha.provefair.app',
       ALLOW_DEV_LOGIN: '1',
     }),
   )
 })
 
 test('§2 ALLOW_DEV_LOGIN=1 is accepted on a staging-looking APP_ORIGIN (https://stg.*)', () => {
-  const env = loadEnv({ ...BASE, APP_ORIGIN: 'https://stg.confession.fayad.app', ALLOW_DEV_LOGIN: '1' })
+  const env = loadEnv({ ...BASE, APP_ORIGIN: 'https://stg.masaraha.provefair.app', ALLOW_DEV_LOGIN: '1' })
   assert.equal(env.allowDevLogin, true)
 })
 
@@ -30,12 +30,12 @@ test('§2 ALLOW_DEV_LOGIN=1 is accepted on http://localhost', () => {
 })
 
 test('§2 ALLOW_DEV_LOGIN unset is fine even with a production-looking APP_ORIGIN — the check only fires when the switch is on', () => {
-  const env = loadEnv({ ...BASE, APP_ORIGIN: 'https://confession.fayad.app' })
+  const env = loadEnv({ ...BASE, APP_ORIGIN: 'https://masaraha.provefair.app' })
   assert.equal(env.allowDevLogin, false)
 })
 
 test('§2 a near-miss origin (https://staging.example.com, no dot after stg) is still refused with ALLOW_DEV_LOGIN=1', () => {
-  assert.throws(() => loadEnv({ ...BASE, APP_ORIGIN: 'https://staging.confession.fayad.app', ALLOW_DEV_LOGIN: '1' }))
+  assert.throws(() => loadEnv({ ...BASE, APP_ORIGIN: 'https://staging.masaraha.provefair.app', ALLOW_DEV_LOGIN: '1' }))
 })
 
 test('§2 a missing required variable throws', () => {

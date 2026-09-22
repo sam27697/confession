@@ -20,7 +20,7 @@
 // the kind of thing that gets a takedown rather than a compliment. If
 // official brand assets are ever added they slot in beside this, keyed by
 // the same id.
-export type ShareGlyph = 'bubble' | 'plane' | 'globe' | 'spark' | 'link' | 'image'
+export type ShareGlyph = 'bubble' | 'plane' | 'feed' | 'story' | 'spark' | 'link' | 'image'
 
 export type ShareTarget = {
   id: string
@@ -38,17 +38,39 @@ export type ShareTarget = {
   href: (args: { url: string; text: string }) => string
 }
 
-export const LINK_TARGETS: readonly ShareTarget[] = [
+// A tile that goes through the phone's own share sheet carrying the PNG,
+// because the destination has NO web route. Facebook's own documentation is
+// explicit: sharing to Stories is done "by using Android Implicit Intents and
+// iOS Custom URL Schemes" from a native app. There is no browser equivalent,
+// on any of these platforms. The share sheet is the route, and from it the
+// user picks Facebook and then Your Story -- one extra tap, and the only tap
+// that exists.
+export type SheetTile = {
+  kind: 'sheet'
+  id: string
+  glyph: ShareGlyph
+  accent: string
+  label: string
+}
+
+export type LinkTile = ShareTarget & { kind: 'link' }
+export type ShareTile = LinkTile | SheetTile
+
+const WHATSAPP: LinkTile = {
+  kind: 'link',
+  id: 'whatsapp',
+  accent: '--citron-500',
+  glyph: 'bubble',
+  label: 'واتساب',
+  href: ({ url, text }) => `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,
+}
+
+// Ordered as it renders. Story before post for Facebook, deliberately: the
+// story is what this app is shared through, and the post is the afterthought.
+export const SHARE_TILES: readonly ShareTile[] = [
+  WHATSAPP,
   {
-    id: 'whatsapp',
-    accent: '--citron-500',
-    glyph: 'bubble',
-    label: 'واتساب',
-    // Opens a chat picker with the message prefilled. WhatsApp Status is not
-    // reachable this way — that is the share sheet's job.
-    href: ({ url, text }) => `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,
-  },
-  {
+    kind: 'link',
     id: 'telegram',
     accent: '--action-reveal',
     glyph: 'plane',
@@ -57,13 +79,22 @@ export const LINK_TARGETS: readonly ShareTarget[] = [
       `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
   },
   {
+    kind: 'sheet',
+    id: 'facebook-story',
+    accent: '--citron-300',
+    glyph: 'story',
+    label: 'ستوري فيسبوك',
+  },
+  {
+    kind: 'link',
     id: 'facebook',
     accent: '--citron-300',
-    glyph: 'globe',
+    glyph: 'feed',
     label: 'فيسبوك (منشور)',
     href: ({ url }) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
   },
   {
+    kind: 'link',
     id: 'x',
     accent: '--text-2',
     glyph: 'spark',
@@ -72,6 +103,12 @@ export const LINK_TARGETS: readonly ShareTarget[] = [
       `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
   },
 ] as const
+
+// Kept as the link-only view of the same list: the URL-building contract is
+// tested against this, and a sheet tile has no URL to test.
+export const LINK_TARGETS: readonly ShareTarget[] = SHARE_TILES.filter(
+  (t): t is LinkTile => t.kind === 'link',
+)
 
 // Named here so the omission is a decision on the record rather than a gap
 // someone "fixes" with a broken button later.

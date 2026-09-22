@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { robotsBody } from '../src/robots.js'
 
-const PRODUCTION_ORIGIN = 'https://confession.fayad.app'
-const STAGING_ORIGIN = 'https://stg.confession.fayad.app'
+const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
+const STAGING_ORIGIN = 'https://stg.masaraha.provefair.app'
 
 // §3: "Disallow: lines for /c/, /inbox, /sent, /offer/, /onboarding, /auth/"
 const ALLOW_LIST_DISALLOWED_PATHS = ['/c/', '/inbox', '/sent', '/offer/', '/onboarding', '/auth/']
@@ -36,7 +36,7 @@ test('§5.1 the production `*` group does not contain a bare "Disallow: /" line'
   assert.ok(!lines(starGroup!).includes('Disallow: /'), 'the production * group must not close the whole site')
 })
 
-test('§3 the staging origin (https://stg.confession.fayad.app) returns the closed body', () => {
+test('§3 the staging origin (https://stg.masaraha.provefair.app) returns the closed body', () => {
   const body = robotsBody(STAGING_ORIGIN)
   assert.ok(lines(body).includes('Disallow: /'), 'staging must get "Disallow: /"')
 })
@@ -64,10 +64,10 @@ test('§3 the Dockerfile build-time placeholder origin returns the closed body �
 
 test('§3 default-deny matches the production origin exactly, not by prefix or substring', () => {
   const nearMisses = [
-    'https://confession.fayad.app.evil.com', // production origin as a prefix of an attacker domain
-    'https://confession.fayad.app/',          // trailing slash
-    'https://stg.confession.fayad.app',       // the production hostname as a suffix of the staging one
-    'http://confession.fayad.app',            // right host, wrong scheme
+    'https://masaraha.provefair.app.evil.com', // production origin as a prefix of an attacker domain
+    'https://masaraha.provefair.app/',          // trailing slash
+    'https://stg.masaraha.provefair.app',       // the production hostname as a suffix of the staging one
+    'http://masaraha.provefair.app',            // right host, wrong scheme
   ]
   for (const origin of nearMisses) {
     const body = robotsBody(origin)

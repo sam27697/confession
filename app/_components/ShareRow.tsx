@@ -20,7 +20,7 @@
 // their trademark to license, not ours to draw; if official brand assets are
 // added later they drop into the same slots.
 
-import { LINK_TARGETS, type ShareGlyph } from '../../src/share-targets.js'
+import { SHARE_TILES, type ShareGlyph } from '../../src/share-targets.js'
 import { useToast } from './ToastProvider.js'
 
 // One 24x24 viewBox, stroked with currentColor so every tile inherits its own
@@ -53,11 +53,21 @@ function Glyph({ name }: { name: ShareGlyph }) {
           <path d="M9.1 12.7 21.5 3.5" />
         </svg>
       )
-    case 'globe':
+    case 'feed':
+      // A post: a card with lines of text on it.
       return (
         <svg {...common}>
-          <circle cx="12" cy="12" r="8.6" />
-          <path d="M3.4 12h17.2M12 3.4c2.3 2.5 3.4 5.4 3.4 8.6S14.3 18.1 12 20.6c-2.3-2.5-3.4-5.4-3.4-8.6S9.7 5.9 12 3.4Z" />
+          <rect x="3.6" y="4.4" width="16.8" height="15.2" rx="2.4" />
+          <path d="M7.2 9.2h9.6M7.2 12.4h9.6M7.2 15.6h5.6" />
+        </svg>
+      )
+    case 'story':
+      // A story: a tall frame inside the ring that every app draws around an
+      // unwatched story. A shape, not anyone's mark.
+      return (
+        <svg {...common}>
+          <rect x="7.4" y="2.6" width="9.2" height="18.8" rx="2.6" />
+          <path d="M4.4 7.4a9.6 9.6 0 0 0 0 9.2M19.6 7.4a9.6 9.6 0 0 1 0 9.2" />
         </svg>
       )
     case 'spark':
@@ -126,19 +136,40 @@ export function ShareRow({
       )}
 
       <div className="sharerow__grid">
-        {LINK_TARGETS.map((t) => (
-          <a
-            key={t.id}
-            className="sharechip"
-            style={{ ['--chip-accent' as string]: `var(${t.accent})` }}
-            href={t.href({ url: shareUrl, text: caption })}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className="sharechip__glyph"><Glyph name={t.glyph} /></span>
-            <span className="sharechip__label">{t.label}</span>
-          </a>
-        ))}
+        {SHARE_TILES.map((t) => {
+          // A sheet tile has no URL to open — it hands the PNG to the phone's
+          // share sheet. On a browser that cannot share files there is no
+          // route at all, so the tile is not rendered rather than rendered
+          // dead.
+          if (t.kind === 'sheet') {
+            if (!canShareImage) return null
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className="sharechip"
+                style={{ ['--chip-accent' as string]: `var(${t.accent})` }}
+                onClick={onShareImage}
+              >
+                <span className="sharechip__glyph"><Glyph name={t.glyph} /></span>
+                <span className="sharechip__label">{t.label}</span>
+              </button>
+            )
+          }
+          return (
+            <a
+              key={t.id}
+              className="sharechip"
+              style={{ ['--chip-accent' as string]: `var(${t.accent})` }}
+              href={t.href({ url: shareUrl, text: caption })}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="sharechip__glyph"><Glyph name={t.glyph} /></span>
+              <span className="sharechip__label">{t.label}</span>
+            </a>
+          )
+        })}
 
         <button
           type="button"
