@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useToast } from './ToastProvider.js'
+import { ShareRow } from './ShareRow.js'
 
 const PROMPTS = [
   'شي بقلبك عليي ومستحي تقوله بوجهي؟',
@@ -280,16 +281,54 @@ export function StoryCard({
     }
   }, [open])
 
-  const handleShare = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        toast('ما قدرنا نجهز البطاقة.', 'danger')
-        return
-      }
-      const file = new File([blob], `masaraha-${slug}.png`, { type: 'image/png' })
+  // Whether the phone can hand a FILE to its share sheet. This is the only
+  // route from a web page into an Instagram / TikTok / WhatsApp story, so
+  // the answer decides which primary button the panel shows. Probed with a
+  // throwaway PNG rather than assumed: Android Chrome and iOS Safari say
+  // yes, most desktops say no, and guessing wrong leaves a dead control.
+  const [canShareImage, setCanShareImage] = useState(false)
+  useEffect(() => {
+    try {
+      const probe = new File([new Uint8Array([0])], 'probe.png', { type: 'image/png' })
+      setCanShareImage(Boolean(navigator.canShare?.({ files: [probe] })))
+    } catch {
+      setCanShareImage(false)
+    }
+  }, [])
 
+  // One canvas -> blob path, two endings. `andThen` is what the caller wants
+  // done with the PNG, so the share button and the download button cannot
+  // drift into two different images.
+  const withCardBlob = useCallback(
+    (andThen: (blob: Blob) => void) => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast('ما قدرنا نجهز البطاقة.', 'danger')
+          return
+        }
+        andThen(blob)
+      }, 'image/png')
+    },
+    [toast],
+  )
+
+  const handleDownload = useCallback(() => {
+    withCardBlob((blob) => {
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = `masaraha-${slug}.png`
+      a.click()
+      URL.revokeObjectURL(objectUrl)
+      toast('تنزّلت بطاقة الستوري.', 'citron')
+    })
+  }, [slug, toast, withCardBlob])
+
+  const handleShare = useCallback(() => {
+    withCardBlob(async (blob) => {
+      const file = new File([blob], `masaraha-${slug}.png`, { type: 'image/png' })
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'مصارحة', text: shareUrl })
@@ -300,16 +339,15 @@ export function StoryCard({
           // to the download, which always works.
         }
       }
+      handleDownload()
+    })
+  }, [slug, shareUrl, withCardBlob, handleDownload])
 
-      const objectUrl = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = objectUrl
-      a.download = `masaraha-${slug}.png`
-      a.click()
-      URL.revokeObjectURL(objectUrl)
-      toast('تنزّلت بطاقة الستوري.', 'citron')
-    }, 'image/png')
-  }, [slug, shareUrl, toast])
+  // One caption, two consumers: the clipboard button and every link target
+  // in ShareRow. Two copies of this string would drift within a week.
+  const caption = reactionText
+    ? `وصلني اعتراف بالسر عالصندوق 👀\n«${reactionText.length > 120 ? reactionText.slice(0, 117) + '...' : reactionText}»\nاحكولي انتو كمان عالرابط بالستيكر:`
+    : `حطيت رابط الصندوق بالستيكر فوق، احكولي بصراحة وبالسر وبدون ما اعرف مين انتو ✨\n«${PROMPTS[prompt] || ''}»`
 
   const handleCopyCaption = useCallback(() => {
     const caption = reactionText
@@ -396,9 +434,13 @@ export function StoryCard({
             </div>
 
             <div className="story-actions">
-              <button type="button" className="btn btn--primary btn--block" onClick={handleShare}>
-                نزّل وشارك
-              </button>
+              <ShareRow
+                shareUrl={shareUrl}
+                caption={caption}
+                canShareImage={canShareImage}
+                onShareImage={handleShare}
+                onDownload={handleDownload}
+              />
               <button type="button" className="btn btn--secondary btn--block" onClick={handleCopyCaption}>
                 {reactionText ? 'نسخ كابشن الرد' : 'نسخ كابشن الستوري'}
               </button>
