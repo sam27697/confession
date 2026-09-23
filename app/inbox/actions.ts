@@ -3,6 +3,10 @@
 // the domain layer re-check ownership — no ownership decision is ever taken
 // from a form field (spec §5.3). Errors carry the error class only, never
 // .message, which can embed a confession id or a link slug (spec §1 rule 3).
+//
+// On success each action names what it did in ?done=, a fixed key the inbox
+// turns into one sentence (week 15 §3.1). The link toggle does not: its own
+// label and status line already change in place.
 import { redirect } from 'next/navigation'
 import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
@@ -62,7 +66,7 @@ export async function openRevealOfferAction(formData: FormData) {
     redirect('/inbox?error=generic')
   }
 
-  redirect('/inbox')
+  redirect('/inbox?done=offered')
 }
 
 export async function blockSenderAction(formData: FormData) {
@@ -80,7 +84,7 @@ export async function blockSenderAction(formData: FormData) {
     redirect('/inbox?error=generic')
   }
 
-  redirect('/inbox')
+  redirect('/inbox?done=blocked')
 }
 
 export async function reportConfessionAction(formData: FormData) {
@@ -103,7 +107,7 @@ export async function reportConfessionAction(formData: FormData) {
     redirect('/inbox?error=generic')
   }
 
-  redirect('/inbox')
+  redirect('/inbox?done=reported')
 }
 
 export async function hideConfessionAction(formData: FormData) {
@@ -121,5 +125,5 @@ export async function hideConfessionAction(formData: FormData) {
     redirect('/inbox?error=generic')
   }
 
-  redirect('/inbox')
+  redirect('/inbox?done=hidden')
 }

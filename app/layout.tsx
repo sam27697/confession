@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { getViewerAccountId } from './_lib/auth.js'
 import { env } from './_lib/domain/env.js'
 import { genericShareMetadata } from '../src/share-card.js'
@@ -28,6 +28,16 @@ export async function generateMetadata(): Promise<Metadata> {
     // omitted, so an absent app id never claims an app that doesn't exist.
     ...(share.facebook ? { facebook: share.facebook } : {}),
   }
+}
+
+// The phone's own browser chrome (the address bar on Android, the status bar
+// area of an installed page) takes this colour instead of white, so the
+// screen reads as one dark surface to its edges. #070512 is --ground in
+// app/globals.css; a meta tag cannot read a CSS variable, so the value is
+// repeated here and nowhere else (week 15 §1 item 13).
+export const viewport: Viewport = {
+  themeColor: '#070512',
+  colorScheme: 'dark',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

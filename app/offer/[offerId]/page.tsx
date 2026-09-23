@@ -6,8 +6,25 @@ import { acceptOfferAction, declineOfferAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 
 const ERROR_COPY: Record<string, string> = {
-  short: 'لازم تكتب جوابك.',
-  generic: 'صار في مشكلة، جرب لاحقاً.',
+  short: 'جوابك لازم يكون حرفين على الأقل.',
+  generic: 'صار خلل من عنا، مش منك. جرب كمان مرة بعد شوي.',
+}
+
+// The two ways this page can have nothing to offer. Each used to be one bare
+// line with no way off the screen; each now says why and points at /sent,
+// where every offer this person has ever received is listed (week 15 §3.5).
+function OfferGone({ title, line }: { title: string; line: string }) {
+  return (
+    <div className="veil veil--rose enter">
+      <div className="empty">
+        <p>{title}</p>
+        <p>{line}</p>
+        <a className="btn btn--secondary btn--sm" href="/sent">
+          الرسائل المرسلة
+        </a>
+      </div>
+    </div>
+  )
 }
 
 const RESPONSE_STARTER_PROMPTS = [
@@ -33,10 +50,17 @@ export default async function OfferPage({
     offer = await getPendingOfferForSender(db, { offerId, senderAccountId })
   } catch (err) {
     if (err instanceof RevealOfferNotFoundError || err instanceof NotYourConfessionError) {
-      return <p className="notice notice--danger">ما لقينا هالعرض.</p>
+      // One answer for both: telling "no such offer" apart from "not yours"
+      // would confirm that an offer id exists.
+      return (
+        <OfferGone
+          title="ما لقينا هالعرض."
+          line="يمكن الرابط ناقص، أو العرض مش إلك. كل العروض يلي وصلتك بتلاقيها بالرسائل المرسلة."
+        />
+      )
     }
     if (err instanceof OfferNotPendingError) {
-      return <p className="hint">هالعرض خلص، ما بقي فيه شي تعمله.</p>
+      return <OfferGone title="هالعرض تسكّر." line="انرد عليه من قبل، أو انسحب. آخر أخباره بتلاقيها بالرسائل المرسلة." />
     }
     throw err
   }
@@ -56,9 +80,11 @@ export default async function OfferPage({
       </p>
 
       <div className="card card--raised card--bubble reveal">
-        <p className="hint">شو بدها تعرف</p>
+        {/* This page has no name for the other side, by design, so the
+            labels are neutral instead of guessing «بدها» (week 15 §3.3). */}
+        <p className="hint">السؤال يلي بدو جوابك</p>
         <p className="sent-resolved__text">{offer.questionForSender}</p>
-        <p className="hint">شو رح تحكيلك عن حالها</p>
+        <p className="hint">وشو رح تعرف بالمقابل</p>
         <p className="sent-resolved__text">{offer.stakePrompt}</p>
       </div>
 
@@ -101,6 +127,10 @@ export default async function OfferPage({
         <form action={declineOfferAction}>
           <input type="hidden" name="offerId" value={offer.offerId} />
           <SubmitButton className="btn btn--danger btn--block">رفض العرض نهائياً</SubmitButton>
+          {/* What saying no costs, said before it is said (week 15 §3.4).
+              A declined offer writes no sender answer, and the recipient's
+              inbox shows only «ما وافق». */}
+          <span className="hint offer-actions__note">إذا رفضت، ما في شي بينكشف عنك. الطرف التاني بيعرف بس إنك ما وافقت.</span>
         </form>
       </div>
     </div>

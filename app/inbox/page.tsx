@@ -1,7 +1,7 @@
 import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
 import { getLinkForOwner } from '../_lib/domain/links.js'
-import { getInboxForRecipient, getSentForSender } from '../_lib/domain/views.js'
+import { getInboxForRecipient, countSentForSender } from '../_lib/domain/views.js'
 import type { RecipientConfession } from '../_lib/domain/views.js'
 import { env } from '../_lib/domain/env.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
@@ -19,8 +19,18 @@ import { SubmitButton } from '../_components/SubmitButton.js'
 import { RevealCard, QUESTION_SUGGESTIONS, STAKE_SUGGESTIONS } from '../_components/RevealCard.js'
 
 const ERROR_COPY: Record<string, string> = {
-  short: 'لازم تكتب شي مش أقل من حرفين، بكل خانة.',
-  generic: 'صار في مشكلة، جرب لاحقاً.',
+  short: 'كل خانة بدها حرفين على الأقل. كمّلها وجرب كمان مرة.',
+  generic: 'صار خلل من عنا، مش منك. جرب كمان مرة بعد شوي.',
+}
+
+// Week 15 §3.1. What each action in ./actions.ts just did, said once, where
+// the person did it. Only a fixed key travels in the URL; the sentence is
+// looked up here, so nothing a visitor types into ?done= can reach the page.
+const DONE_COPY: Record<string, string> = {
+  hidden: 'خبّيناها من صندوقك.',
+  blocked: 'تم الحظر. ما رح توصلك منه رسايل جديدة، وهو ما رح يعرف إنك حظرته.',
+  reported: 'وصلنا بلاغك، والإدارة رح تراجعه.',
+  offered: 'انبعت العرض. جوابك مخبّى لحد ما يرد الطرف التاني.',
 }
 
 const DAILY_SPARKS = [
@@ -46,7 +56,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
         </div>
         <div className="reveal-dialogue">
           <div className="reveal-dialogue__item">
-            <span className="hint">جوابه</span>
+            <span className="hint">جواب {reveal.senderDisplayName}</span>
             <p className="reveal-dialogue__text">{reveal.senderAnswer}</p>
           </div>
           <div className="reveal-dialogue__item">
@@ -62,7 +72,7 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
     return (
       <div className="reveal">
         <span className="chip chip--pending">{STATE_EMOJI.pending} لسا ما رد</span>
-        <p>بعتلو عرض مصارحة. لسا ما رد.</p>
+        <p>انبعت عرض المصارحة، ولسا ما وصل رد.</p>
       </div>
     )
   }
@@ -182,24 +192,36 @@ function RevealBlock({ reveal, confessionId }: { reveal: RecipientConfession['re
 export default async function InboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; done?: string }>
 }) {
   const db = getDb()
   const viewerAccountId = await requireActiveViewerAccountId(db)
-  const { error } = await searchParams
+  const { error, done } = await searchParams
 
   const link = await getLinkForOwner(db, { ownerAccountId: viewerAccountId })
   if (!link) {
-    return <p className="notice notice--danger">ما لقينا رابطك.</p>
+    // Every account gets its link in the same transaction that creates it,
+    // so this is a fault, not a state. Say so without alarm; the header nav
+    // above is still the way out (week 15 §3.5).
+    return (
+      <div className="empty">
+        <p>ما قدرنا نلاقي رابطك هلق.</p>
+        <p>جرب تحدّث الصفحة بعد شوي.</p>
+      </div>
+    )
   }
 
-  const messages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId })
+  // The list and the other tab's badge do not depend on each other, so they
+  // are read together. The badge is a count, not the other tab's whole list
+  // (week 15 §2.2).
+  const [messages, totalSent] = await Promise.all([
+    getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId }),
+    countSentForSender(db, { senderAccountId: viewerAccountId }),
+  ])
   const confessions = messages
   const visible = messages.filter((m) => m.status !== 'hidden_by_recipient')
   const now = new Date()
   const totalCount = visible.length
-  const sentMessages = await getSentForSender(db, { senderAccountId: viewerAccountId })
-  const totalSent = sentMessages.length
   const isInboxEmpty = totalCount === 0
   const dayIndex = Math.floor(now.getTime() / 86400000) % DAILY_SPARKS.length
   const sparkOfTheDay = DAILY_SPARKS[Math.abs(dayIndex)] || DAILY_SPARKS[0]
@@ -223,6 +245,28 @@ export default async function InboxPage({
           {isInboxEmpty ? `جاهز للرسايل ${MOOD_EMOJI.sparkle}` : `${totalCount} ${MOOD_EMOJI.fire}`}
         </span>
       </div>
+
+      {/* What was just done, pinned to the bottom of the viewport: the action
+          was taken on a card further down, and a Server Action's redirect
+          keeps the scroll position, so a notice in the flow of the page was
+          off-screen at exactly the moment it mattered. The key is fresh on
+          every render, so hiding two messages in a row shows the second
+          confirmation too instead of reusing the faded first one. */}
+      {done && DONE_COPY[done] && (
+        <div className="toasts flash" key={now.getTime()}>
+          <p className="toast toast--citron" role="status">
+            {DONE_COPY[done]}
+          </p>
+        </div>
+      )}
+      {/* An error stays in the flow, directly under the heading: it has to
+          be read and acted on, so it does not leave on its own. Below the
+          link block it was off the first screen of a phone. */}
+      {error && ERROR_COPY[error] && (
+        <p className="notice notice--danger" role="alert">
+          {ERROR_COPY[error]}
+        </p>
+      )}
 
       <div className="daily-spark" role="region" aria-label="سؤال اليوم">
         <div className="daily-spark__header">
@@ -296,7 +340,6 @@ export default async function InboxPage({
         </div>
       </div>
 
-      {error && ERROR_COPY[error] && <p className="notice notice--danger">{ERROR_COPY[error]}</p>}
 
       {(confessions.length === 0 || visible.length === 0) && (
         <div className="empty inbox-empty">
@@ -361,6 +404,11 @@ export default async function InboxPage({
                 <form action={blockSenderAction}>
                   <input type="hidden" name="confessionId" value={m.id} />
                   <SubmitButton className="btn btn--danger btn--sm">احظر صاحبها</SubmitButton>
+                  {/* Said where the decision is taken, not after it (week 15
+                      §3.4). True because a blocked sender's send returns
+                      success and writes nothing, and v1 has no notifications
+                      at all. */}
+                  <span className="hint">الحظر بيوقف رسايله إلك، وما بيوصله إشعار.</span>
                 </form>
                 <form action={reportConfessionAction}>
                   <input type="hidden" name="confessionId" value={m.id} />
@@ -377,7 +425,15 @@ export default async function InboxPage({
         )
       })}
 
-      <a className="btn btn--ghost" href="/account/delete">حذف الحساب</a>
+      {/* The account's quiet corner (week 15 §1 item 12). Deleting stays one
+          tap away, as data sovereignty requires, beside the two documents
+          that say what deleting keeps and removes, instead of sitting alone
+          under the messages as the last button on the screen. */}
+      <nav className="account-links" aria-label="حسابك">
+        <a href="/terms">الشروط والأحكام</a>
+        <a href="/privacy">سياسة الخصوصية</a>
+        <a href="/account/delete">حذف الحساب</a>
+      </nav>
     </div>
   )
 }

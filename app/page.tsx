@@ -55,7 +55,12 @@ export default async function HomePage({
 
       <div className="card card--citron">
         {env.facebookAppId ? (
-          <a className="btn btn--primary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
+          <a
+            className="btn btn--primary btn--block"
+            href={next ? `/auth/facebook/start?next=${encodeURIComponent(next)}` : '/auth/facebook/start'}
+          >
+            تسجيل دخول بفيسبوك
+          </a>
         ) : (
           <p className="hint">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
         )}

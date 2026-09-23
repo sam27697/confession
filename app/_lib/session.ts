@@ -78,6 +78,15 @@ export const pendingIdentityCookieOptions = {
   maxAge: PENDING_IDENTITY_MAX_AGE_SECONDS,
 }
 
+// Week 15 §2.3: where a visitor was headed when they signed in, carried
+// across the Facebook round trip and through /onboarding. Unsigned on
+// purpose: it only ever holds a path that already passed
+// sanitizeNextDestination, and every reader sanitises it again, so a
+// tampered value can at worst name another page on this same origin. It
+// lives as long as the pending identity it travels beside.
+export const AFTER_LOGIN_COOKIE = 'after_login'
+export const afterLoginCookieOptions = pendingIdentityCookieOptions
+
 export const fbOauthStateCookieOptions = {
   httpOnly: true,
   secure: true,
