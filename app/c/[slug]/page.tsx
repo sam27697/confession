@@ -5,7 +5,7 @@ import { getViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { getLinkBySlug } from '../../_lib/domain/links.js'
 import { env } from '../../_lib/domain/env.js'
-import { personalisedShareMetadata } from '../../../src/share-card.js'
+import { personalisedShareMetadata, storyCardVariant } from '../../../src/share-card.js'
 import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
@@ -28,8 +28,18 @@ import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 // read in the app.
 const loadLink = cache((slug: string) => getLinkBySlug(getDb(), { slug }))
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ q?: string | string[] }>
+}): Promise<Metadata> {
   const { slug } = await params
+  // ?q= picks which pre-drawn story card Facebook shows when this link is
+  // shared to a story (week 16 §2.1). Validated against a fixed list; the page
+  // body below never reads it.
+  const { q } = await searchParams
   const link = await loadLink(slug)
 
   if (!link || !link.enabled) return {}
@@ -39,6 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     facebookAppId: env.facebookAppId,
     slug,
     ownerDisplayName: link.ownerDisplayName,
+    storyVariant: storyCardVariant(q),
   })
 
   return {

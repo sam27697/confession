@@ -99,18 +99,48 @@ export function genericShareMetadata({
 // not shipped. Per §4.2's own stated fallback, og:image and og:image:alt
 // here are the same static generic image and alt as the root card (§4.1) —
 // not a personalised image URL.
+// Week 16 (docs/SPEC-week16-clickable-story.md §2.1). A Facebook story that
+// opens the link is drawn from this page's Open Graph tags, so the og:image
+// is the story. The story sheet offers six questions and a reaction card;
+// each has a pre-drawn preview in public/og/story/, made by
+// scripts/generate-story-og-images.py. The shared link names one with ?q=.
+//
+// The variant is an index into a fixed list, never text a person typed, so
+// the card still carries only the two variable things §2.1 allows: nothing
+// from a message is ever drawn into a public image.
+export const STORY_CARD_VARIANTS = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'r'] as const
+export type StoryCardVariant = (typeof STORY_CARD_VARIANTS)[number]
+
+// Anything that is not exactly one of the variants is ignored, so the query
+// string can never choose a path, and a stale or hand-edited ?q= falls back
+// to the page's ordinary card.
+export function storyCardVariant(q: unknown): StoryCardVariant | null {
+  return typeof q === 'string' && (STORY_CARD_VARIANTS as readonly string[]).includes(q)
+    ? (q as StoryCardVariant)
+    : null
+}
+
 export function personalisedShareMetadata({
   appOrigin,
   facebookAppId,
   slug,
   ownerDisplayName,
+  storyVariant = null,
 }: {
   appOrigin: string
   facebookAppId: string | null
   slug: string
   ownerDisplayName: string
+  storyVariant?: StoryCardVariant | null
 }): ShareCardMetadata {
   const title = personalisedTitle(ownerDisplayName)
+  // og:url is Facebook's canonical URL for a share: without the variant in
+  // it, Facebook resolves the plain page and draws the default card instead
+  // of the story card (spec week 16 §1.4).
+  const pageUrl = storyVariant ? `${appOrigin}/c/${slug}?q=${storyVariant}` : `${appOrigin}/c/${slug}`
+  const image = storyVariant
+    ? { url: `${appOrigin}/og/story/${storyVariant}.png`, width: 1200, height: 630, alt: title }
+    : { url: `${appOrigin}/og/default.png`, width: 1200, height: 630, alt: GENERIC_OG_TITLE }
   return {
     openGraph: {
       type: 'website',
@@ -118,15 +148,8 @@ export function personalisedShareMetadata({
       locale: OG_LOCALE,
       title,
       description: PERSONALISED_OG_DESCRIPTION,
-      url: `${appOrigin}/c/${slug}`,
-      images: [
-        {
-          url: `${appOrigin}/og/default.png`,
-          width: 1200,
-          height: 630,
-          alt: GENERIC_OG_TITLE,
-        },
-      ],
+      url: pageUrl,
+      images: [image],
     },
     twitter: { card: 'summary_large_image' },
     ...(facebookAppId ? { facebook: { appId: facebookAppId } } : {}),
