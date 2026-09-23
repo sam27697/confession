@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const DELETE_PAGE = path.join(REPO_ROOT, 'app', 'account', 'delete', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Delete account view renders a unified data sovereignty card (.sovereignty-card) replacing fragmented notices', () => {
   assert.ok(existsSync(DELETE_PAGE), 'app/account/delete/page.tsx must exist')

@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const OFFER_PAGE = path.join(REPO_ROOT, 'app', 'offer', '[offerId]', 'page.tsx')
 const DELETE_PAGE = path.join(REPO_ROOT, 'app', 'account', 'delete', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Deep action routes render a semantic breadcrumb / return bar (.view-breadcrumb)', () => {
   assert.ok(existsSync(OFFER_PAGE), 'app/offer/[offerId]/page.tsx must exist')
@@ -77,7 +77,7 @@ test('AC3 (KEEP): Offer response forms, decline actions, safe exit link, and del
 })
 
 test('AC4 (KEEP): human_checklist.md defines HC-32 for contextual breadcrumb header evaluation', () => {
-  assert.ok(existsSync(HUMAN_CHECKLIST), '.uxprogram/human_checklist.md must exist')
+  assert.ok(existsSync(HUMAN_CHECKLIST), 'docs/human_checklist.md must exist')
   const content = readFileSync(HUMAN_CHECKLIST, 'utf8')
   assert.match(
     content,

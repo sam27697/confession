@@ -78,7 +78,7 @@ describe('B3-T03 -- atmospheric empty state vignette', () => {
 
   // AC5: HC-35 in human checklist
   it('AC5: HC-35 exists in human_checklist.md', () => {
-    const checklist = fs.readFileSync('.uxprogram/human_checklist.md', 'utf8');
-    assert.ok(checklist.includes('HC-35'), 'HC-35 must be present in .uxprogram/human_checklist.md');
+    const checklist = fs.readFileSync('docs/human_checklist.md', 'utf8');
+    assert.ok(checklist.includes('HC-35'), 'HC-35 must be present in docs/human_checklist.md');
   });
 });

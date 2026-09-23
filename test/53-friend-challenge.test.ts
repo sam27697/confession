@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const SEND_PAGE = path.join(REPO_ROOT, 'app', 'c', '[slug]', 'page.tsx')
 const COPY_LINK = path.join(REPO_ROOT, 'app', '_components', 'CopyLink.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Post-send confirmation renders friend challenge container on sent=1', () => {
   assert.ok(existsSync(SEND_PAGE), 'app/c/[slug]/page.tsx must exist')

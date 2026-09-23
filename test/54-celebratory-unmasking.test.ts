@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const SENT_PAGE = path.join(REPO_ROOT, 'app', 'sent', 'page.tsx')
 const INBOX_PAGE = path.join(REPO_ROOT, 'app', 'inbox', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Resolved reveal cards render celebratory glow styling honoring bilateral unmasking', () => {
   assert.ok(existsSync(SENT_PAGE), 'app/sent/page.tsx must exist')

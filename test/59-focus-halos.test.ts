@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): app/globals.css defines centralized :focus-visible rules using --citron-500', () => {
   assert.ok(existsSync(GLOBALS_CSS), 'app/globals.css must exist')
@@ -56,7 +56,7 @@ test('AC4 (KEEP): Existing button, chip, and tab tap states strictly preserved',
 })
 
 test('AC5 (HUMAN): Human checklist contains HC-33 item for keyboard focus halos', () => {
-  assert.ok(existsSync(HUMAN_CHECKLIST), '.uxprogram/human_checklist.md must exist')
+  assert.ok(existsSync(HUMAN_CHECKLIST), 'docs/human_checklist.md must exist')
   const content = readFileSync(HUMAN_CHECKLIST, 'utf8')
   assert.match(
     content,

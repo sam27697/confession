@@ -23,7 +23,12 @@ npm ci
 npx tsc --noEmit   # typecheck
 npm test           # applies drizzle/*.sql to a fresh PGlite instance, runs every test
 npm run build      # the production build the image runs
+python3 scripts/authorship_scan.py --base <commit your work started from>
 ```
+
+The last line is the authorship check: it fails on co-author trailers, tool
+or vendor names, and em-dashes in commit messages and added lines. Run it
+before pushing.
 
 The tests need no external service, no Docker, no network and no environment
 variables: PGlite is a real Postgres compiled to WASM, and the migration files

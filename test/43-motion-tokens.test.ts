@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const globalsCss = fs.readFileSync('app/globals.css', 'utf-8');
-const tokensMd = fs.readFileSync('.uxprogram/tokens.md', 'utf-8');
+const tokensMd = fs.readFileSync('docs/tokens.md', 'utf-8');
 
 test('AC1: --dur-hover and --ease-standard defined in globals.css and tokens.md', () => {
   assert.match(globalsCss, /--dur-hover\s*:/, 'globals.css must define --dur-hover');

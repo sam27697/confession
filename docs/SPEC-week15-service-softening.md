@@ -71,7 +71,8 @@ login carries `next` into `resolveLoginAndRedirect`. But:
    destination. Facebook Login is dark today, so this has not cost anyone yet;
    it will on the day the App ID arrives.
 
-This is the growth loop of the product (principles.md, principle 1), and it
+This is the growth loop of the product (the UX program's principles.md,
+principle 1; `git show ux-B-c3:.uxprogram/principles.md`), and it
 leaks at the one step where the visitor has just committed.
 
 ### §0.6 Finding F - actions finish silently, and the copy guesses genders

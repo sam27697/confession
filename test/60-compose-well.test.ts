@@ -101,10 +101,10 @@ describe('B3-T02 -- compose well focus elevation', () => {
 
   // AC5 presence in human checklist (HC-34)
   it('AC5: HC-34 exists in human_checklist.md', () => {
-    const checklist = fs.readFileSync('.uxprogram/human_checklist.md', 'utf8');
+    const checklist = fs.readFileSync('docs/human_checklist.md', 'utf8');
     assert.ok(
       checklist.includes('HC-34'),
-      'HC-34 must be present in .uxprogram/human_checklist.md'
+      'HC-34 must be present in docs/human_checklist.md'
     );
   });
 });
