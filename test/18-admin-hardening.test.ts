@@ -312,7 +312,7 @@ function runMethodGuardProbe(envOverrides: Record<string, string>): { status: nu
         // scheme and the probe dies before it can report a status. Hand it
         // a file:// URL, which is correct on every platform.
         `import { adminMethodNotAllowed } from ${JSON.stringify(pathToFileURL(METHOD_GUARD_PATH).href)}`,
-        "const request = new Request('https://stg.confession.fayad.app/admin/reveal')",
+        "const request = new Request('https://stg.masaraha.provefair.app/admin/reveal')",
         'const response = await adminMethodNotAllowed(request, {})',
         "console.log(JSON.stringify({ status: response.status }))",
       ].join('\n'),
@@ -321,7 +321,7 @@ function runMethodGuardProbe(envOverrides: Record<string, string>): { status: nu
       NODE_ENV: 'test',
       DATABASE_URL: 'postgres://user:pass@localhost:5432/confession',
       SESSION_SECRET: 'm'.repeat(32),
-      APP_ORIGIN: 'https://stg.confession.fayad.app',
+      APP_ORIGIN: 'https://stg.masaraha.provefair.app',
       ADMIN_BOOTSTRAP_USERNAME: '',
       ADMIN_BOOTSTRAP_PASSWORD_HASH: '',
     }
@@ -417,7 +417,7 @@ const CHECK_DEPLOY_PAIRING_SCRIPT = path.resolve(REPO_ROOT, 'scripts', 'check-de
 const STAGING_ROW = {
   stack: 'confession',
   port: '8182',
-  origin: 'https://stg.confession.fayad.app',
+  origin: 'https://stg.masaraha.provefair.app',
   dir: '/srv/apps/confession',
 }
 
@@ -529,7 +529,7 @@ function runCheckEnv(envOverrides: Record<string, string>): { status: number | n
     NODE_ENV: 'test',
     DATABASE_URL: 'postgres://user:pass@localhost:5432/confession',
     SESSION_SECRET: 'n'.repeat(32),
-    APP_ORIGIN: 'https://stg.confession.fayad.app',
+    APP_ORIGIN: 'https://stg.masaraha.provefair.app',
   }
   const result = spawnSync('node', [CHECK_ENV_SCRIPT], {
     encoding: 'utf8',

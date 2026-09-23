@@ -1,0 +1,19 @@
+-- 0005_google_provider.sql
+--
+-- Adds 'google' to the provider enum.
+--
+-- Why a second provider exists at all: publishing a Facebook app to the
+-- public requires a VERIFIED Meta business portfolio whatever the scope,
+-- and Meta refused that verification for an individual developer on
+-- 2026-09-22. Google's openid/profile scopes are non-sensitive, so the
+-- same product ships with no verification, no user cap and no warning
+-- screen. See docs/projects/confession-facebook-login.md.
+--
+-- ALTER TYPE ... ADD VALUE is allowed inside a transaction block on
+-- PostgreSQL 12+ (this box runs 17) PROVIDED the new value is not used in
+-- the same transaction. It is not used here -- this file adds the label and
+-- nothing else -- which is what keeps it compatible with scripts/migrate.mjs
+-- wrapping every migration in begin/commit. Do not append an INSERT or an
+-- UPDATE that writes 'google' to this file; it would fail at run time, not
+-- at review time.
+ALTER TYPE provider ADD VALUE IF NOT EXISTS 'google';

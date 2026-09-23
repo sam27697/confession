@@ -624,6 +624,13 @@ test('item 10b: every client component under app/ lives in app/_components and i
   const AUTHORISED = [
     'app/_components/Celebrate.tsx',
     'app/_components/CopyLink.tsx',
+    // Added 2026-09-23, deliberately and not as a convenience. OpenInBrowser
+    // is the guard that keeps a story link from dead-ending in an in-app
+    // browser Google refuses to authorise in, and ShareRow is the share
+    // panel the story card hands off to; both need the browser (navigator,
+    // clipboard, the share sheet) and cannot be server components.
+    'app/_components/OpenInBrowser.tsx',
+    'app/_components/ShareRow.tsx',
     'app/_components/StoryCard.tsx',
     'app/_components/SubmitButton.tsx',
     'app/_components/ToastProvider.tsx',

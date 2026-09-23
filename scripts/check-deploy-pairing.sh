@@ -61,7 +61,7 @@ fi
 # by shell word-splitting on an empty field.
 TABLE_STACK=(confession confession-prod)
 TABLE_PORT=(8182 8082)
-TABLE_ORIGIN=("https://stg.confession.fayad.app" "https://confession.fayad.app")
+TABLE_ORIGIN=("https://stg.masaraha.provefair.app" "https://masaraha.provefair.app")
 TABLE_ALLOW_DESC=("'1' or empty" "empty")
 TABLE_DIR=(/srv/apps/confession /srv/apps/confession-prod)
 

@@ -25,9 +25,17 @@ function sqlDefaultRandomUuid() {
   return sql`gen_random_uuid()`
 }
 
-export const providerEnum = pgEnum('provider', ['facebook'])
+export const providerEnum = pgEnum('provider', ['facebook', 'google'])
 // Instagram is a distribution channel, not an auth surface (STACK.md). The
-// enum exists so that staying Facebook-only is a deliberate decision.
+// enum exists so that every provider added is a deliberate decision.
+//
+// 'google' was added 2026-09-22 (drizzle/0005_google_provider.sql). Not a
+// growth decision: Meta requires a VERIFIED business portfolio to publish
+// an app to the public whatever the scope, and refused that verification
+// for an individual developer. Google's openid/profile scopes are
+// non-sensitive and need no review, so the product ships. Keep both -- an
+// account is keyed on (provider, provider_user_id) and the Facebook rows
+// that already exist stay valid.
 
 export const confessionStatusEnum = pgEnum('confession_status', [
   'delivered',

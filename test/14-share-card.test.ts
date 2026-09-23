@@ -371,7 +371,13 @@ test('§6.9 / §2.4 the header-read tripwire: app/ and src/ contain no request-h
   const unexpected = matches.filter((m) => {
     const isPrivacyPageCopy = m.file === 'app/privacy/page.tsx' && /ip address/i.test(m.text)
     const isRobotsLiteral = m.file === 'src/robots.ts' && /User-agent:/.test(m.text)
-    return !isPrivacyPageCopy && !isRobotsLiteral
+    // Third allowance, added 2026-09-23. `rel="noopener noreferrer"` on the
+    // outbound share links matches /referrer/ but is the exact OPPOSITE of
+    // what this tripwire guards: it STOPS a header being sent, and reads
+    // nothing. Narrowed to that literal so a genuine referrer READ anywhere
+    // -- including in the same file -- still trips the wire.
+    const isNoReferrerAttribute = /^rel="noopener noreferrer"$/.test(m.text)
+    return !isPrivacyPageCopy && !isRobotsLiteral && !isNoReferrerAttribute
   })
 
   assert.deepEqual(
@@ -413,7 +419,7 @@ test('§6.9 (source-level) app/c/[slug]/opengraph-image.tsx does not exist, per 
 
 test('§6.10 / §5.1 the production robots body is the exact three groups, in order', async () => {
   const { robotsBody } = await import('../src/robots.js')
-  const PRODUCTION_ORIGIN = 'https://confession.fayad.app'
+  const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
 
   // Transcribed from spec §5.1's fenced code block, verbatim, not from
   // src/robots.ts.
@@ -444,7 +450,7 @@ test('§6.10 / §5.1 the production robots body is the exact three groups, in or
 
 test('§6.10 / §5.1 staging is still fully closed: User-agent: * / Disallow: /', async () => {
   const { robotsBody } = await import('../src/robots.js')
-  const STAGING_ORIGIN = 'https://stg.confession.fayad.app'
+  const STAGING_ORIGIN = 'https://stg.masaraha.provefair.app'
   const body = robotsBody(STAGING_ORIGIN)
   const lines = body.split('\n').map((l) => l.trimEnd())
   assert.equal(lines[0], 'User-agent: *')

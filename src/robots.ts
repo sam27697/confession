@@ -6,7 +6,7 @@
 // (app/robots.txt/route.ts) is the only place that reads env.appOrigin and
 // hands it to this function.
 
-const PRODUCTION_ORIGIN = 'https://confession.fayad.app'
+const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
 
 // Week-6 share-card spec §5.1: week 5's single `User-agent: *` block
 // disallowed `/c/` for every crawler, including facebookexternalhit — the

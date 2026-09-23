@@ -15,6 +15,8 @@ export type Env = {
   appOrigin: string
   facebookAppId: string | null
   facebookAppSecret: string | null
+  googleClientId: string | null
+  googleClientSecret: string | null
   // 1 enables POST /auth/dev, the local test-identity login (spec §3.2).
   // Must be absent in production — see the APP_ORIGIN check below.
   allowDevLogin: boolean
@@ -46,6 +48,22 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
 
   const facebookAppId = source.FACEBOOK_APP_ID?.trim() || null
   const facebookAppSecret = source.FACEBOOK_APP_SECRET?.trim() || null
+
+  const googleClientId = source.GOOGLE_CLIENT_ID?.trim() || null
+  const googleClientSecret = source.GOOGLE_CLIENT_SECRET?.trim() || null
+
+  // Both or neither, the same rule the admin pair follows (spec §2.4 rule
+  // 1) and deliberately stricter than the Facebook pair above, which only
+  // 503s at request time. A half-configured login is a configuration error
+  // discovered at boot, by a container that refuses to start, rather than a
+  // dead button discovered by the first real user. The Facebook pair is
+  // left as it is on purpose: tightening it is a change to a live
+  // deployment's start-up behaviour and belongs in its own commit.
+  if ((googleClientId === null) !== (googleClientSecret === null)) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both be left unset',
+    )
+  }
 
   const allowDevLogin = source.ALLOW_DEV_LOGIN === '1'
   // The one genuinely dangerous switch in this slice (spec §2): refuse to
@@ -97,6 +115,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     appOrigin,
     facebookAppId,
     facebookAppSecret,
+    googleClientId,
+    googleClientSecret,
     allowDevLogin,
     port,
     adminBootstrapUsername,

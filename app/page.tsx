@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { resolveActiveViewerAccountId } from './_lib/auth.js'
 import { getDb } from './_lib/domain/db.js'
 import { env } from './_lib/domain/env.js'
+import { OpenInBrowser } from './_components/OpenInBrowser.js'
 
 export default async function HomePage({
   searchParams,
@@ -53,16 +54,33 @@ export default async function HomePage({
 
       {deleted === '1' && <p className="notice">تم حذف حسابك نهائياً.</p>}
 
+      <OpenInBrowser>
       <div className="card card--citron">
-        {env.facebookAppId ? (
+        {/* Google first, deliberately: it is the path published to everyone,
+            and the Facebook button only works for people with a role on the
+            unpublished Meta app. Both carry ?next= (week 15 §2.3) so a
+            stranger who opened a friend's link lands back on that link
+            after signing in, not in their own empty inbox. */}
+        {env.googleClientId && (
           <a
             className="btn btn--primary btn--block"
+            href={next ? `/auth/google/start?next=${encodeURIComponent(next)}` : '/auth/google/start'}
+          >
+            تسجيل دخول بحساب غوغل
+          </a>
+        )}
+
+        {env.facebookAppId && (
+          <a
+            className="btn btn--secondary btn--block"
             href={next ? `/auth/facebook/start?next=${encodeURIComponent(next)}` : '/auth/facebook/start'}
           >
             تسجيل دخول بفيسبوك
           </a>
-        ) : (
-          <p className="hint">تسجيل الدخول بفيسبوك مش متاح هلق.</p>
+        )}
+
+        {!env.googleClientId && !env.facebookAppId && (
+          <p className="hint">تسجيل الدخول مش متاح هلق.</p>
         )}
 
         {env.allowDevLogin && (
@@ -76,6 +94,7 @@ export default async function HomePage({
           </form>
         )}
       </div>
+      </OpenInBrowser>
 
       <p className="hint">
         <a href="/terms">الشروط والأحكام</a> · <a href="/privacy">سياسة الخصوصية</a>

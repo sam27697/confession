@@ -190,6 +190,8 @@
   --radius-md:18px;
   --radius-lg:28px;
   --radius-xl:36px;
+  /* Narrowest a share chip may be before its label wraps. */
+  --share-chip-min: 7.5rem;
   --radius-pill:999px;
 
   --radius-notch:10px;
@@ -2375,6 +2377,91 @@ main{
 
 
 
+
+
+/* The share panel on the story card, and the escape hatch out of an in-app
+   browser. Tokens only: no literal colour, radius, spacing or duration
+   appears below, so these follow the theme like every other class here. */
+.sharerow{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2);
+}
+.sharerow__grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(var(--share-chip-min), 1fr));
+  gap:var(--space-2);
+  margin-top:var(--space-2);
+}
+.sharechip{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:var(--space-1);
+  /* A thumb target, not a link. */
+  min-height:var(--control-h);
+  padding:var(--space-3) var(--space-2);
+  border:var(--space-hair) solid var(--line);
+  border-radius:var(--radius-card);
+  background:var(--surface-1);
+  color:var(--text-1);
+  font:inherit;
+  font-size:var(--size-caption);
+  text-align:center;
+  text-decoration:none;
+  cursor:pointer;
+  overflow:hidden;
+  transition:border-color var(--dur-hover) var(--ease-out), transform var(--dur-hover) var(--ease-out);
+}
+/* The shine: an accent glow behind the glyph, inside the tile, that lifts on
+   hover. One custom property per tile is the only thing that changes, so a
+   new destination is a colour and not a new rule. */
+.sharechip::before{
+  content:"";
+  position:absolute;
+  inset-block-start:calc(var(--space-6) * -1);
+  inline-size:var(--space-16);
+  block-size:var(--space-16);
+  border-radius:var(--radius-pill);
+  background:radial-gradient(circle, var(--chip-accent, var(--citron-500)) 0%, transparent 70%);
+  opacity:var(--chip-glow, .22);
+  filter:blur(var(--space-4));
+  transition:opacity var(--dur-hover) var(--ease-out);
+  pointer-events:none;
+}
+.sharechip__glyph{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  inline-size:var(--space-10);
+  block-size:var(--space-10);
+  border-radius:var(--radius-pill);
+  border:var(--space-hair) solid var(--line);
+  background:var(--bg-card-raised);
+  color:var(--chip-accent, var(--citron-500));
+}
+.sharechip__label{ position:relative; color:var(--text-2); }
+.sharechip:hover{ border-color:var(--chip-accent, var(--citron-500)); transform:translateY(calc(var(--space-hair) * -2)); }
+.sharechip:hover::before{ opacity:var(--chip-glow-hover, .42); }
+.sharechip:hover .sharechip__label{ color:var(--text-1); }
+.sharechip:active{ box-shadow:var(--shadow-press); transform:none; }
+.sharechip:focus-visible{ outline:var(--focus-ring); }
+
+.hint--tight{ margin-top:var(--space-1); }
+.linkish{
+  background:none;
+  border:0;
+  padding-top:var(--space-2);
+  color:var(--text-3);
+  font:inherit;
+  font-size:var(--size-caption);
+  text-decoration:underline;
+  cursor:pointer;
+}
+.linkish:focus-visible{ outline:var(--focus-ring); }
 
 /* ============================================================
    Week 15: the account corner and the decline note
