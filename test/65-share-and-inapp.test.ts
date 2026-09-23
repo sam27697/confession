@@ -88,9 +88,10 @@ test('share links encode Arabic captions and the url instead of pasting them in'
 })
 
 test('no link target claims to post a story', () => {
-  // Stories are unreachable from a web page on every one of these platforms;
-  // the labels must not promise otherwise. The native share sheet is the
-  // only route and it is a separate control.
+  // A plain link target opens a post or a message, never a story, so its
+  // label must not promise one. The routes that do reach a story are their
+  // own kinds: `story` (Facebook's share page, week 16) and `sheet` (the
+  // phone's share sheet with the image).
   for (const target of LINK_TARGETS) {
     assert.ok(!/ستوري|story/i.test(target.label), `${target.id} must not be labelled as a story share`)
   }
@@ -106,13 +107,13 @@ test('the Facebook story tile comes before the Facebook post tile', () => {
   assert.ok(story < post, 'story must render before post')
 })
 
-test('a sheet tile carries no URL, because no web route to a story exists', () => {
+test('a sheet tile carries no URL, because its destination has no web route', () => {
   for (const tile of SHARE_TILES) {
     if (tile.kind !== 'sheet') continue
     assert.ok(!('href' in tile), `${tile.id} must not pretend to have a web route`)
-    // Facebook's own docs: sharing to Stories is Android Intents and iOS
-    // custom URL schemes from a native app. A URL here would be a lie that
-    // fails in the user's hand rather than in this suite.
+    // The Stories APIs are Android intents and iOS URL schemes from a native
+    // app (week 16 §1.1), and Instagram has no share page. A URL here would
+    // be a lie that fails in the user's hand rather than in this suite.
   }
   assert.ok(SHARE_TILES.some((t) => t.kind === 'sheet'), 'the sheet route must be represented')
 })
