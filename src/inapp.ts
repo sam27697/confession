@@ -10,13 +10,13 @@
 // with Google", and hit a Google error page. Without this module the app's
 // main growth path and its only login are mutually exclusive.
 //
-// Pure string functions, no window, no navigator — the component passes the
+// Pure string functions, no window, no navigator -- the component passes the
 // user agent and the href in, so every branch below is testable.
 
 // Matched on the markers each app appends to its webview's user agent.
 // Facebook is FBAN/FBAV, Instagram is 'Instagram', and the rest are their
 // own names. Deliberately NOT matched: Safari, Chrome, Firefox, Samsung
-// Internet — a real browser must never be told to open a real browser.
+// Internet -- a real browser must never be told to open a real browser.
 const IN_APP_MARKERS = [
   'FBAN',
   'FBAV',

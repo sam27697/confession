@@ -16,7 +16,7 @@
 // FACEBOOK_SCOPE: accounts are keyed on the stable `sub` claim and the
 // product displays a name. An address the app never uses is an address it
 // should never hold. Adding a scope here changes the app's publishing
-// status — it is a decision, not a detail.
+// status -- it is a decision, not a detail.
 export const GOOGLE_SCOPE = 'openid profile'
 
 // Pinned in one place each, for the same reason GRAPH_API_VERSION is: an
@@ -54,8 +54,8 @@ export function buildAuthorizeUrl({
 
 export type GoogleTokenResult = { accessToken: string }
 
-// The access token this returns is used for exactly one call — fetchProfile
-// below — and then discarded by the caller. It is never stored, never put
+// The access token this returns is used for exactly one call -- fetchProfile
+// below -- and then discarded by the caller. It is never stored, never put
 // in a cookie, never logged.
 export async function exchangeCodeForToken({
   clientId,
@@ -86,7 +86,7 @@ export async function exchangeCodeForToken({
   })
 
   if (!res.ok) {
-    // Status only — the response body can carry request-identifying detail
+    // Status only -- the response body can carry request-identifying detail
     // and this error may end up in a log (spec §1 rule 3).
     throw new Error(`google token exchange failed with status ${res.status}`)
   }

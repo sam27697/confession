@@ -6,7 +6,7 @@
 //
 // Google refuses OAuth inside an embedded webview and answers
 // `403 disallowed_useragent`. This app is shared as a link in a story, so
-// most first visits arrive inside Instagram's or Facebook's in-app browser —
+// most first visits arrive inside Instagram's or Facebook's in-app browser --
 // which is precisely where the only login cannot work. Left alone, the app's
 // growth path and its sign-in are mutually exclusive, and the user sees a
 // Google error page with our name on it.

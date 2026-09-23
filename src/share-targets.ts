@@ -1,6 +1,6 @@
 // src/share-targets.ts
 //
-// Where a story card can actually go, and — just as important — where it
+// Where a story card can actually go, and -- just as important -- where it
 // cannot.
 //
 // THE RULE THIS FILE EXISTS TO RECORD: no web page can post to an Instagram,

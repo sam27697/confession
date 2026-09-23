@@ -7,7 +7,7 @@
 // The first test is the one that matters most and is not about code style.
 // Google's openid/profile scopes are non-sensitive, which is why this app
 // can be published with no OAuth verification, no 100-user cap and no
-// "unverified app" screen. Adding `email` — or anything else — to
+// "unverified app" screen. Adding `email` -- or anything else -- to
 // GOOGLE_SCOPE silently moves the app into a class that needs Google's
 // review, exactly as `email` would have re-opened Business Verification on
 // the Facebook side. This test is the tripwire for that.

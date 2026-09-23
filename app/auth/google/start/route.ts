@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   // work: open a friend's link, sign in, land in your own empty inbox.
   rememberDestination(store, new URL(request.url).searchParams.get('next'))
 
-  // The URL, the scope and the endpoints all come from src/google.ts — this
+  // The URL, the scope and the endpoints all come from src/google.ts -- this
   // route owns the state cookie and the redirect, and nothing about the
   // OAuth shape itself. Its own cookie name, not Facebook's: a user who
   // starts both flows in two tabs must not have one overwrite the other's

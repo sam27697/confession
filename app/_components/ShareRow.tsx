@@ -2,13 +2,13 @@
 
 // app/_components/ShareRow.tsx
 //
-// "شارك إلى" — one control with several destinations, as asked for.
+// "شارك إلى" -- one control with several destinations, as asked for.
 //
 // WHAT IS AND IS NOT POSSIBLE HERE, because the difference decides the whole
 // layout: **no web page can post to an Instagram, TikTok, WhatsApp or
 // Facebook story.** None of them expose a web endpoint for it. The only
-// route from a page into a story is the phone's own share sheet — which
-// DOES list all of those apps — so that is the primary button, and it
+// route from a page into a story is the phone's own share sheet -- which
+// DOES list all of those apps -- so that is the primary button, and it
 // carries the image itself, not a link.
 //
 // The row underneath is for the platforms that accept a link from the web.
@@ -137,7 +137,7 @@ export function ShareRow({
 
       <div className="sharerow__grid">
         {SHARE_TILES.map((t) => {
-          // A sheet tile has no URL to open — it hands the PNG to the phone's
+          // A sheet tile has no URL to open -- it hands the PNG to the phone's
           // share sheet. On a browser that cannot share files there is no
           // route at all, so the tile is not rendered rather than rendered
           // dead.

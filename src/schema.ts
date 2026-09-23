@@ -33,7 +33,7 @@ export const providerEnum = pgEnum('provider', ['facebook', 'google'])
 // growth decision: Meta requires a VERIFIED business portfolio to publish
 // an app to the public whatever the scope, and refused that verification
 // for an individual developer. Google's openid/profile scopes are
-// non-sensitive and need no review, so the product ships. Keep both — an
+// non-sensitive and need no review, so the product ships. Keep both -- an
 // account is keyed on (provider, provider_user_id) and the Facebook rows
 // that already exist stay valid.
 
