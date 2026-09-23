@@ -283,3 +283,40 @@ So the record is `{ dnsResolved, probePath, status?, location? }`, and
 spec's own contract, made before the code was written rather than after a test
 went red, and §3 item 9 is unchanged: it was always the stricter and the
 correct requirement, and §1.1 was the half that was wrong.
+
+### §4.2 `--path` belongs to the retired rows only
+
+Found by running it. `node scripts/check-origins.mjs --path /c/example` turned
+all four rows red: the two retired origins on NXDOMAIN, which is the finding,
+and the two live origins on a 404, which is the correct answer for a slug
+nobody owns. A check that goes red on correct behaviour is a check that gets
+ignored, and that is the failure mode this whole slice exists to prevent.
+
+`--path` exists to prove a retired origin preserves the path, because the path
+is what carries somebody's already-posted link. A live origin is probed at `/`
+and always at `/`. Section §1.2's step 2 is amended to that; the judgement in
+§1.1 is unchanged and so is every item of §3.
+
+Measured after the change, verbatim:
+
+```
+check-origins: probing 4 origins at /c/example
+
+ok   live     200 at https://masaraha.provefair.app
+ok   live     200 at https://stg.masaraha.provefair.app
+FAIL retired  NXDOMAIN: https://confession.fayad.app resolves to no A and no AAAA record, so nothing after DNS was measured
+FAIL retired  NXDOMAIN: https://stg.confession.fayad.app resolves to no A and no AAAA record, so nothing after DNS was measured
+
+check-origins: 2 of 4 origins are not keeping the contract.
+```
+
+### §4.3 Two things confirmed on the way past, so they are not re-litigated
+
+- **Week 15's dead ends are live.** `https://masaraha.provefair.app/c/example`
+  answers 404 with «ما لقينا هالصفحة» and a «رجوع» link, not Next's built-in
+  English page. Finding D of week 15 is closed on production.
+- **The working tree at `repos/confession` is not writable by this account.**
+  `src/`, `test/`, `app/` and the repository root are owned by uid 1006 with
+  mode 755, so `src/origins.ts` could not be created there at all. Both halves
+  of this slice were therefore built in fresh worktrees, which is the isolation
+  week 7 §9 asked for anyway. Recorded because the next session will hit it.
