@@ -261,3 +261,25 @@ worktree, without reading `src/origins.ts` or the script. Items in §3.
 
 No existing test is edited by this slice. If one turns red, the fix is in this
 slice's code.
+
+---
+
+## §4 Found while building, after the freeze
+
+Recorded here rather than folded back into §1, so the frozen text still says
+what was known before any code.
+
+### §4.1 The probe record has to carry the path it was taken at
+
+§1.1 lists the probe record as `dnsResolved`, `status` and `location`, and §3
+item 9 requires a 301 that carries the successor's origin with the path dropped
+to FAIL. Those two cannot both hold: with only a `location` to look at, a
+redirect to `https://masaraha.provefair.app/` is indistinguishable from a
+correct redirect of a probe taken at `/`. The verdict needs to know what was
+asked for.
+
+So the record is `{ dnsResolved, probePath, status?, location? }`, and
+`probePath` defaults to `/` when it is absent. This is a correction to the
+spec's own contract, made before the code was written rather than after a test
+went red, and §3 item 9 is unchanged: it was always the stricter and the
+correct requirement, and §1.1 was the half that was wrong.
