@@ -309,6 +309,16 @@
   /* The hairline on a destructive panel. --danger-wash (.12) is its fill and
      --danger-700 its solid edge; this is the step between them. */
   --danger-line:rgba(255,92,77,0.25); /* @kind color */
+
+  /* How long an action's confirmation stays on screen (week 15 §3.1). Not a
+     --dur-*: those are transition speeds and collapse to 1ms under reduced
+     motion, and a sentence that vanished in 1ms would not be read at all. */
+  --flash-life:5200ms; /* @kind motion */
+
+  /* The spotlight's dim while someone types (week 15). Was .85 black under
+     a blur: the page behind the field went unreadable, and the field went
+     with it. Lighter, and unblurred, it still recedes. */
+  --spotlight-dim:rgba(0,0,0,0.55); /* @kind color */
 }
 
 /* tokens/base.css -- مصارحة base reset. RTL is not a modifier here, it is
@@ -327,9 +337,22 @@ body::before {
   transition: background 0.6s ease;
 }
 body:has(.input:focus-visible, .textarea:focus-visible)::before {
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
+  background: var(--spotlight-dim);
+}
+/* What is being written stays in the light (week 15). Only a .card holding
+   the focused field was ever lifted above the dim, and most fields are not
+   in one: the send screen's message box, the offer answer and the report
+   reason all went dark along with the page, at 85% black under a blur, while
+   the person was typing into them. The entrance animation also leaves every
+   .enter child with a transform, which makes it a stacking context, so
+   lifting the field alone cannot work; the form that holds it, and the
+   animated block around that, are lifted instead. The whole form rises,
+   which keeps the send button and the sender disclosure beside the field
+   readable (test/63 section 3.4). */
+form:has(.input:focus-visible, .textarea:focus-visible),
+.enter > :has(.input:focus-visible, .textarea:focus-visible){
+  position: relative;
+  z-index: 11;
 }
 /* The full-page film grain is deliberately not here.
    The week-12 recolour drew it with an SVG data URI running fractal noise.
@@ -672,7 +695,7 @@ main{
   content:'';
   width:6px;
   height:6px;
-  border-radius:999px;
+  border-radius:var(--radius-pill);
   background:currentColor;
   opacity:.9;
 }
@@ -807,7 +830,7 @@ main{
 
 .daily-spark__badge{
   font:var(--type-caption);
-  font-weight:700;
+  font-weight:var(--weight-bold);
   color:var(--citron-400);
   background:var(--citron-wash);
   padding:var(--space-1) var(--space-2);
@@ -1232,14 +1255,17 @@ main{
   transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);
 }
 /* The same two tones as .notice--citron and .notice--danger: a toast is a
-   transient echo of a notice, so it says things the same way. */
+   transient echo of a notice, so it says things the same way. A notice sits
+   on the page, but a toast floats over whatever is scrolled beneath it, so
+   the translucent wash is laid over an opaque --surface-3 rather than over
+   the message text underneath (week 15). */
 .toast--citron{
-  background:var(--citron-wash);
+  background:linear-gradient(var(--citron-wash),var(--citron-wash)),var(--surface-3);
   border-color:rgba(214,242,91,.26);
   color:var(--citron-100);
 }
 .toast--danger{
-  background:var(--danger-wash);
+  background:linear-gradient(var(--danger-wash),var(--danger-wash)),var(--surface-3);
   border-color:rgba(255,92,77,.32);
   color:#FFC9C1;
 }
@@ -1682,7 +1708,7 @@ main{
 .send-hero__text{
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:var(--space-1);
 }
 .send-hero__text h1{
   margin:0;
@@ -1762,11 +1788,13 @@ main{
    var(--veil-citron) on .empty since week 11. Two washes at 10% citron, and
    the copy reads at the same contrast over them.
 
-   Recorded in .uxprogram/decisions.md as D-011 rather than left as a silent
-   contradiction. The line the B3-T03 commit replaced said "(No veil, no glow -
-   spec section 3.5)"; deleting a rule's only comment is how a rule gets lost,
-   so it is written out here instead. Reverting is one edit: drop the
-   background-image below and test/61's AC1 with it. */
+   Recorded in the UX program's decisions.md as D-011 rather than left as a
+   silent contradiction (the program is retired; read it with
+   `git show ux-B-c3:.uxprogram/decisions.md`). The line the B3-T03 commit
+   replaced said "(No veil, no glow - spec section 3.5)"; deleting a rule's
+   only comment is how a rule gets lost, so it is written out here instead.
+   Reverting is one edit: drop the background-image below and test/61's AC1
+   with it. */
 .sent-empty{
   display:flex;
   flex-direction:column;
@@ -1860,7 +1888,7 @@ main{
 .sent-resolved__item{
   display:flex;
   flex-direction:column;
-  gap:2px;
+  gap:var(--space-hair);
 }
 
 .sent-resolved__text{
@@ -2099,7 +2127,7 @@ main{
   background:var(--citron-500);
   color:var(--text-on-accent);
   box-shadow:0 0 0 1px var(--citron-300);
-  font-weight:700;
+  font-weight:var(--weight-bold);
   font-size:var(--size-caption);
   flex-shrink:0;
 }
@@ -2345,7 +2373,7 @@ main{
   gap: var(--space-2);
 }
 
-/* Design tokens contract v1 codified in .uxprogram/tokens.md */
+/* Design tokens contract v1 codified in docs/tokens.md */
 
 
 
@@ -2434,3 +2462,55 @@ main{
   cursor:pointer;
 }
 .linkish:focus-visible{ outline:var(--focus-ring); }
+
+/* ============================================================
+   Week 15: the account corner and the decline note
+   (docs/SPEC-week15-service-softening.md)
+   ============================================================ */
+
+/* The foot of /inbox (§1 item 12): terms, privacy and delete account as
+   three quiet text links, centred, each with a full tap target. Deleting is
+   still one tap away; it no longer stands alone as the last button under
+   someone's messages. */
+.account-links{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:0 var(--space-5);
+  margin:var(--space-8) 0 var(--space-4);
+  font:var(--type-caption);
+}
+.account-links a{
+  display:inline-flex;
+  align-items:center;
+  min-height:var(--tap-min);
+  color:var(--text-3);
+  text-decoration:none;
+  transition:color var(--dur-hover) var(--ease-standard);
+}
+.account-links a:hover{color:var(--text-1)}
+
+/* The confirmation after an action (§3.1). A Server Action's redirect is a
+   soft navigation that keeps the scroll position, so a notice at the top of
+   the page lands off-screen for someone who acted on the fifth card. It is
+   rendered on the server into a .toasts box, so it is pinned exactly where
+   the client toasts are and is seen wherever the page is scrolled to, with
+   JavaScript or without; this rule only makes it leave on its own. Opacity
+   only, no travel, so reduced motion has nothing to take away; and hidden,
+   not just transparent, once it is gone. */
+.flash{
+  animation:flash-life var(--flash-life) linear both;
+}
+@keyframes flash-life{
+  0%{opacity:0}
+  4%{opacity:1}
+  92%{opacity:1}
+  100%{opacity:0;visibility:hidden}
+}
+
+/* The line under «رفض العرض نهائياً» (§3.4), centred under the button it
+   explains so it reads as that button's caption. */
+.offer-actions__note{
+  margin-top:var(--space-2);
+  text-align:center;
+}

@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const INBOX_PAGE = path.join(REPO_ROOT, 'app', 'inbox', 'page.tsx')
 const SENT_PAGE = path.join(REPO_ROOT, 'app', 'sent', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Sub-navigation tab bar renders numeric count badges (.app-nav__badge) indicating message volume', () => {
   assert.ok(existsSync(INBOX_PAGE), 'app/inbox/page.tsx must exist')
@@ -83,7 +83,7 @@ test('AC4 (KEEP): Inbox confession list, daily spark banner, and sent filter pil
 })
 
 test('AC5 (HUMAN): Human checklist contains HC-31 item for tab volume badges', () => {
-  assert.ok(existsSync(HUMAN_CHECKLIST), '.uxprogram/human_checklist.md must exist')
+  assert.ok(existsSync(HUMAN_CHECKLIST), 'docs/human_checklist.md must exist')
   const content = readFileSync(HUMAN_CHECKLIST, 'utf8')
   assert.match(
     content,

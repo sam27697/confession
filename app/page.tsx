@@ -56,16 +56,27 @@ export default async function HomePage({
 
       <OpenInBrowser>
       <div className="card card--citron">
-        {/* Google first, deliberately. It is the path that is actually
-            published to everyone; the Facebook button is only live for
-            people with a role on the unpublished Meta app. Ordering the
-            buttons by what works avoids a first-run dead end. */}
+        {/* Google first, deliberately: it is the path published to everyone,
+            and the Facebook button only works for people with a role on the
+            unpublished Meta app. Both carry ?next= (week 15 §2.3) so a
+            stranger who opened a friend's link lands back on that link
+            after signing in, not in their own empty inbox. */}
         {env.googleClientId && (
-          <a className="btn btn--primary btn--block" href="/auth/google/start">تسجيل دخول بحساب غوغل</a>
+          <a
+            className="btn btn--primary btn--block"
+            href={next ? `/auth/google/start?next=${encodeURIComponent(next)}` : '/auth/google/start'}
+          >
+            تسجيل دخول بحساب غوغل
+          </a>
         )}
 
         {env.facebookAppId && (
-          <a className="btn btn--secondary btn--block" href="/auth/facebook/start">تسجيل دخول بفيسبوك</a>
+          <a
+            className="btn btn--secondary btn--block"
+            href={next ? `/auth/facebook/start?next=${encodeURIComponent(next)}` : '/auth/facebook/start'}
+          >
+            تسجيل دخول بفيسبوك
+          </a>
         )}
 
         {!env.googleClientId && !env.facebookAppId && (

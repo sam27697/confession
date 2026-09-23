@@ -57,6 +57,8 @@ export async function declineOfferAction(formData: FormData) {
     redirect(`/offer/${offerId}?error=generic`)
   }
 
-  // Terminal, no nag, no penalty (DESIGN.md) — straight back to his own list.
-  redirect('/sent')
+  // Terminal, no nag, no penalty (DESIGN.md). Straight back to the sender's
+  // own list, with one line saying it is done and that nothing was revealed
+  // (week 15 §3.1).
+  redirect('/sent?done=declined')
 }

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { env } from '../../../_lib/domain/env.js'
 import { exchangeCodeForToken, fetchProfile } from '../../../../src/google.js'
-import { GOOGLE_OAUTH_STATE_COOKIE } from '../../../_lib/session.js'
+import { AFTER_LOGIN_COOKIE, GOOGLE_OAUTH_STATE_COOKIE } from '../../../_lib/session.js'
 import { resolveLoginAndRedirect } from '../../../_lib/login-flow.js'
 
 export async function GET(request: Request) {
@@ -41,6 +41,15 @@ export async function GET(request: Request) {
     return new Response('login failed', { status: 400 })
   }
 
-  await resolveLoginAndRedirect({ provider: 'google', providerUserId: profile.id, displayName: profile.name })
+  // Set by /auth/google/start from its ?next= (week 15 §2.3).
+  // resolveLoginAndRedirect sanitises it again and, if the visitor still
+  // has terms to accept, carries it on through /onboarding.
+  const remembered = store.get(AFTER_LOGIN_COOKIE)?.value ?? null
+  store.delete(AFTER_LOGIN_COOKIE)
+
+  await resolveLoginAndRedirect(
+    { provider: 'google', providerUserId: profile.id, displayName: profile.name },
+    remembered,
+  )
   return new Response(null, { status: 302 })
 }

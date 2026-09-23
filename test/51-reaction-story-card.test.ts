@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const STORY_CARD = path.join(REPO_ROOT, 'app', '_components', 'StoryCard.tsx')
 const INBOX_PAGE = path.join(REPO_ROOT, 'app', 'inbox', 'page.tsx')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): StoryCard accepts optional reactionText prop and handles reaction canvas drawing with line limits', () => {
   assert.ok(existsSync(STORY_CARD), 'StoryCard.tsx must exist')

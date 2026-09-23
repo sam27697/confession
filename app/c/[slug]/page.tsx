@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import { getViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { getLinkBySlug } from '../../_lib/domain/links.js'
@@ -18,15 +19,18 @@ import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 // neither becomes a second, easier user-enumeration oracle than the page
 // underneath already is (§2.6).
 //
-// This does exactly one read by slug, the same query the page component
-// below also runs — it is not combined with it because src/links.ts is
-// frozen (builder A's signatures) and generateMetadata and the page
-// component are two independent Next entry points, not a shared call
-// frame.
+// generateMetadata and the page component are two independent Next entry
+// points, not a shared call frame, and src/links.ts is frozen (builder A's
+// signatures), so they cannot share a variable. They share a request
+// instead: React's cache() memoises per request, so the slug is read from
+// the database once and the second caller gets the same row from memory
+// (week 15 §2). This is the page every shared link lands on, the busiest
+// read in the app.
+const loadLink = cache((slug: string) => getLinkBySlug(getDb(), { slug }))
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const db = getDb()
-  const link = await getLinkBySlug(db, { slug })
+  const link = await loadLink(slug)
 
   if (!link || !link.enabled) return {}
 
@@ -45,11 +49,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 const ERROR_COPY: Record<string, string> = {
-  signin: 'لازم تسجل دخول تبعت رسالة.',
-  empty: 'لازم تكتب شي.',
-  ratelimit: 'بعتّ كتير رسائل، جرب بعد شوي.',
-  unavailable: 'الرابط مش متاح هلق.',
-  generic: 'صار في مشكلة، جرب لاحقاً.',
+  signin: 'سجّل دخول أول، وبعدها فيك تبعت رسالتك.',
+  empty: 'الرسالة فاضية. اكتب شي قبل ما تبعت.',
+  ratelimit: 'بعتّ رسايل كتير بوقت قصير. خود استراحة صغيرة وجرب بعد شوي.',
+  unavailable: 'هالرابط مش عم يستقبل رسايل هلق.',
+  generic: 'صار خلل من عنا، مش منك. جرب كمان مرة بعد شوي.',
 }
 
 const STARTER_PROMPTS = [
@@ -65,7 +69,9 @@ function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName
       <p className="send-pitch">
         صارح {ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
       </p>
-      <p className="hint">لازم تسجل دخول قبل ما تبعت.</p>
+      {/* True for a first-time visitor too: next rides through /onboarding
+          in the after_login cookie (week 15 §2.3). */}
+      <p className="hint">تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.</p>
       <a className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول {ACTION_EMOJI.send}</a>
     </div>
   )
@@ -80,16 +86,22 @@ export default async function SendPage({
 }) {
   const { slug } = await params
   const { sent, error } = await searchParams
-  const db = getDb()
-  const link = await getLinkBySlug(db, { slug })
+  const link = await loadLink(slug)
 
   if (!link) notFound()
 
   if (!link.enabled) {
+    // A visitor who followed a friend's link to a switched-off box is still
+    // a visitor who wanted to write something. Say it is paused rather than
+    // gone, and offer them their own box (week 15 §3.5).
     return (
       <div className="veil enter">
-        <div className="notice">
-          <p>هالرابط مطفي هلق.</p>
+        <div className="empty">
+          <p>هالرابط مش عم يستقبل رسايل هلق.</p>
+          <p>صاحبه طفّاه لفترة. فيك ترجع بعدين، أو تفتح صندوقك وتخلي رفقاتك يصارحوك.</p>
+          <a className="btn btn--secondary btn--sm" href="/inbox">
+            افتح صندوقك السري
+          </a>
         </div>
       </div>
     )

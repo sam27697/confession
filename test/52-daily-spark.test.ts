@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const INBOX_PAGE = path.join(REPO_ROOT, 'app', 'inbox', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): Inbox renders ambient daily rotating Levantine spark banner with deterministic day index', () => {
   assert.ok(existsSync(INBOX_PAGE), 'app/inbox/page.tsx must exist')

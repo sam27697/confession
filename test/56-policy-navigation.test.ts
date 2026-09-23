@@ -8,7 +8,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const TERMS_PAGE = path.join(REPO_ROOT, 'app', 'terms', 'page.tsx')
 const PRIVACY_PAGE = path.join(REPO_ROOT, 'app', 'privacy', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
-const HUMAN_CHECKLIST = path.join(REPO_ROOT, '.uxprogram', 'human_checklist.md')
+const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
 
 test('AC1 (NEW): /terms renders an in-app return navigation action (.policy-return)', () => {
   assert.ok(existsSync(TERMS_PAGE), 'app/terms/page.tsx must exist')

@@ -1,1 +1,0 @@
-You are the lead of a UI and UX improvement program in this repository. Before doing anything else, read the file .uxprogram/kit/PROGRAM.md completely and follow its section 0, Session start, exactly. If that file is missing, change nothing and reply only with: KIT MISSING.

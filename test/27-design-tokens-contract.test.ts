@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const TOKENS_MD_PATH = path.join(REPO_ROOT, '.uxprogram', 'tokens.md')
+const TOKENS_MD_PATH = path.join(REPO_ROOT, 'docs', 'tokens.md')
 const GLOBALS_CSS_PATH = path.join(REPO_ROOT, 'app', 'globals.css')
 
 test('AC1: tokens.md exists and documents all 7 token categories with exact CSS variables', () => {
-  assert.ok(existsSync(TOKENS_MD_PATH), '.uxprogram/tokens.md must exist')
+  assert.ok(existsSync(TOKENS_MD_PATH), 'docs/tokens.md must exist')
   const content = readFileSync(TOKENS_MD_PATH, 'utf8')
 
   const categories = [
@@ -43,7 +43,7 @@ test('AC1: tokens.md exists and documents all 7 token categories with exact CSS 
 })
 
 test('AC2: token adoption in app/globals.css is verified against tokens.md specification', () => {
-  assert.ok(existsSync(TOKENS_MD_PATH), '.uxprogram/tokens.md must exist')
+  assert.ok(existsSync(TOKENS_MD_PATH), 'docs/tokens.md must exist')
   const tokensContent = readFileSync(TOKENS_MD_PATH, 'utf8')
   assert.ok(existsSync(GLOBALS_CSS_PATH), 'app/globals.css must exist')
   const css = readFileSync(GLOBALS_CSS_PATH, 'utf8')

@@ -5,6 +5,7 @@ import { getDb } from '../_lib/domain/db.js'
 import { getViewerAccountId, requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getAccountById, createAccountWithTerms, recordTermsReacceptance } from '../_lib/domain/accounts.js'
 import { TERMS_VERSION } from '../_lib/domain/terms.js'
+import { takeRememberedDestination } from '../_lib/login-flow.js'
 import {
   SID_COOKIE,
   PENDING_IDENTITY_COOKIE,
@@ -31,7 +32,9 @@ export async function acceptTermsAction(formData: FormData) {
     if (account.termsVersion < TERMS_VERSION) {
       await recordTermsReacceptance(db, { accountId, termsVersion: TERMS_VERSION, locale: 'ar' })
     }
-    redirect('/inbox')
+    // '/inbox' unless the login that sent them here was on its way somewhere
+    // (week 15 §2.3).
+    redirect(await takeRememberedDestination())
   }
 
   const pendingRaw = store.get(PENDING_IDENTITY_COOKIE)?.value
@@ -49,5 +52,7 @@ export async function acceptTermsAction(formData: FormData) {
 
   store.set(SID_COOKIE, createSessionCookieValue(accountId), sidCookieOptions)
   store.delete(PENDING_IDENTITY_COOKIE)
-  redirect('/inbox')
+  // A stranger who signed up from a friend's link goes back to that link,
+  // not to their own empty inbox (week 15 §0.5).
+  redirect(await takeRememberedDestination())
 }

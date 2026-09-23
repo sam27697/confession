@@ -98,6 +98,17 @@ export const pendingIdentityCookieOptions = {
   maxAge: PENDING_IDENTITY_MAX_AGE_SECONDS,
 }
 
+// Week 15 §2.3: where a visitor was headed when they signed in, carried
+// across the OAuth round trip and through /onboarding. Unsigned on
+// purpose: it only ever holds a path that already passed
+// sanitizeNextDestination, and every reader sanitises it again, so a
+// tampered value can at worst name another page on this same origin. It
+// lives as long as the pending identity it travels beside. Shared by both
+// providers: where someone was going has nothing to do with who they
+// signed in with.
+export const AFTER_LOGIN_COOKIE = 'after_login'
+export const afterLoginCookieOptions = pendingIdentityCookieOptions
+
 // One set of options, both providers: the state cookie's security
 // properties have nothing to do with which provider issued the redirect.
 export const oauthStateCookieOptions = {

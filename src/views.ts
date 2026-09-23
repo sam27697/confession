@@ -21,7 +21,7 @@
 // change needs one, the sentence the sender consents to changes first.
 // See docs/SPEC-week2-data-model.md, CORRECTION 2026-08-28.
 
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, ne } from 'drizzle-orm'
 import type { Db } from './db.js'
 import {
   accounts,
@@ -100,6 +100,12 @@ export async function getInboxForRecipient(
     })
     .from(confessions)
     .where(eq(confessions.linkId, linkId))
+    // Newest first. Without an ORDER BY the list came back in heap order,
+    // oldest on top, and within one hour bucket that order was the exact
+    // order of sending, the precision created_hour exists to discard. id is
+    // a random uuid, so the tiebreak is stable and says nothing about who
+    // sent first (week 15 §2.1).
+    .orderBy(desc(confessions.createdHour), confessions.id)
 
   if (confessionRows.length === 0) return []
 
@@ -315,6 +321,8 @@ export async function getSentForSender(
     .innerJoin(links, eq(links.id, confessions.linkId))
     .innerJoin(accounts, eq(accounts.id, links.ownerAccountId))
     .where(eq(confessions.senderAccountId, senderAccountId))
+    // Same order and same reason as getInboxForRecipient (week 15 §2.1).
+    .orderBy(desc(confessions.createdHour), confessions.id)
 
   if (confessionRows.length === 0) return []
 
@@ -394,4 +402,34 @@ export async function getSentForSender(
       offer: reveal,
     }
   })
+}
+
+// The tab badges on /inbox and /sent (week 15 §2.2). Each tab used to read
+// the other tab's entire list, bodies and answers included, to print one
+// number. These return the number and nothing else: no body, no display
+// name, no account id.
+
+// Messages on one link that the owner has not hidden, the same filter the
+// inbox applies before it renders. Callers pass the link they already
+// resolved for the viewer through getLinkForOwner, so ownership was decided
+// there, not here.
+export async function countVisibleInboxForLink(db: Db, { linkId }: { linkId: string }): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(confessions)
+    .where(and(eq(confessions.linkId, linkId), ne(confessions.status, 'hidden_by_recipient')))
+  return row?.n ?? 0
+}
+
+// Confessions the viewer sent. The WHERE clause is getSentForSender's own,
+// filtered on the viewer's id, so no other person's identity is involved.
+export async function countSentForSender(
+  db: Db,
+  { senderAccountId }: { senderAccountId: string },
+): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(confessions)
+    .where(eq(confessions.senderAccountId, senderAccountId))
+  return row?.n ?? 0
 }

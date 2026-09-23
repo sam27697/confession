@@ -1,12 +1,26 @@
 import { requireActiveViewerAccountId } from '../_lib/auth.js'
 import { getDb } from '../_lib/domain/db.js'
-import { getInboxForRecipient, getSentForSender } from '../_lib/domain/views.js'
+import { countVisibleInboxForLink, getSentForSender } from '../_lib/domain/views.js'
 import { getLinkForOwner } from '../_lib/domain/links.js'
 import type { SentConfession } from '../_lib/domain/views.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
 
-function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
+// Week 15 §3.1: what the offer page's actions just did, keyed, never free
+// text from the URL.
+const DONE_COPY: Record<string, string> = {
+  declined: 'سكّرنا العرض. ما انكشف شي عنك.',
+}
+
+// The resolved card names whose answer sits beside the sender's. That name
+// is on the row already («لـ ...»), so it rides into the card with the offer
+// instead of the card guessing a pronoun (week 15 §3.3).
+type ResolvedOffer = Extract<SentConfession['offer'], { kind: 'resolved' }>
+type SentOfferView =
+  | Exclude<SentConfession['offer'], { kind: 'resolved' }>
+  | (ResolvedOffer & { recipientDisplayName: string })
+
+function OfferBlock({ offer }: { offer: SentOfferView }) {
   if (offer.kind === 'none') return null
 
   if (offer.kind === 'pending') {
@@ -24,7 +38,7 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
   if (offer.kind === 'declined') {
     return (
       <div className="sent-declined">
-        <p className="hint">ما وافقت على المصارحة.</p>
+        <p className="hint">ما وافقت على المصارحة، وما انكشف شي عنك.</p>
       </div>
     )
   }
@@ -45,7 +59,9 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
           <p className="sent-resolved__text">{offer.senderAnswer}</p>
         </div>
         <div className="sent-resolved__item">
-          <span className="hint">جوابها</span>
+          {/* The name is on this row already; guessing a pronoun made every
+              recipient a woman (week 15 §3.3). */}
+          <span className="hint">جواب {offer.recipientDisplayName}</span>
           <p className="sent-resolved__text">{offer.recipientAnswer}</p>
         </div>
       </div>
@@ -56,18 +72,25 @@ function OfferBlock({ offer }: { offer: SentConfession['offer'] }) {
 export default async function SentPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ filter?: string }>
+  searchParams?: Promise<{ filter?: string; done?: string }>
 }) {
-  const { filter = 'all' } = (await searchParams) || {}
+  const { filter = 'all', done } = (await searchParams) || {}
   const db = getDb()
   const senderAccountId = await requireActiveViewerAccountId(db)
-  const messages = await getSentForSender(db, { senderAccountId })
-  const link = await getLinkForOwner(db, { ownerAccountId: senderAccountId })
-  let totalInbox = 0
-  if (link) {
-    const inboxMessages = await getInboxForRecipient(db, { linkId: link.linkId, viewerAccountId: senderAccountId })
-    totalInbox = inboxMessages.filter((m) => m.status !== 'hidden_by_recipient').length
-  }
+  // The list and the inbox tab's badge are independent reads, so they run
+  // together, and the badge is a count rather than the whole inbox with
+  // every body in it (week 15 §2.2). Same link, same hidden filter as before.
+  const [sentRows, totalInbox] = await Promise.all([
+    getSentForSender(db, { senderAccountId }),
+    getLinkForOwner(db, { ownerAccountId: senderAccountId }).then((link) =>
+      link ? countVisibleInboxForLink(db, { linkId: link.linkId }) : 0,
+    ),
+  ])
+  const messages = sentRows.map((m) => {
+    const offer: SentOfferView =
+      m.offer.kind === 'resolved' ? { ...m.offer, recipientDisplayName: m.recipientDisplayName } : m.offer
+    return { ...m, offer }
+  })
   const now = new Date()
   const totalSent = messages.length
   const isSentEmpty = totalSent === 0
@@ -104,6 +127,15 @@ export default async function SentPage({
           {isSentEmpty ? `لسا فاضية ${MOOD_EMOJI.nothingSent}` : `${totalSent} ${ACTION_EMOJI.send}`}
         </span>
       </div>
+
+      {/* The same pinned confirmation as /inbox (week 15 §3.1). */}
+      {done && DONE_COPY[done] && (
+        <div className="toasts flash" key={now.getTime()}>
+          <p className="toast toast--citron" role="status">
+            {DONE_COPY[done]}
+          </p>
+        </div>
+      )}
 
       {!isSentEmpty && (
         <div className="sent-filters" role="tablist" aria-label="تصفية الرسائل المرسلة">
