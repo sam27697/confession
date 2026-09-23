@@ -1,3 +1,7 @@
+# Program closed, 2026-09-23
+NEXT: none. See STATE.md "Program close". The notes below are the last
+handoff written while the program was running, kept as they were.
+
 # Handoff after B3, 2026-09-21
 NEXT: row 11, track C, cycle 3
 
