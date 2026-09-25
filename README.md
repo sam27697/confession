@@ -36,9 +36,10 @@ it applies are the same files the deploy applies.
 
 ## Deploying
 
-Staging is `stg.confession.fayad.app` on port 8182; production is
-`confession.fayad.app` on 8082. Both are the reverse proxy's business, not
-this repo's. The deploy account is not root and has no access to the proxy.
+Staging is `stg.masaraha.provefair.app` on port 8182; production is
+`masaraha.provefair.app` on 8082. Both are the reverse proxy's business, not
+this repo's. `src/origins.ts` is the table of every origin this product has
+advertised, and `node scripts/check-origins.mjs` probes it from outside. The deploy account is not root and has no access to the proxy.
 
 From the build session, with `bin/asam.sh` as the only channel to the box:
 
@@ -50,7 +51,7 @@ bin/asam.sh put /tmp/DEPLOY_VERSION        /srv/apps/confession/DEPLOY_VERSION
 bin/asam.sh sh 'set -e; cd /srv/apps/confession; rm -rf repo; mkdir repo;
   tar xzf repo.tar.gz -C repo; mv DEPLOY_VERSION repo/DEPLOY_VERSION;
   rm -f repo.tar.gz; chmod +x repo/deploy.sh; ./repo/deploy.sh'
-bin/asam.sh check stg.confession.fayad.app
+bin/asam.sh check stg.masaraha.provefair.app
 ```
 
 The tree is transferred as files rather than cloned: the deploy account holds
@@ -109,8 +110,6 @@ server, it is chmod 600, and it is never committed and never printed.
   `/auth/facebook/*` answers 503 by design, and `POST /auth/dev` — which
   exists only when `ALLOW_DEV_LOGIN=1`, and refuses to start on any origin
   that is not `https://stg.` or `http://localhost` — is the only way in.
-- **Nothing is promoted to production.** `confession.fayad.app` still answers
-  503, which is the proxy's "not deployed yet" page.
 - **No moderation dashboard.** `getAdminInbox` and `adminReveal` are the
   primitives a dashboard would be built from, not the dashboard itself.
 - **No analytics of any kind**, by design — an analytics SDK on the send

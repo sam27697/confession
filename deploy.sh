@@ -10,7 +10,7 @@
 #
 # It deliberately does NOT verify from outside: this script has no view of
 # DNS or the certificate. The external check is
-# `bin/asam.sh check stg.confession.fayad.app` from the build session, and
+# `bin/asam.sh check stg.masaraha.provefair.app` from the build session, and
 # that is the claim that counts.
 set -euo pipefail
 
