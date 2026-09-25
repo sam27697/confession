@@ -3,16 +3,20 @@
 // Where a story card can actually go, and -- just as important -- where it
 // cannot.
 //
-// THE RULE THIS FILE EXISTS TO RECORD: no web page can post to an Instagram,
-// TikTok, WhatsApp or Facebook **story**. Those platforms expose no web
-// endpoint for it; the only route from a web page into a story is the
-// operating system's own share sheet (navigator.share with a file), which
-// the user then points at whichever app they like. Everything listed below
-// as a link target opens a POST or a MESSAGE, never a story, and the labels
-// say so rather than implying otherwise.
+// THE RULE THIS FILE EXISTS TO RECORD, as corrected in week 16
+// (docs/SPEC-week16-clickable-story.md §1): no platform offers an API that
+// lets a web page, or even a native app, post a story that opens a link.
+// Facebook's Stories API takes images, stickers and colours and nothing else.
+// But Facebook's OWN share page (m.facebook.com/sharer.php) lets a signed-in
+// person pick "Your story" as the destination, and a link shared that way
+// becomes a story drawn from the page's Open Graph card that opens the link
+// when tapped. That is the one web route to a clickable story, and it is a
+// `story` target below. Instagram, TikTok and WhatsApp status have no such
+// page; the only route into them is the phone's share sheet with the image
+// (a `sheet` tile), made clickable by the person adding a link sticker.
 //
-// So the card's primary action is the native share sheet, and these links
-// are the secondary row for the platforms that do accept a link from the web.
+// Everything listed as a plain `link` target opens a POST or a MESSAGE, never
+// a story, and the labels say so rather than implying otherwise.
 
 // The glyph a tile draws. Deliberately generic shapes that describe the
 // ACTION -- send, post, save a link -- and not any platform's mark. The
@@ -39,12 +43,10 @@ export type ShareTarget = {
 }
 
 // A tile that goes through the phone's own share sheet carrying the PNG,
-// because the destination has NO web route. Facebook's own documentation is
-// explicit: sharing to Stories is done "by using Android Implicit Intents and
-// iOS Custom URL Schemes" from a native app. There is no browser equivalent,
-// on any of these platforms. The share sheet is the route, and from it the
-// user picks Facebook and then Your Story -- one extra tap, and the only tap
-// that exists.
+// because the destination has NO web route: Instagram has no share page, and
+// its Stories API is native-only (week 16 §1.1). From the sheet the person
+// picks the app and then Story; the link rides along on the clipboard for the
+// link sticker.
 export type SheetTile = {
   kind: 'sheet'
   id: string
@@ -54,7 +56,13 @@ export type SheetTile = {
 }
 
 export type LinkTile = ShareTarget & { kind: 'link' }
-export type ShareTile = LinkTile | SheetTile
+
+// A platform's own share page where Story is one of the destinations the
+// person picks. The URL it is given should be the story variant of the link
+// (?q=), because the story is drawn from that page's Open Graph card.
+export type StoryTile = ShareTarget & { kind: 'story' }
+
+export type ShareTile = LinkTile | SheetTile | StoryTile
 
 const WHATSAPP: LinkTile = {
   kind: 'link',
@@ -65,9 +73,24 @@ const WHATSAPP: LinkTile = {
   href: ({ url, text }) => `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,
 }
 
-// Ordered as it renders. Story before post for Facebook, deliberately: the
-// story is what this app is shared through, and the post is the afterthought.
+// Facebook's mobile share page, not its API: it needs no App ID, and for a
+// signed-in person it offers News Feed and Your story. m. rather than www.,
+// because the mobile page is the one that offers the story destination.
+export const FACEBOOK_STORY: StoryTile = {
+  kind: 'story',
+  id: 'facebook-story',
+  accent: '--citron-300',
+  glyph: 'story',
+  label: 'ستوري فيسبوك بالرابط',
+  href: ({ url }) => `https://m.facebook.com/sharer.php?u=${encodeURIComponent(url)}`,
+}
+
+// Ordered as it renders. The Facebook story leads, deliberately: the story is
+// what this app is shared through, and the post is the afterthought. The
+// share panel draws `story` tiles as its lead buttons and the rest as the
+// grid beneath them.
 export const SHARE_TILES: readonly ShareTile[] = [
+  FACEBOOK_STORY,
   WHATSAPP,
   {
     kind: 'link',
@@ -80,10 +103,10 @@ export const SHARE_TILES: readonly ShareTile[] = [
   },
   {
     kind: 'sheet',
-    id: 'facebook-story',
-    accent: '--citron-300',
+    id: 'instagram-story',
+    accent: '--rose-300',
     glyph: 'story',
-    label: 'ستوري فيسبوك',
+    label: 'ستوري انستغرام',
   },
   {
     kind: 'link',
@@ -112,4 +135,5 @@ export const LINK_TARGETS: readonly ShareTarget[] = SHARE_TILES.filter(
 
 // Named here so the omission is a decision on the record rather than a gap
 // someone "fixes" with a broken button later.
-export const NO_WEB_STORY_ROUTE = ['instagram', 'tiktok', 'whatsapp-status', 'facebook-story'] as const
+// Facebook's story left this list in week 16: its share page is a route.
+export const NO_WEB_STORY_ROUTE = ['instagram', 'tiktok', 'whatsapp-status'] as const

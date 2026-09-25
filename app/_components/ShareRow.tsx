@@ -5,16 +5,19 @@
 // "شارك إلى" -- one control with several destinations, as asked for.
 //
 // WHAT IS AND IS NOT POSSIBLE HERE, because the difference decides the whole
-// layout: **no web page can post to an Instagram, TikTok, WhatsApp or
-// Facebook story.** None of them expose a web endpoint for it. The only
-// route from a page into a story is the phone's own share sheet -- which
-// DOES list all of those apps -- so that is the primary button, and it
-// carries the image itself, not a link.
+// layout (docs/SPEC-week16-clickable-story.md §1):
 //
-// The row underneath is for the platforms that accept a link from the web.
+//   - A Facebook story that OPENS THE LINK is reachable: Facebook's own
+//     share page offers "Your story" as a destination, and the story it
+//     makes is the page's link card. That is the lead button, and it is
+//     given the story variant of the link (?q=) so the card is the question
+//     the person picked.
+//   - Every other story (Instagram, TikTok, WhatsApp status) is reachable
+//     only through the phone's share sheet, with the image. The same tap
+//     puts the link on the clipboard, so the link sticker is one paste.
+//
+// The grid underneath is for the platforms that accept a link from the web.
 // Every one of them opens a POST or a MESSAGE, and each label says which.
-// A button labelled "انستغرام ستوري" that cannot do it is worse than no
-// button, so there isn't one.
 //
 // The buttons carry names, not logos. Reproducing the platforms' marks is
 // their trademark to license, not ours to draw; if official brand assets are
@@ -97,12 +100,14 @@ function Glyph({ name }: { name: ShareGlyph }) {
 
 export function ShareRow({
   shareUrl,
+  storyUrl,
   caption,
   onShareImage,
   onDownload,
   canShareImage,
 }: {
   shareUrl: string
+  storyUrl: string
   caption: string
   onShareImage: () => void
   onDownload: () => void
@@ -120,23 +125,45 @@ export function ShareRow({
     <div className="sharerow">
       <p className="hint">شارك إلى:</p>
 
+      {SHARE_TILES.map((t) => {
+        if (t.kind !== 'story') return null
+        return (
+          <div key={t.id}>
+            <a
+              className="btn btn--primary btn--block"
+              href={t.href({ url: storyUrl, text: caption })}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Glyph name={t.glyph} />
+              {t.label}
+            </a>
+            <p className="hint hint--tight">
+              بتفتحلك صفحة فيسبوك: اختار «قصتك» وانشر. الستوري بيطلع كرت بالسؤال، وأي حدا بيضغط عليه بيوصل لرابطك.
+            </p>
+          </div>
+        )
+      })}
+
       {canShareImage ? (
         <>
-          <button type="button" className="btn btn--primary btn--block" onClick={onShareImage}>
-            الصورة للستوري
+          <button type="button" className="btn btn--secondary btn--block" onClick={onShareImage}>
+            الصورة للستوري + ستيكر الرابط
           </button>
           <p className="hint hint--tight">
-            بتفتح لك تطبيقات الهاتف (انستغرام، واتساب، تيك توك وغيرها) واختار منها.
+            منسخلك الرابط مع الصورة. بالستوري (انستغرام، فيسبوك وغيرها) حط ستيكر «رابط» والصقه، ليصير الستوري بيفتح عالرابط.
           </p>
         </>
       ) : (
-        <button type="button" className="btn btn--primary btn--block" onClick={onDownload}>
+        <button type="button" className="btn btn--secondary btn--block" onClick={onDownload}>
           نزّل الصورة للستوري
         </button>
       )}
 
       <div className="sharerow__grid">
         {SHARE_TILES.map((t) => {
+          // Story tiles are the lead buttons above, not grid chips.
+          if (t.kind === 'story') return null
           // A sheet tile has no URL to open -- it hands the PNG to the phone's
           // share sheet. On a browser that cannot share files there is no
           // route at all, so the tile is not rendered rather than rendered

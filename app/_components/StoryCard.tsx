@@ -221,9 +221,13 @@ function draw(canvas: HTMLCanvasElement, prompt: string, linkLabel: string, reac
   ctx.fillText(linkLabel, centre, stickY + stickH / 2 + 2)
   ctx.direction = 'rtl'
 
-  ctx.fillStyle = p.text3
-  ctx.font = `400 32px ${p.fontAr}`
-  ctx.fillText('حط رابطك بستيكر الرابط بالستوري ليقدروا يجاوبوك مباشرة', centre, 1540)
+  // For the people who VIEW the story. It used to carry the poster's own
+  // instruction about the link sticker, printed onto the picture everyone
+  // else sees; that instruction lives beside the share button now (week 16
+  // §2.4).
+  ctx.fillStyle = p.text2
+  ctx.font = `500 34px ${p.fontAr}`
+  ctx.fillText('افتح الرابط وصارحني بالسر', centre, 1540)
 }
 
 export function StoryCard({
@@ -256,6 +260,10 @@ export function StoryCard({
   // come from the page's own origin rather than a constant.
   const shareUrl = typeof window === 'undefined' ? url : `${window.location.origin}/c/${slug}`
   const linkLabel = shareUrl.replace(/^https?:\/\//, '')
+  // The same link with ?q= naming the pre-drawn preview for this story: the
+  // question picked, or `r` for a reaction. A Facebook link story is drawn
+  // from that preview (week 16 §2.1); the page itself ignores the parameter.
+  const storyUrl = `${shareUrl}?q=${reactionText ? 'r' : `q${prompt}`}`
 
   useEffect(() => {
     if (!open) return
@@ -329,6 +337,15 @@ export function StoryCard({
   const handleShare = useCallback(() => {
     withCardBlob(async (blob) => {
       const file = new File([blob], `masaraha-${slug}.png`, { type: 'image/png' })
+      // An image story opens the link only through a link sticker, and a
+      // sticker is a paste. So the link goes on the clipboard on the same
+      // tap (week 16 §2.2). Started before navigator.share and not awaited:
+      // some browsers drop the tap's user activation across an await, and
+      // then refuse the share.
+      const copied = navigator.clipboard?.writeText(shareUrl)
+      copied
+        ?.then(() => toast('الرابط منسوخ. بالستوري حط ستيكر «رابط» والصقه.', 'citron'))
+        .catch(() => undefined)
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'مصارحة', text: shareUrl })
@@ -341,7 +358,7 @@ export function StoryCard({
       }
       handleDownload()
     })
-  }, [slug, shareUrl, withCardBlob, handleDownload])
+  }, [slug, shareUrl, withCardBlob, handleDownload, toast])
 
   // One caption, two consumers: the clipboard button and every link target
   // in ShareRow. Two copies of this string would drift within a week.
@@ -436,6 +453,7 @@ export function StoryCard({
             <div className="story-actions">
               <ShareRow
                 shareUrl={shareUrl}
+                storyUrl={storyUrl}
                 caption={caption}
                 canShareImage={canShareImage}
                 onShareImage={handleShare}
