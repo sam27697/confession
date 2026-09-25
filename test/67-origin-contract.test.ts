@@ -335,6 +335,20 @@ test("11: the exit-code rule -- non-zero when any entry fails, over a fabricated
 
 // --- §3 item 12: no network in this file -----------------------------------
 
+// Built by concatenation rather than as one contiguous literal, so the
+// needle this test sweeps for does not appear verbatim in its own source.
+// The pre-amendment file swept for the dns module (with its node: prefix)
+// spelled out as one plain literal, sitting right there in the regex and
+// in the assertion message, so the sweep matched itself and could never
+// go red on a real import. Joining the segments at runtime keeps the
+// check honest: the joined module name only ever exists in memory, never
+// as contiguous text on disk.
+const dnsModuleName = ['node', 'dns'].join(':')
+const dnsImportPattern = new RegExp(
+  `\\bfrom\\s+['"](?:${dnsModuleName}|dns)(?:/promises)?['"]` +
+    `|\\brequire\\(\\s*['"](?:${dnsModuleName}|dns)(?:/promises)?['"]\\s*\\)`,
+)
+
 test('12: this test file performs no DNS lookup and no fetch -- itself read as text', () => {
   const selfPath = fileURLToPath(import.meta.url)
   const selfSrc = readFileSync(selfPath, 'utf8')
@@ -345,9 +359,10 @@ test('12: this test file performs no DNS lookup and no fetch -- itself read as t
       'over fabricated records, never over the network',
   )
   assert.ok(
-    !/node:dns/.test(selfSrc),
-    'test/67-origin-contract.test.ts imports node:dns; a resolver lookup here would make ' +
-      'this file exactly the thing §2 rejected alternative 2 refused to ship inside npm test',
+    !dnsImportPattern.test(selfSrc),
+    `test/67-origin-contract.test.ts imports the ${dnsModuleName} module (or bare 'dns'); ` +
+      'a resolver lookup here would make this file exactly the thing §2 rejected ' +
+      'alternative 2 refused to ship inside npm test',
   )
   assert.ok(
     !/\bnet\.(connect|createConnection)\b/.test(selfSrc),
