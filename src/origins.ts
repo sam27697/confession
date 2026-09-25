@@ -10,12 +10,17 @@
 //
 // Why this file exists. On 2026-09-23 the app moved from confession.fayad.app
 // to masaraha.provefair.app, and the commit that moved it promised the old
-// host would keep answering a permanent redirect so that links already posted
-// in people's stories would survive the move. Nineteen hours later both old
+// host would keep answering a permanent redirect. Nineteen hours later both old
 // names were NXDOMAIN and the whole suite was still green, because 468 tests
 // knew nothing about what hostname this product is served on. A promise kept
 // in a commit message is a promise that can never fail. This one is a table a
 // script can probe.
+//
+// The promise itself was then withdrawn by the owner, 2026-09-24: he moved the
+// domain so that his name would not appear in this app's URL (spec section 5).
+// So a retired origin here must be absent from DNS altogether. A redirect from
+// one of them would put his name back in front of the app, which is the thing
+// the move was for.
 
 export type LiveOrigin = {
   kind: 'live'
@@ -28,7 +33,7 @@ export type LiveOrigin = {
 export type RetiredOrigin = {
   kind: 'retired'
   origin: string
-  redirectsTo: string
+  expects: 'absent'
   retired: string
   why: string
 }
@@ -39,8 +44,8 @@ export const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
 export const STAGING_ORIGIN = 'https://stg.masaraha.provefair.app'
 
 // The rule for this table runs one way: it gains rows and it never loses one.
-// A retired origin that starts failing is a finding about the internet, not a
-// row to delete, and test/67 pins all four strings so that removing one turns
+// A retired origin that starts failing means the name came back, and that is
+// a finding to explain, not a row to delete, and test/67 pins all four strings so that removing one turns
 // the suite red instead of quieting the check.
 export const ORIGINS: readonly OriginEntry[] = Object.freeze([
   {
@@ -60,27 +65,18 @@ export const ORIGINS: readonly OriginEntry[] = Object.freeze([
   {
     kind: 'retired',
     origin: 'https://confession.fayad.app',
-    redirectsTo: PRODUCTION_ORIGIN,
-    retired: '2026-09-23',
-    why: 'Story cards posted before the move have this host painted into the image by StoryCard.tsx. The person holding one cannot be told where the app went, so the host has to tell them.',
+    expects: 'absent',
+    retired: '2026-09-24',
+    why: 'Retired by the owner so that his name does not appear in the app\'s URL. Story cards posted before 2026-09-23 carry this host and no longer open; that cost was accepted with the move.',
   },
   {
     kind: 'retired',
     origin: 'https://stg.confession.fayad.app',
-    redirectsTo: STAGING_ORIGIN,
-    retired: '2026-09-23',
-    why: 'Retires to staging and not to production. A test link that quietly lands on the real site is how a seeded confession becomes a real one.',
+    expects: 'absent',
+    retired: '2026-09-24',
+    why: 'Staging twin of the name above, retired with it for the same reason.',
   },
 ] as const)
-
-// Path preserved means the path, and only the path. Query strings and
-// fragments are deliberately out of scope: nothing this product shares carries
-// one, and claiming to preserve something untested is the kind of sentence
-// this slice exists to stop.
-export function expectedRedirect(entry: RetiredOrigin, probePath: string): string {
-  const path = probePath.startsWith('/') ? probePath : `/${probePath}`
-  return `${entry.redirectsTo}${path}`
-}
 
 export type OriginProbe = {
   // false when the name resolves to neither an A nor an AAAA record. Kept
@@ -88,9 +84,8 @@ export type OriginProbe = {
   // different person, and flattening the two is how the 2026-09-23 outage
   // stayed invisible for nineteen hours.
   dnsResolved: boolean
-  // The path the probe was actually taken at (spec section 4.1). Without it,
-  // a redirect to the successor's root cannot be told apart from a correct
-  // redirect of a probe taken at the root.
+  // The path the probe was taken at (spec section 4.1). Carried for the
+  // printed line only since section 5: nothing is judged on it any more.
   probePath?: string
   status?: number
   location?: string | null
@@ -102,9 +97,17 @@ export type OriginVerdict = {
 }
 
 export function judgeProbe(entry: OriginEntry, probe: OriginProbe): OriginVerdict {
-  // DNS ranks ahead of everything else. An unresolvable name has no status,
-  // and a status supplied alongside dnsResolved:false is evidence of nothing.
+  // DNS ranks ahead of everything else, for both kinds. An unresolvable name
+  // has no status, and a status supplied alongside dnsResolved:false is
+  // evidence of nothing. What differs is the verdict: for a live origin it is
+  // an outage, for a retired one it is the state the owner asked for.
   if (!probe.dnsResolved) {
+    if (entry.kind === 'retired') {
+      return {
+        ok: true,
+        reason: `NXDOMAIN: ${entry.origin} resolves to nothing, retired ${entry.retired} and absent as intended`,
+      }
+    }
     return {
       ok: false,
       reason: `NXDOMAIN: ${entry.origin} resolves to no A and no AAAA record, so nothing after DNS was measured`,
@@ -123,42 +126,17 @@ export function judgeProbe(entry: OriginEntry, probe: OriginProbe): OriginVerdic
     }
   }
 
-  const probePath = probe.probePath ?? '/'
-  const wanted = expectedRedirect(entry, probePath)
-
-  if (status === undefined) {
-    return {
-      ok: false,
-      reason: `${entry.origin} answered ${describeStatus(status)}, expected 301 to ${wanted}`,
-    }
+  // The name resolves again. Whatever it answers, somebody changed the owner's
+  // DNS, and a redirect to the new host is the likeliest shape of that change,
+  // so it is named rather than reported as a bare 301.
+  const answered =
+    status !== undefined && status >= 300 && status <= 399 && probe.location
+      ? `${status} to ${probe.location}`
+      : describeStatus(status)
+  return {
+    ok: false,
+    reason: `${entry.origin} resolves again and answered ${answered}; the owner retired it ${entry.retired} so his name would not appear in the app's URL, and it should not resolve at all`,
   }
-
-  if (status < 300 || status > 399) {
-    return {
-      ok: false,
-      reason: `${entry.origin} answered ${status} and is not redirecting, expected 301 to ${wanted}`,
-    }
-  }
-
-  // A 302 with a perfect location still fails. The commitment made when the
-  // domain moved was "permanently", and a temporary redirect tells a browser
-  // cache, a crawler and Facebook's own link store a different thing.
-  if (status !== 301) {
-    return {
-      ok: false,
-      reason: `${entry.origin} answered ${status}, expected 301: the move was permanent and a temporary redirect is a different promise`,
-    }
-  }
-
-  const got = probe.location ?? ''
-  if (got !== wanted) {
-    return {
-      ok: false,
-      reason: `${entry.origin} redirected to ${got || '(no location header)'}, expected ${wanted}`,
-    }
-  }
-
-  return { ok: true, reason: `301 ${entry.origin} to ${wanted}` }
 }
 
 function describeStatus(status: number | undefined): string {

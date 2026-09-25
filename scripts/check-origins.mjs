@@ -8,11 +8,10 @@
 // Run it from the repository root:
 //
 //   node scripts/check-origins.mjs
-//   node scripts/check-origins.mjs --path /c/example
 //
 // Exit 0 only when every entry passes. Exit 1 otherwise, after printing all of
-// them: stopping at the first failure hides the second, and on 2026-09-23 both
-// retired origins were down at once.
+// them: stopping at the first failure hides the second. Exit 2 on any
+// argument, since it takes none (spec section 5.1).
 //
 // This script holds no judgement of its own. It collects DNS and HTTP facts
 // and hands them to judgeProbe in src/origins.ts, so every rule it enforces is
@@ -33,15 +32,16 @@ const { ORIGINS, judgeProbe } = await import('../src/origins.ts')
 
 const TIMEOUT_MS = 15_000
 
-function readProbePath(argv) {
-  const at = argv.indexOf('--path')
-  if (at === -1) return '/'
-  const value = argv[at + 1]
-  if (!value) {
-    console.error('check-origins: --path needs a value, for example --path /c/example')
-    process.exit(2)
-  }
-  return value.startsWith('/') ? value : `/${value}`
+// Every origin is probed at the root. The path flag this script used to take
+// proved a retired host preserved the path through its redirect, and since
+// spec section 5 no retired host redirects. Refused loudly rather than ignored,
+// so anything still passing it finds out.
+const PROBE_PATH = '/'
+const args = process.argv.slice(2)
+if (args.length > 0) {
+  console.error(`check-origins: takes no arguments, got: ${args.join(' ')}`)
+  console.error('usage: node scripts/check-origins.mjs')
+  process.exit(2)
 }
 
 function hostOf(origin) {
@@ -96,22 +96,13 @@ async function probe(origin, probePath) {
   }
 }
 
-const probePath = readProbePath(process.argv.slice(2))
-
-console.log(`check-origins: probing ${ORIGINS.length} origins at ${probePath}`)
+console.log(`check-origins: probing ${ORIGINS.length} origins at ${PROBE_PATH}`)
 console.log('')
 
 let failures = 0
 
 for (const entry of ORIGINS) {
-  // --path exists to prove a retired origin preserves the path, which is the
-  // half of the move that carries somebody's already-posted link. A live
-  // origin is always probed at the root: measured the first time this ran,
-  // --path /c/example turned both live rows red on a 404 that is the correct
-  // answer for a slug nobody owns, and a check that cries on correct
-  // behaviour is a check that gets ignored (spec section 4.2).
-  const pathForEntry = entry.kind === 'retired' ? probePath : '/'
-  const result = await probe(entry.origin, pathForEntry)
+  const result = await probe(entry.origin, PROBE_PATH)
   const verdict = judgeProbe(entry, result)
   const mark = verdict.ok ? 'ok  ' : 'FAIL'
   const tail = result.transportError ? ` (${result.transportError})` : ''
@@ -123,8 +114,8 @@ console.log('')
 
 if (failures > 0) {
   console.log(`check-origins: ${failures} of ${ORIGINS.length} origins are not keeping the contract.`)
-  console.log('A retired origin that fails is a finding about DNS or the reverse proxy.')
-  console.log('It is never repaired by deleting its row from src/origins.ts.')
+  console.log('A live origin that fails is an outage. A retired origin that fails has come back in DNS.')
+  console.log('Neither is repaired by deleting its row from src/origins.ts.')
   process.exit(1)
 }
 
