@@ -8,18 +8,31 @@
 // what makes the table's claims fail loudly if they stop being true, and
 // §3 item 5 is what stops "fix the red check" from meaning "delete the row".
 //
+// Revised 2026-09-25 against §5, the amendment that replaces §3 items 3, 4,
+// 6 and 9 with 3', 4', 6' and 9' and adds items 13 and 14. The owner retired
+// confession.fayad.app and stg.confession.fayad.app himself on 2026-09-24,
+// on purpose, so his name would stop appearing in this app's URL -- so a
+// retired origin no longer owes a redirect. It owes silence: the name must
+// not resolve at all, and if it ever does resolve again that is a change to
+// his DNS someone has to explain, not a redirect this repository arranges.
+// The old items 3, 4, 6 and 9 tested a redirect that the owner has since
+// said he does not want, so they are replaced rather than kept.
+//
 // Written from the spec alone, in a worktree that does not contain
 // src/origins.ts or scripts/check-origins.mjs, by design (spec §1.3). Every
 // test below either fabricates its own probe records or reads
-// scripts/check-origins.mjs as inert text for a substring sweep (item 10);
-// nothing here opens a socket, resolves a name or imports the script.
+// scripts/check-origins.mjs as inert text for a substring sweep (items 10
+// and 14); nothing here opens a socket, resolves a name or imports the
+// script.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { ORIGINS, expectedRedirect, judgeProbe } from '../src/origins.js'
+import * as origins from '../src/origins.js'
+
+const { ORIGINS, judgeProbe } = origins
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const CHECK_SCRIPT_PATH = path.join(REPO_ROOT, 'scripts', 'check-origins.mjs')
@@ -29,7 +42,8 @@ const CHECK_SCRIPT_PATH = path.join(REPO_ROOT, 'scripts', 'check-origins.mjs')
 // src/origins.ts currently contains, so that removing a row from the table
 // to quiet a failing check (§2 rejected alternative 4) turns this suite red
 // instead of green. A red check on a retired origin is the finding, not a
-// bug to be edited away.
+// bug to be edited away. As of §5 the two retired rows below no longer
+// redirect anywhere; they must simply not resolve.
 const PRODUCTION_ORIGIN = 'https://masaraha.provefair.app'
 const STAGING_ORIGIN = 'https://stg.masaraha.provefair.app'
 const RETIRED_PRODUCTION_ORIGIN = 'https://confession.fayad.app'
@@ -94,51 +108,41 @@ test('3.2: the production origin is present with role production and the staging
   )
 })
 
-// --- §3 item 3: both retired origins present, pointing into the table ----
+// --- §5.3 item 3': both retired origins present, expects absent, no redirectsTo ---
 
-test('3.3: both retired origins are present, each redirectsTo the origin of a live entry in the same table', () => {
+test("3': both retired origins are present, each with expects: 'absent' and no redirectsTo property at all", () => {
   for (const retiredOrigin of [RETIRED_PRODUCTION_ORIGIN, RETIRED_STAGING_ORIGIN]) {
     const entry = findByOrigin(retiredOrigin)
     assert.ok(entry, `${retiredOrigin} is missing from ORIGINS`)
     assert.equal(entry?.kind, 'retired', `${retiredOrigin} must be a retired entry`)
-    const redirectsTo = (entry as { redirectsTo?: string })?.redirectsTo
-    assert.ok(redirectsTo, `${retiredOrigin} has no redirectsTo`)
-    const target = findByOrigin(redirectsTo as string)
-    assert.ok(
-      target,
-      `${retiredOrigin} redirectsTo "${redirectsTo}", which is not any origin in ORIGINS at all`,
-    )
     assert.equal(
-      target?.kind,
-      'live',
-      `${retiredOrigin} redirectsTo "${redirectsTo}", which is itself a retired origin -- ` +
-        'a retired host may not point at another retired host',
+      (entry as { expects?: string })?.expects,
+      'absent',
+      `${retiredOrigin} must carry expects: 'absent' -- §5.1: a retired origin now means ` +
+        'the name must not resolve at all, not that it redirects somewhere',
+    )
+    assert.ok(
+      entry && !('redirectsTo' in entry),
+      `${retiredOrigin} still carries a redirectsTo property; §5.1 removes it, because ` +
+        'nothing owes this name a redirect any more',
     )
   }
 })
 
-// --- §3 item 4: staging retires to staging, not to production ------------
+// --- §5.3 item 4': src/origins.ts exports no expectedRedirect --------------
 
-test('3.4: stg.confession.fayad.app redirects to the staging origin, not to production', () => {
-  const entry = findByOrigin(RETIRED_STAGING_ORIGIN)
-  assert.ok(entry, `${RETIRED_STAGING_ORIGIN} is missing from ORIGINS`)
-  const redirectsTo = (entry as { redirectsTo?: string })?.redirectsTo
+test("4': src/origins.ts exports no expectedRedirect", () => {
   assert.equal(
-    redirectsTo,
-    STAGING_ORIGIN,
-    `${RETIRED_STAGING_ORIGIN} must redirectsTo ${STAGING_ORIGIN}, not ${redirectsTo}. ` +
-      'Sending a staging link to production would hand a test visitor the real site.',
-  )
-  assert.notEqual(
-    redirectsTo,
-    PRODUCTION_ORIGIN,
-    `${RETIRED_STAGING_ORIGIN} must not redirectsTo the production origin`,
+    origins.expectedRedirect,
+    undefined,
+    'src/origins.ts still exports expectedRedirect; §5.1 removes it -- nothing owes a ' +
+      'redirect any more, and a helper that computes one invites someone to build one',
   )
 })
 
 // --- §3 item 5: the table may not shrink ----------------------------------
 
-test('3.5: all four origins measured in the build session are still present in ORIGINS -- the table may gain rows and may never lose one', () => {
+test('5: all four origins measured in the build session are still present in ORIGINS -- the table may gain rows and may never lose one', () => {
   const present = new Set(ORIGINS.map((e) => e.origin))
   for (const origin of [
     PRODUCTION_ORIGIN,
@@ -150,52 +154,74 @@ test('3.5: all four origins measured in the build session are still present in O
       present.has(origin),
       `${origin} is missing from ORIGINS. Deleting a row to quiet a failing check is the ` +
         'failure mode this slice exists to resist (spec §2 rejected alternative 4): a red ' +
-        'check on a retired origin is the finding, not a bug in the check.',
+        'check on a retired origin is the finding, not a bug in the check. §5.2: the table ' +
+        'still has four rows and still may not shrink, with the new expectation attached ' +
+        'to the two retired ones.',
     )
   }
 })
 
-// --- §3 item 6: expectedRedirect preserves the path -----------------------
+// --- §5.3 item 6': a retired entry with dnsResolved: false passes regardless of status/location ---
 
-test('3.6: expectedRedirect preserves the path exactly, never doubling or dropping a slash', () => {
-  const retiredProd = findByOrigin(RETIRED_PRODUCTION_ORIGIN)
-  assert.ok(retiredProd, `${RETIRED_PRODUCTION_ORIGIN} is missing from ORIGINS`)
-  if (!retiredProd) return
-
-  assert.equal(
-    expectedRedirect(retiredProd, '/c/abc'),
-    `${PRODUCTION_ORIGIN}/c/abc`,
-    'expectedRedirect must preserve /c/abc exactly under the production retirement',
-  )
-  assert.equal(
-    expectedRedirect(retiredProd, '/'),
-    `${PRODUCTION_ORIGIN}/`,
-    'expectedRedirect must give exactly the origin plus a single slash for path "/"',
-  )
-})
-
-// --- §3 item 7: judgeProbe ranks DNS first --------------------------------
-
-test('3.7: judgeProbe fails with a reason beginning NXDOMAIN when dnsResolved is false, even alongside a 200 status', () => {
+test("6': a retired entry with dnsResolved: false passes, even when a status of 301 and a location on a live origin are also supplied", () => {
   const entry = findByOrigin(RETIRED_PRODUCTION_ORIGIN)
   assert.ok(entry, `${RETIRED_PRODUCTION_ORIGIN} is missing from ORIGINS`)
   if (!entry) return
 
-  // probePath is part of the probe record (spec §4.1); DNS is checked before
-  // the path is ever compared, so a root probe is enough to prove the rank.
-  const verdict = judgeProbe(entry, { dnsResolved: false, probePath: '/', status: 200, location: null })
-  assert.equal(verdict.ok, false, 'an entry with dnsResolved: false must not pass')
+  const verdict = judgeProbe(entry, {
+    dnsResolved: false,
+    probePath: '/',
+    status: 301,
+    location: `${PRODUCTION_ORIGIN}/`,
+  })
+  assert.equal(
+    verdict.ok,
+    true,
+    `a retired entry with dnsResolved: false must pass regardless of any status or ` +
+      `location also present in the record, got reason "${verdict.reason}"`,
+  )
   assert.ok(
     verdict.reason.startsWith('NXDOMAIN'),
-    `reason must begin with "NXDOMAIN" when dnsResolved is false, got "${verdict.reason}". ` +
-      'An unresolvable name has no status, so DNS must outrank every other check even when ' +
-      'a status of 200 is present in the same record.',
+    `the reason must still begin "NXDOMAIN" on a passing retired verdict, got ` +
+      `"${verdict.reason}" -- §5.1: DNS keeps ranking first for both kinds, only the ` +
+      'verdict differs',
+  )
+})
+
+// --- §5.3 item 7: judgeProbe ranks DNS first, for both kinds ---------------
+
+test('7: judgeProbe ranks DNS first for both kinds -- the reason begins NXDOMAIN whenever dnsResolved is false, even with a status supplied, though the verdict differs by kind', () => {
+  const live = findByOrigin(PRODUCTION_ORIGIN)
+  const retired = findByOrigin(RETIRED_PRODUCTION_ORIGIN)
+  assert.ok(live, `${PRODUCTION_ORIGIN} is missing from ORIGINS`)
+  assert.ok(retired, `${RETIRED_PRODUCTION_ORIGIN} is missing from ORIGINS`)
+  if (!live || !retired) return
+
+  const liveVerdict = judgeProbe(live, { dnsResolved: false, probePath: '/', status: 200, location: null })
+  assert.equal(liveVerdict.ok, false, 'a live entry with dnsResolved: false must still fail')
+  assert.ok(
+    liveVerdict.reason.startsWith('NXDOMAIN'),
+    `a live entry's reason must begin "NXDOMAIN" when dnsResolved is false, even ` +
+      `alongside a status of 200, got "${liveVerdict.reason}"`,
+  )
+
+  const retiredVerdict = judgeProbe(retired, { dnsResolved: false, probePath: '/', status: 200, location: null })
+  assert.equal(
+    retiredVerdict.ok,
+    true,
+    'a retired entry with dnsResolved: false must pass -- absence is now the correct state',
+  )
+  assert.ok(
+    retiredVerdict.reason.startsWith('NXDOMAIN'),
+    `a retired entry's reason must also begin "NXDOMAIN" when dnsResolved is false, even ` +
+      `alongside a status of 200, got "${retiredVerdict.reason}" -- DNS ranks first for ` +
+      'both kinds, and only the verdict differs (§5.1)',
   )
 })
 
 // --- §3 item 8: a live entry names the status it received ----------------
 
-test('3.8: a live entry passes on 200 and fails on 301, 404, 500 and 503, each naming the received status', () => {
+test('8: a live entry passes on 200 and fails on 301, 404, 500 and 503, each naming the received status', () => {
   const live = findByOrigin(PRODUCTION_ORIGIN)
   assert.ok(live, `${PRODUCTION_ORIGIN} is missing from ORIGINS`)
   if (!live) return
@@ -214,66 +240,40 @@ test('3.8: a live entry passes on 200 and fails on 301, 404, 500 and 503, each n
   }
 })
 
-// --- §3 item 9: a retired entry's full pass/fail matrix -------------------
+// --- §5.3 item 9': a retired entry with dnsResolved: true fails, whatever else it carries ---
 
-test('3.9: a retired entry passes on an exactly-correct 301 and fails on 200, 404, a dropped path, the old host itself, and 302', () => {
+test("9': a retired entry with dnsResolved: true fails on 200, 404, a 301 to the live successor, a 302 to the same, and a record with no status at all, each reason naming the retired origin", () => {
   const entry = findByOrigin(RETIRED_PRODUCTION_ORIGIN)
   assert.ok(entry, `${RETIRED_PRODUCTION_ORIGIN} is missing from ORIGINS`)
   if (!entry) return
 
-  // probePath rides in the probe record (spec §4.1). Every fixture below
-  // probes /c/abc on purpose: at probePath "/" the correct location and a
-  // "path dropped to the homepage" location are the same string
-  // (https://.../), so only a non-root probe can prove the path-dropped
-  // case fails for the reason claimed and not by accident.
-  const probePath = '/c/abc'
-  const correctLocation = expectedRedirect(entry, probePath)
+  const cases: Array<{ label: string; probe: { status?: number; location?: string | null } }> = [
+    { label: '200', probe: { status: 200, location: null } },
+    { label: '404', probe: { status: 404, location: null } },
+    { label: '301 to the live successor', probe: { status: 301, location: `${PRODUCTION_ORIGIN}/` } },
+    { label: '302 to the live successor', probe: { status: 302, location: `${PRODUCTION_ORIGIN}/` } },
+    { label: 'no status at all', probe: {} },
+  ]
 
-  const okVerdict = judgeProbe(entry, { dnsResolved: true, probePath, status: 301, location: correctLocation })
-  assert.equal(
-    okVerdict.ok,
-    true,
-    `a retired entry answering 301 with the exactly-correct location must pass, got reason "${okVerdict.reason}"`,
-  )
-
-  const notRedirecting200 = judgeProbe(entry, { dnsResolved: true, probePath, status: 200, location: null })
-  assert.equal(notRedirecting200.ok, false, 'a retired entry answering 200 must not pass')
-
-  const notRedirecting404 = judgeProbe(entry, { dnsResolved: true, probePath, status: 404, location: null })
-  assert.equal(notRedirecting404.ok, false, 'a retired entry answering 404 must not pass')
-
-  const droppedPath = judgeProbe(entry, { dnsResolved: true, probePath, status: 301, location: PRODUCTION_ORIGIN })
-  assert.equal(
-    droppedPath.ok,
-    false,
-    `a retired entry probed at ${probePath} but redirected to the bare successor origin ` +
-      '(the path dropped) must not pass',
-  )
-
-  const backToOldHost = judgeProbe(entry, {
-    dnsResolved: true,
-    probePath,
-    status: 301,
-    location: `${RETIRED_PRODUCTION_ORIGIN}${probePath}`,
-  })
-  assert.equal(
-    backToOldHost.ok,
-    false,
-    'a retired entry answering 301 to itself (the old host) must not pass',
-  )
-
-  const temporaryRedirect = judgeProbe(entry, { dnsResolved: true, probePath, status: 302, location: correctLocation })
-  assert.equal(
-    temporaryRedirect.ok,
-    false,
-    'a retired entry answering 302 with an otherwise correct location must not pass -- ' +
-      'the commitment is permanently, and a temporary redirect is a different promise',
-  )
+  for (const { label, probe } of cases) {
+    const verdict = judgeProbe(entry, { dnsResolved: true, probePath: '/', ...probe })
+    assert.equal(
+      verdict.ok,
+      false,
+      `a retired entry with dnsResolved: true must fail on ${label} -- §5.1: the name ` +
+        'resolving at all is the failure now, whatever else the record carries',
+    )
+    assert.ok(
+      verdict.reason.includes(RETIRED_PRODUCTION_ORIGIN),
+      `a retired entry's failure reason on ${label} must name the retired origin, got ` +
+        `"${verdict.reason}"`,
+    )
+  }
 })
 
 // --- §3 item 10: no secret surface in the checker script ------------------
 
-test('3.10: scripts/check-origins.mjs contains no .env read, no process.env secret access and no Authorization header', () => {
+test('10: scripts/check-origins.mjs contains no .env read, no process.env secret access and no Authorization header', () => {
   const src = readFileSync(CHECK_SCRIPT_PATH, 'utf8')
 
   assert.ok(
@@ -295,22 +295,27 @@ test('3.10: scripts/check-origins.mjs contains no .env read, no process.env secr
 
 // --- §3 item 11: the script's exit-code rule, proved over judgeProbe -----
 
-test('3.11: the exit-code rule -- non-zero when any entry fails, over a fabricated result set', () => {
+test("11: the exit-code rule -- non-zero when any entry fails, over a fabricated result set built to the retired semantics of §5.1", () => {
   // §1.2 step 3: the script hands each probe record to judgeProbe and exits
   // 1 if any of them fail, 0 only if all of them pass. The rule under test
   // is a fold over judgeProbe's own verdicts, not the script's I/O, so it is
   // proved here without importing or reading the script's logic.
-  // §4.2: a live entry is always probed at "/"; a retired entry's probePath
-  // rides along in the probe record (§4.1) so judgeProbe can tell a correct
-  // redirect from one that dropped the path.
+  // §5.1: a retired entry now passes on dnsResolved: false alone and is
+  // built with no redirectsTo, so a passing retired record here carries no
+  // location at all -- unlike the pre-amendment fixture, there is no
+  // successor URL to compute.
   const probePath = '/'
-  const allPassing = ORIGINS.map((entry) => {
-    if (entry.kind === 'live') {
-      return judgeProbe(entry, { dnsResolved: true, probePath, status: 200, location: null })
-    }
-    const location = expectedRedirect(entry, probePath)
-    return judgeProbe(entry, { dnsResolved: true, probePath, status: 301, location })
-  })
+  const passingProbeFor = (entry: (typeof ORIGINS)[number]) =>
+    entry.kind === 'live'
+      ? judgeProbe(entry, { dnsResolved: true, probePath, status: 200, location: null })
+      : judgeProbe(entry, { dnsResolved: false, probePath })
+
+  const failingProbeFor = (entry: (typeof ORIGINS)[number]) =>
+    entry.kind === 'live'
+      ? judgeProbe(entry, { dnsResolved: false, probePath })
+      : judgeProbe(entry, { dnsResolved: true, probePath, status: 200, location: null })
+
+  const allPassing = ORIGINS.map(passingProbeFor)
   const allExitCode = allPassing.some((v) => !v.ok) ? 1 : 0
   assert.equal(
     allExitCode,
@@ -318,16 +323,7 @@ test('3.11: the exit-code rule -- non-zero when any entry fails, over a fabricat
     'when every entry passes judgeProbe, the exit-code rule must compute 0',
   )
 
-  const oneFailing = ORIGINS.map((entry, i) => {
-    if (i === 0) {
-      return judgeProbe(entry, { dnsResolved: false, probePath, status: 200, location: null })
-    }
-    if (entry.kind === 'live') {
-      return judgeProbe(entry, { dnsResolved: true, probePath, status: 200, location: null })
-    }
-    const location = expectedRedirect(entry, probePath)
-    return judgeProbe(entry, { dnsResolved: true, probePath, status: 301, location })
-  })
+  const oneFailing = ORIGINS.map((entry, i) => (i === 0 ? failingProbeFor(entry) : passingProbeFor(entry)))
   const oneFailingExitCode = oneFailing.some((v) => !v.ok) ? 1 : 0
   assert.equal(
     oneFailingExitCode,
@@ -339,7 +335,7 @@ test('3.11: the exit-code rule -- non-zero when any entry fails, over a fabricat
 
 // --- §3 item 12: no network in this file -----------------------------------
 
-test('3.12: this test file performs no DNS lookup and no fetch -- itself read as text', () => {
+test('12: this test file performs no DNS lookup and no fetch -- itself read as text', () => {
   const selfPath = fileURLToPath(import.meta.url)
   const selfSrc = readFileSync(selfPath, 'utf8')
 
@@ -355,7 +351,40 @@ test('3.12: this test file performs no DNS lookup and no fetch -- itself read as
   )
   assert.ok(
     !/\bnet\.(connect|createConnection)\b/.test(selfSrc),
-    'test/67-origin-contract.test.ts opens a raw socket; this file proves judgeProbe and ' +
-      'expectedRedirect against data it fabricates itself, nothing reachable',
+    'test/67-origin-contract.test.ts opens a raw socket; this file proves judgeProbe ' +
+      'against data it fabricates itself, nothing reachable',
+  )
+})
+
+// --- §5.3 item 13: live rows are not weakened by the amendment -------------
+
+test('13: a live entry with dnsResolved: false still fails, with a reason beginning NXDOMAIN', () => {
+  const live = findByOrigin(PRODUCTION_ORIGIN)
+  assert.ok(live, `${PRODUCTION_ORIGIN} is missing from ORIGINS`)
+  if (!live) return
+
+  const verdict = judgeProbe(live, { dnsResolved: false, probePath: '/', status: 200, location: null })
+  assert.equal(
+    verdict.ok,
+    false,
+    'a live entry with dnsResolved: false must fail -- §5.1 changes what a retired entry ' +
+      'means, not what a live one requires',
+  )
+  assert.ok(
+    verdict.reason.startsWith('NXDOMAIN'),
+    `a live entry's reason must begin "NXDOMAIN" when dnsResolved is false, got ` +
+      `"${verdict.reason}"`,
+  )
+})
+
+// --- §5.3 item 14: the checker script no longer takes --path ---------------
+
+test('14: scripts/check-origins.mjs, read as inert text, contains no --path', () => {
+  const src = readFileSync(CHECK_SCRIPT_PATH, 'utf8')
+  assert.ok(
+    !src.includes('--path'),
+    'scripts/check-origins.mjs still references --path; §5.1 removes it -- every origin ' +
+      'is now probed at "/", and an unknown argument exits 2 with a usage line instead of ' +
+      'being accepted',
   )
 })
