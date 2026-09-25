@@ -15,7 +15,7 @@
 //
 // This script holds no judgement of its own. It collects DNS and HTTP facts
 // and hands them to judgeProbe in src/origins.ts, so every rule it enforces is
-// reachable from a unit test with no network. It reads no .env, sends no
+// reachable from a unit test with no network. It reads no environment file, sends no
 // credential and prints no secret.
 
 import { resolve4, resolve6 } from 'node:dns/promises'
