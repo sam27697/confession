@@ -132,8 +132,22 @@ test("3': both retired origins are present, each with expects: 'absent' and no r
 // --- §5.3 item 4': src/origins.ts exports no expectedRedirect --------------
 
 test("4': src/origins.ts exports no expectedRedirect", () => {
+  // Read through Record<string, unknown> rather than off the typed
+  // namespace: origins.expectedRedirect does not typecheck once the
+  // property is genuinely absent from the module's type, and that absence
+  // is exactly what this test is proving, so the access has to go through
+  // something the compiler will not reject on that basis alone.
+  const namespaceRecord = origins as Record<string, unknown>
+
   assert.equal(
-    origins.expectedRedirect,
+    Object.prototype.hasOwnProperty.call(origins, 'expectedRedirect'),
+    false,
+    'src/origins.ts still exports expectedRedirect as an own property of the module ' +
+      'namespace; §5.1 removes it -- nothing owes a redirect any more, and a helper that ' +
+      'computes one invites someone to build one',
+  )
+  assert.equal(
+    namespaceRecord['expectedRedirect'],
     undefined,
     'src/origins.ts still exports expectedRedirect; §5.1 removes it -- nothing owes a ' +
       'redirect any more, and a helper that computes one invites someone to build one',
