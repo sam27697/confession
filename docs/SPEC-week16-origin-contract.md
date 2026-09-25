@@ -320,3 +320,79 @@ check-origins: 2 of 4 origins are not keeping the contract.
   mode 755, so `src/origins.ts` could not be created there at all. Both halves
   of this slice were therefore built in fresh worktrees, which is the isolation
   week 7 §9 asked for anyway. Recorded because the next session will hit it.
+
+---
+
+## §5 Amended 2026-09-25: the owner retired the old names, and no redirect is owed
+
+Everything above §5 was frozen on the premise that `a3a47e4`'s promise stood:
+the two `fayad.app` names would keep answering a permanent redirect. The owner
+answered that premise the other way on 2026-09-24 00:50, recorded verbatim in
+`work/confession-app/BRIEF.md` (workspace repository), "Sam's word,
+2026-09-24":
+
+> انا بدلت الدومين صار masaraha.provefair.app
+
+and four minutes later, the reason, which is now a requirement of the product:
+
+> غيرته لانو مابدي اسمي يظهر ضمن ال url تبع تطبيق مصارحة
+
+So NXDOMAIN on `confession.fayad.app` and `stg.confession.fayad.app` is the
+intended state, not a finding. A redirect from either name would put his name
+in front of this app's URL, which is the thing he moved the domain to stop.
+Findings A and E in §0 stand as measurements of 2026-09-23; their conclusion
+("it goes to Sam as a request") is withdrawn. Finding E's dashboard URLs are his
+and are tracked outside this repository.
+
+### §5.1 What changes
+
+A `retired` origin now means **absent**: the name must not resolve at all.
+
+- `RetiredOrigin` loses `redirectsTo` and gains `expects: 'absent'`. It keeps
+  `origin`, `retired` (ISO date, now `2026-09-24`, the day the owner retired
+  it) and `why`.
+- `expectedRedirect` is removed. Nothing owes a redirect any more, and a helper
+  that computes one invites someone to build one.
+- `judgeProbe` on a retired entry:
+  - `dnsResolved: false` passes, with a `reason` that still begins `NXDOMAIN`.
+    DNS keeps ranking first for both kinds; only the verdict differs.
+  - `dnsResolved: true` fails, whatever else the record carries (a status, a
+    redirect to a live origin, or no HTTP response at all). The reason names
+    what it answered and says the owner retired the name so it would not appear
+    in the app's URL. A name that resolves again is a change to his DNS that
+    somebody has to explain, and a 301 to the new host is the most likely
+    shape of it, so that case is named in the reason rather than folded in.
+- A live entry is judged exactly as before.
+- `scripts/check-origins.mjs` loses `--path`. It existed only to prove the path
+  was preserved through a redirect (§4.2). Every origin is probed at `/`. An
+  unknown argument exits 2 with a usage line rather than being ignored, so a
+  deploy script still passing `--path` finds out.
+
+### §5.2 What does not change
+
+The table still has four rows and still may not shrink (§3 item 5). The two
+`fayad.app` rows stay, with the new expectation: removing them would delete the
+only check that goes red if the owner's name comes back in front of this app.
+
+### §5.3 Acceptance, replacing §3 items 3, 4, 6 and 9
+
+Items 1, 2, 5, 7, 8, 10, 11 and 12 stand. Item 7 now holds for both kinds: the
+reason begins `NXDOMAIN` whenever `dnsResolved` is false, even with a `status`
+supplied.
+
+- **3'.** Both retired origins are present, each with `expects: 'absent'` and
+  **no `redirectsTo` property** at all.
+- **4'.** `src/origins.ts` exports no `expectedRedirect`.
+- **6'.** A retired entry with `dnsResolved: false` passes, even when a
+  `status` of 301 and a `location` on a live origin are also supplied.
+- **9'.** A retired entry with `dnsResolved: true` fails on each of: 200, 404,
+  a 301 to `https://masaraha.provefair.app/`, a 302 to the same, and a record
+  with no `status` at all. Each reason names the retired origin.
+- **13.** The live rows are not weakened by the change: a live entry with
+  `dnsResolved: false` still fails, with a reason beginning `NXDOMAIN`.
+- **14.** `scripts/check-origins.mjs`, read as inert text, contains no
+  `--path`.
+
+Rejected: keeping `redirectsTo` as an optional field "in case he changes his
+mind". He can change his mind, and that is one row edited on the day he does.
+A field that describes a promise nobody is keeping is how §0.1 happened.
