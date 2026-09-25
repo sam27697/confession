@@ -261,3 +261,138 @@ worktree, without reading `src/origins.ts` or the script. Items in §3.
 
 No existing test is edited by this slice. If one turns red, the fix is in this
 slice's code.
+
+---
+
+## §4 Found while building, after the freeze
+
+Recorded here rather than folded back into §1, so the frozen text still says
+what was known before any code.
+
+### §4.1 The probe record has to carry the path it was taken at
+
+§1.1 lists the probe record as `dnsResolved`, `status` and `location`, and §3
+item 9 requires a 301 that carries the successor's origin with the path dropped
+to FAIL. Those two cannot both hold: with only a `location` to look at, a
+redirect to `https://masaraha.provefair.app/` is indistinguishable from a
+correct redirect of a probe taken at `/`. The verdict needs to know what was
+asked for.
+
+So the record is `{ dnsResolved, probePath, status?, location? }`, and
+`probePath` defaults to `/` when it is absent. This is a correction to the
+spec's own contract, made before the code was written rather than after a test
+went red, and §3 item 9 is unchanged: it was always the stricter and the
+correct requirement, and §1.1 was the half that was wrong.
+
+### §4.2 `--path` belongs to the retired rows only
+
+Found by running it. `node scripts/check-origins.mjs --path /c/example` turned
+all four rows red: the two retired origins on NXDOMAIN, which is the finding,
+and the two live origins on a 404, which is the correct answer for a slug
+nobody owns. A check that goes red on correct behaviour is a check that gets
+ignored, and that is the failure mode this whole slice exists to prevent.
+
+`--path` exists to prove a retired origin preserves the path, because the path
+is what carries somebody's already-posted link. A live origin is probed at `/`
+and always at `/`. Section §1.2's step 2 is amended to that; the judgement in
+§1.1 is unchanged and so is every item of §3.
+
+Measured after the change, verbatim:
+
+```
+check-origins: probing 4 origins at /c/example
+
+ok   live     200 at https://masaraha.provefair.app
+ok   live     200 at https://stg.masaraha.provefair.app
+FAIL retired  NXDOMAIN: https://confession.fayad.app resolves to no A and no AAAA record, so nothing after DNS was measured
+FAIL retired  NXDOMAIN: https://stg.confession.fayad.app resolves to no A and no AAAA record, so nothing after DNS was measured
+
+check-origins: 2 of 4 origins are not keeping the contract.
+```
+
+### §4.3 Two things confirmed on the way past, so they are not re-litigated
+
+- **Week 15's dead ends are live.** `https://masaraha.provefair.app/c/example`
+  answers 404 with «ما لقينا هالصفحة» and a «رجوع» link, not Next's built-in
+  English page. Finding D of week 15 is closed on production.
+- **The working tree at `repos/confession` is not writable by this account.**
+  `src/`, `test/`, `app/` and the repository root are owned by uid 1006 with
+  mode 755, so `src/origins.ts` could not be created there at all. Both halves
+  of this slice were therefore built in fresh worktrees, which is the isolation
+  week 7 §9 asked for anyway. Recorded because the next session will hit it.
+
+---
+
+## §5 Amended 2026-09-25: the owner retired the old names, and no redirect is owed
+
+Everything above §5 was frozen on the premise that `a3a47e4`'s promise stood:
+the two `fayad.app` names would keep answering a permanent redirect. The owner
+answered that premise the other way on 2026-09-24 00:50, recorded verbatim in
+`work/confession-app/BRIEF.md` (workspace repository), "Sam's word,
+2026-09-24":
+
+> انا بدلت الدومين صار masaraha.provefair.app
+
+and four minutes later, the reason, which is now a requirement of the product:
+
+> غيرته لانو مابدي اسمي يظهر ضمن ال url تبع تطبيق مصارحة
+
+So NXDOMAIN on `confession.fayad.app` and `stg.confession.fayad.app` is the
+intended state, not a finding. A redirect from either name would put his name
+in front of this app's URL, which is the thing he moved the domain to stop.
+Findings A and E in §0 stand as measurements of 2026-09-23; their conclusion
+("it goes to Sam as a request") is withdrawn. Finding E's dashboard URLs are his
+and are tracked outside this repository.
+
+### §5.1 What changes
+
+A `retired` origin now means **absent**: the name must not resolve at all.
+
+- `RetiredOrigin` loses `redirectsTo` and gains `expects: 'absent'`. It keeps
+  `origin`, `retired` (ISO date, now `2026-09-24`, the day the owner retired
+  it) and `why`.
+- `expectedRedirect` is removed. Nothing owes a redirect any more, and a helper
+  that computes one invites someone to build one.
+- `judgeProbe` on a retired entry:
+  - `dnsResolved: false` passes, with a `reason` that still begins `NXDOMAIN`.
+    DNS keeps ranking first for both kinds; only the verdict differs.
+  - `dnsResolved: true` fails, whatever else the record carries (a status, a
+    redirect to a live origin, or no HTTP response at all). The reason names
+    what it answered and says the owner retired the name so it would not appear
+    in the app's URL. A name that resolves again is a change to his DNS that
+    somebody has to explain, and a 301 to the new host is the most likely
+    shape of it, so that case is named in the reason rather than folded in.
+- A live entry is judged exactly as before.
+- `scripts/check-origins.mjs` loses `--path`. It existed only to prove the path
+  was preserved through a redirect (§4.2). Every origin is probed at `/`. An
+  unknown argument exits 2 with a usage line rather than being ignored, so a
+  deploy script still passing `--path` finds out.
+
+### §5.2 What does not change
+
+The table still has four rows and still may not shrink (§3 item 5). The two
+`fayad.app` rows stay, with the new expectation: removing them would delete the
+only check that goes red if the owner's name comes back in front of this app.
+
+### §5.3 Acceptance, replacing §3 items 3, 4, 6 and 9
+
+Items 1, 2, 5, 7, 8, 10, 11 and 12 stand. Item 7 now holds for both kinds: the
+reason begins `NXDOMAIN` whenever `dnsResolved` is false, even with a `status`
+supplied.
+
+- **3'.** Both retired origins are present, each with `expects: 'absent'` and
+  **no `redirectsTo` property** at all.
+- **4'.** `src/origins.ts` exports no `expectedRedirect`.
+- **6'.** A retired entry with `dnsResolved: false` passes, even when a
+  `status` of 301 and a `location` on a live origin are also supplied.
+- **9'.** A retired entry with `dnsResolved: true` fails on each of: 200, 404,
+  a 301 to `https://masaraha.provefair.app/`, a 302 to the same, and a record
+  with no `status` at all. Each reason names the retired origin.
+- **13.** The live rows are not weakened by the change: a live entry with
+  `dnsResolved: false` still fails, with a reason beginning `NXDOMAIN`.
+- **14.** `scripts/check-origins.mjs`, read as inert text, contains no
+  `--path`.
+
+Rejected: keeping `redirectsTo` as an optional field "in case he changes his
+mind". He can change his mind, and that is one row edited on the day he does.
+A field that describes a promise nobody is keeping is how §0.1 happened.
