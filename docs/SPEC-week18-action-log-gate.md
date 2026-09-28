@@ -1,6 +1,6 @@
 # Week 18 - nobody on the internet writes into our logs
 
-*Frozen 2026-09-28 21:5x +04 before any code. Every measurement in §0 was taken
+*Frozen 2026-09-28 21:3x +04 before any code. Every measurement in §0 was taken
 against staging over the real certificate, then read back out of the running
 container's own log.*
 
