@@ -262,6 +262,26 @@ both, so the test author, not the implementer, amends them: item 24 expects
 text; each amended line carries a dated comment naming this spec. Items 25, 27
 and every other item stay as they are.
 
+### §4.3 Amendment after freeze, 2026-09-30 22:4x, found by running the suite
+
+Running the whole suite against the implementation turned two older tests red.
+Both are source-text assertions that pin privacy copy to `app/privacy/page.tsx`,
+and §1 decision 1 moves that copy into `src/privacy.ts` on purpose. Neither
+test was edited by the implementer. The test author amends them as follows,
+with a dated comment naming this section on each changed line:
+
+- `test/56-policy-navigation.test.ts` AC4, the privacy half: the two content
+  matches (`سياسة الخصوصية`, `What we store, exactly:`) become assertions on the
+  page RENDERED to HTML (as in item 12), which must contain both strings. The
+  two `dir="rtl"` / `dir="ltr"` source matches stay as they are; the page keeps
+  those literals. The terms half of AC4 is untouched.
+- `test/14-share-card.test.ts`, the header-read tripwire: the allowance
+  `isPrivacyPageCopy` moves from `app/privacy/page.tsx` to `src/privacy.ts`,
+  still narrowed to lines matching `/ip address/i`, and the liveness check
+  that the tripwire finds the privacy copy must find it in `src/privacy.ts`.
+  No other allowance changes, and the pattern `HEADER_READ_INDICATORS` does not
+  change.
+
 ## §5 Deploy verification (the build session, not the test author)
 
 Staging first, verified from outside, then production from the same image:
