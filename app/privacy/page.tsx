@@ -10,42 +10,46 @@
 // English." Those two sentences conflict for this one page. Followed §5.4
 // here, since it is the more specific instruction for /privacy's own
 // content; the conflict is reported in full in the final summary.
+import { PRIVACY_AR, PRIVACY_EN, type PrivacyText } from '../../src/privacy.js'
+
+// Week 19: every sentence below comes from src/privacy.ts, which names the
+// tables each one is about. Nothing is written on this page directly, so
+// the page cannot say less than the schema holds without test/69 noticing.
+function PolicyBody({ text, deleteLabel }: { text: PrivacyText; deleteLabel: string }) {
+  return (
+    <>
+      <p>{text.storedIntro}</p>
+      <ul>
+        {text.stored.map((item) => (
+          <li key={item.text}>{item.text}</li>
+        ))}
+      </ul>
+      <p>{text.admin.text}</p>
+      <p>{text.sharing}</p>
+      <p>{text.cookies}</p>
+      <p>{text.deletion}</p>
+      <p><a href="/account/delete">{deleteLabel}</a></p>
+      <p>{text.never}</p>
+    </>
+  )
+}
+
 export default function PrivacyPage() {
   return (
     <div>
       <div className="policy-header">
         <a className="policy-return btn btn--ghost btn--sm" href="/inbox">→ رجوع</a>
       </div>
-      <h1>سياسة الخصوصية</h1>
+      <h1>{PRIVACY_AR.heading}</h1>
       <div className="legal" dir="rtl">
-        <p>هيك منخزن معلومات عنك بالظبط:</p>
-        <ul>
-          <li>رقم حسابك واسمك من فيسبوك، لطرفي أي رسالة (المرسل والمستقبل).</li>
-          <li>نص الرسالة نفسها.</li>
-          <li>الساعة يلي انبعتت فيها الرسالة (مش الدقيقة بالظبط).</li>
-          <li>موافقتك على الشروط والأحكام.</li>
-        </ul>
-        <p>
-          إدارة التطبيق فيها تشوف مين بعت أي رسالة، وكل مرة حدا من الإدارة يشوف هالشي بينسجل بسجل ثابت مايتغير.
-        </p>
-        <p>هيك ما منجمع أبداً: عنوان الـ IP تبعك، نوع جهازك أو متصفحك، موقعك، أو جهات اتصالك.</p>
+        <PolicyBody text={PRIVACY_AR} deleteLabel="حذف الحساب" />
       </div>
 
       <hr />
 
+      <h2 dir="ltr">{PRIVACY_EN.heading}</h2>
       <div className="legal" dir="ltr">
-        <p>What we store, exactly:</p>
-        <ul>
-          <li>The Facebook account id and display name of both sides of a message (sender and recipient).</li>
-          <li>The message text itself.</li>
-          <li>The hour the message was sent (not the exact minute).</li>
-          <li>Your acceptance of the terms.</li>
-        </ul>
-        <p>
-          The app&apos;s administrators can see who sent a message, and every such
-          lookup is written to a permanent, unchangeable record.
-        </p>
-        <p>What we never collect: your IP address, your device or browser, your location, or your contacts.</p>
+        <PolicyBody text={PRIVACY_EN} deleteLabel="Delete your account" />
       </div>
     </div>
   )
