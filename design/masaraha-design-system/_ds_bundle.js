@@ -813,7 +813,7 @@ try { (() => {
  * the on/off switch. Gets the most visual weight on /inbox.
  */
 function LinkBlock({
-  origin = 'confession.fayad.app/c/',
+  origin = 'masaraha.provefair.app/c/',
   slug = 'k7m2xq9had4v',
   enabled = true,
   copied = false,
