@@ -547,12 +547,19 @@ test('item 23: the deleted owner\'s display name appears nowhere in the JSON of 
 // task, not from a garbled paraphrase, so the negative assertion is
 // actually capable of catching the real pre-week-10 wording.
 
+// AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.2:
+// clause 6 now names both providers (spec section 2.3 of that document
+// supersedes the week-10 wording frozen here). FROZEN_CLAUSE_6_AR and
+// FROZEN_CLAUSE_6_EN below take the section 2.3 text; FROZEN_CLAUSE_7_AR/EN
+// are untouched, clause 7 is not part of the week 19 change.
 const FROZEN_CLAUSE_6_AR =
-  'فيك تطفّي رابطك بأي وقت، وفيك تحذف حسابك بأي وقت. حذف الحساب نهائي وما فيك ترجع عنه: منمحي اسمك وربط حسابك بفيسبوك، وما بتقدر ترجع تفوت على نفس الحساب، ورابطك بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.'
+  'فيك تطفّي رابطك بأي وقت، وفيك تحذف حسابك بأي وقت. حذف الحساب نهائي وما فيك ترجع عنه: منمحي اسمك وربط حسابك بفيسبوك أو غوغل، وما بتقدر ترجع تفوت على نفس الحساب، ورابطك بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.'
 const FROZEN_CLAUSE_7_AR =
   'بس لازم تعرف شو بيضل بعد الحذف: الرسائل يلي بعتها بتضل عند الإدارة مربوطة برقم حساب بلا اسم، والرسائل يلي وصلتك بتضل كمان، وجوابك بأي مصارحة متبادلة ما منقدر نشيله. هالشي مشان نقدر نمنع الإساءة وإذا اضطرينا قانونياً.'
+// AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.2:
+// see the note above FROZEN_CLAUSE_6_AR -- same supersession, English side.
 const FROZEN_CLAUSE_6_EN =
-  'You can switch your link off at any time, and you can delete your account at any time. Deleting is permanent and cannot be undone: we erase your display name and the connection to your Facebook account, you cannot sign back in to that account, and your link stops working and is never given to anyone else.'
+  'You can switch your link off at any time, and you can delete your account at any time. Deleting is permanent and cannot be undone: we erase your display name and the connection to the Facebook or Google account you signed in with, you cannot sign back in to the deleted account, and your link stops working and is never given to anyone else.'
 const FROZEN_CLAUSE_7_EN =
   'You should know what remains after deletion: the messages you sent stay with the administration, attached to an account id with no name on it; the messages you received also stay; and your answer in any mutual reveal cannot be removed. This is so we can prevent abuse and meet a legal requirement if one arises.'
 
@@ -574,8 +581,12 @@ const FROZEN_CLAUSE_7_EN =
 const OLD_CLAUSE_6_SENTENCE_AR = 'أو تحذف حسابك بأي وقت'
 const OLD_CLAUSE_6_SENTENCE_EN = 'off or delete your account at any time'
 
-test('item 24: TERMS_VERSION === "2026-08-31.1" (spec section 6 item 24)', () => {
-  assert.equal(TERMS_VERSION, '2026-08-31.1', 'the version bump for the rewritten clause 6 and new clause 7 (spec section 5)')
+// AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.2:
+// docs/SPEC-week19-privacy-contract.md section 2.3 supersedes the week-10
+// version pin -- TERMS_VERSION moves to 2026-09-30.1 for the rewritten
+// clause 6 (both providers named).
+test('item 24: TERMS_VERSION === "2026-09-30.1" (spec section 6 item 24; version superseded by docs/SPEC-week19-privacy-contract.md section 2.3)', () => {
+  assert.equal(TERMS_VERSION, '2026-09-30.1', 'the version bump for the rewritten clause 6 naming both providers (docs/SPEC-week19-privacy-contract.md section 2.3)')
 })
 
 test('item 25: TERMS_TEXT_AR.clauses and TERMS_TEXT_EN.clauses both have length 7 (spec section 6 item 25)', () => {
