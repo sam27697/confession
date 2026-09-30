@@ -369,7 +369,12 @@ test('§6.9 / §2.4 the header-read tripwire: app/ and src/ contain no request-h
   }
 
   const unexpected = matches.filter((m) => {
-    const isPrivacyPageCopy = m.file === 'app/privacy/page.tsx' && /ip address/i.test(m.text)
+    // AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.3:
+    // the privacy copy's "IP address" prose line moved out of
+    // app/privacy/page.tsx and into src/privacy.ts (spec section 1 decision
+    // 1; the page now renders that module instead of holding the copy
+    // itself), so the allowance follows the copy to where it now lives.
+    const isPrivacyPageCopy = m.file === 'src/privacy.ts' && /ip address/i.test(m.text)
     const isRobotsLiteral = m.file === 'src/robots.ts' && /User-agent:/.test(m.text)
     // Third allowance, added 2026-09-23. `rel="noopener noreferrer"` on the
     // outbound share links matches /referrer/ but is the exact OPPOSITE of
@@ -389,7 +394,10 @@ test('§6.9 / §2.4 the header-read tripwire: app/ and src/ contain no request-h
   // The tripwire must actually be live, not vacuous — assert it does find
   // the two known, allowed matches, so an empty match set doesn't silently
   // pass this test for the wrong reason.
-  assert.ok(matches.some((m) => m.file === 'app/privacy/page.tsx'))
+  // AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.3:
+  // liveness now looks for the privacy copy's match in src/privacy.ts, where
+  // it lives after the move (see the allowance above).
+  assert.ok(matches.some((m) => m.file === 'src/privacy.ts'))
   assert.ok(matches.some((m) => m.file === 'src/robots.ts'))
 
   // No file imports the actual request-header-reading function from

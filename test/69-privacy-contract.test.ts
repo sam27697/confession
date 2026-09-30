@@ -39,6 +39,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderToStaticMarkup } from 'react-dom/server'
+// AMENDED 2026-09-30 by the test author: the render needs React in scope under tsx's classic JSX runtime
+import React from 'react'
 import { freshDb } from './harness.js'
 import { TERMS_VERSION, TERMS_TEXT_AR, TERMS_TEXT_EN } from '../src/terms.js'
 import { recordTermsReacceptance } from '../src/accounts.js'
@@ -438,6 +440,8 @@ test('item 12: the rendered /privacy HTML contains every PRIVACY_AR and PRIVACY_
   const mod = await loadPrivacy()
   assert.ok(mod.PRIVACY_AR && mod.PRIVACY_EN, 'src/privacy.ts must export PRIVACY_AR and PRIVACY_EN for this item to mean anything')
 
+  // AMENDED 2026-09-30 by the test author: the render needs React in scope under tsx's classic JSX runtime
+  ;(globalThis as unknown as { React: typeof React }).React = React
   const html = renderToStaticMarkup(PrivacyPage())
 
   if (mod.PRIVACY_AR) {

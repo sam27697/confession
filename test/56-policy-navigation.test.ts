@@ -3,12 +3,27 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+// AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.3:
+// AC4's privacy half now asserts against the page RENDERED to HTML (spec
+// section 4.1 item 12's approach), not a source-text grep, because section 1
+// decision 1 moves the privacy copy out of app/privacy/page.tsx's source and
+// into src/privacy.ts, which the page renders.
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import PrivacyPage from '../app/privacy/page.js'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TERMS_PAGE = path.join(REPO_ROOT, 'app', 'terms', 'page.tsx')
 const PRIVACY_PAGE = path.join(REPO_ROOT, 'app', 'privacy', 'page.tsx')
 const GLOBALS_CSS = path.join(REPO_ROOT, 'app', 'globals.css')
 const HUMAN_CHECKLIST = path.join(REPO_ROOT, 'docs', 'human_checklist.md')
+
+// AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.3:
+// tsx compiles this file's JSX with the classic runtime, which calls
+// React.createElement without importing React itself, so React must be
+// reachable as a global before the page component is invoked (see
+// test/69-privacy-contract.test.ts's own note on this, item 12).
+;(globalThis as unknown as { React: typeof React }).React = React
 
 test('AC1 (NEW): /terms renders an in-app return navigation action (.policy-return)', () => {
   assert.ok(existsSync(TERMS_PAGE), 'app/terms/page.tsx must exist')
@@ -66,8 +81,13 @@ test('AC4 (KEEP): Dual-language terms and privacy content, RTL/LTR layout, and l
   assert.match(termsSrc, /dir="ltr"/, 'Terms page must preserve LTR container')
 
   const privacySrc = readFileSync(PRIVACY_PAGE, 'utf8')
-  assert.match(privacySrc, /سياسة الخصوصية/, 'Privacy page must render Arabic heading')
-  assert.match(privacySrc, /What we store, exactly:/, 'Privacy page must render English content')
+  // AMENDED 2026-09-30 by the test author, per docs/SPEC-week19-privacy-contract.md section 4.3:
+  // these two were source-text matches against privacySrc; now assertions on
+  // the page RENDERED to HTML, since the privacy copy no longer lives in
+  // app/privacy/page.tsx's source (it lives in src/privacy.ts, section 2.1).
+  const privacyHtml = renderToStaticMarkup(PrivacyPage())
+  assert.ok(privacyHtml.includes('سياسة الخصوصية'), 'Rendered /privacy HTML must contain Arabic heading')
+  assert.ok(privacyHtml.includes('What we store, exactly:'), 'Rendered /privacy HTML must contain English content')
   assert.match(privacySrc, /dir="rtl"/, 'Privacy page must preserve RTL container')
   assert.match(privacySrc, /dir="ltr"/, 'Privacy page must preserve LTR container')
 })
