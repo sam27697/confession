@@ -1,6 +1,6 @@
 # Week 19 - the privacy page describes the product people actually sign in to
 
-*Frozen 2026-09-30 22:0x +04 before any code. Every number in §0 was read off
+*Frozen 2026-09-30 21:4x +04 before any code. Every number in §0 was read off
 the production database or the running site tonight.*
 
 ## §0 What was measured
@@ -262,7 +262,7 @@ both, so the test author, not the implementer, amends them: item 24 expects
 text; each amended line carries a dated comment naming this spec. Items 25, 27
 and every other item stay as they are.
 
-### §4.3 Amendment after freeze, 2026-09-30 22:4x, found by running the suite
+### §4.3 Amendment after freeze, 2026-09-30 21:5x, found by running the suite
 
 Running the whole suite against the implementation turned two older tests red.
 Both are source-text assertions that pin privacy copy to `app/privacy/page.tsx`,
