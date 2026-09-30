@@ -2,6 +2,7 @@ import { requireActiveViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { deleteAccountAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
+import { ACCOUNT_DELETE_ERASED_AR } from '../../../src/privacy.js'
 
 const ERROR_COPY: Record<string, string> = {
   required: 'لازم تحط إشارة عالمربع تحت قبل ما تأكد الحذف.',
@@ -33,7 +34,7 @@ export default async function DeleteAccountPage({
             <span className="sovereignty-card__badge sovereignty-card__badge--purged">سيتم الحذف</span>
             <h2 className="sovereignty-card__title">شو رح ينمحي</h2>
           </div>
-          <p className="sovereignty-card__text">اسمك، وربط حسابك بفيسبوك، وقدرتك إنك ترجع تفوت على نفس الحساب، ورابطك، يلي بيبطّل يشتغل ونهائياً ما منعطيه لحدا تاني.</p>
+          <p className="sovereignty-card__text">{ACCOUNT_DELETE_ERASED_AR}</p>
         </div>
 
         <div className="sovereignty-card__section sovereignty-card__section--preserved">

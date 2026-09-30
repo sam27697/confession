@@ -6,7 +6,7 @@ import { Toggle } from '../core/Toggle.jsx'
  * The growth loop. The user's personal link, a copy action, a share action and
  * the on/off switch. Gets the most visual weight on /inbox.
  */
-export function LinkBlock({ origin = 'confession.fayad.app/c/', slug = 'k7m2xq9had4v', enabled = true, copied = false, onCopy, onShare, onToggle, style }) {
+export function LinkBlock({ origin = 'masaraha.provefair.app/c/', slug = 'k7m2xq9had4v', enabled = true, copied = false, onCopy, onShare, onToggle, style }) {
   return (
     <section style={{
       position: 'relative', overflow: 'hidden',
