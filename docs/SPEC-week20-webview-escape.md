@@ -1,6 +1,6 @@
 # Week 20 - every embedded browser Google refuses gets the way out
 
-*Frozen 2026-10-02 22:1x +04 before any code. Every claim in §0 was measured
+*Frozen 2026-10-02 21:3x +04 before any code. Every claim in §0 was measured
 tonight against production or read off Google's own pages.*
 
 ## §0 What was measured
