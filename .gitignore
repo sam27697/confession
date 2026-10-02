@@ -11,7 +11,7 @@ next-env.d.ts
 # local dev artefacts (a real session cookie was committed here once)
 cookies.txt
 
-# local Claude Code tooling (launch config for the preview server)
+# local editor config (launch config for the preview server)
 .claude/
 
 # scripts/authorship_scan.py is Python; its bytecode is not repository content
