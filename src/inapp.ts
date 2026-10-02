@@ -32,9 +32,37 @@ const IN_APP_MARKERS = [
   'KAKAOTALK',
 ] as const
 
+// The names above only cover the apps someone thought of. Google refuses by
+// engine, not by app name (week 20 spec §0.1), so the two engines are matched
+// as well:
+//
+// Android WebView puts `wv` last in the platform group, `(...; wv)`. Chrome,
+// Samsung Internet, Firefox and Custom Tabs never do.
+//
+// iOS WKWebView sends AppleWebKit with no `Safari/` token. Safari,
+// SFSafariViewController (which Google allows) and every iOS browser built on
+// it -- CriOS, FxiOS, EdgiOS, DuckDuckGo, the Google app -- all carry it.
+// iPhone/iPad/iPod only: a Mac app's WKWebView looks the same as iPad desktop
+// mode, and telling a desktop browser to open a browser is the worse mistake.
+function isAndroidWebView(userAgent: string): boolean {
+  return userAgent.includes('; wv)')
+}
+
+function isIosWebView(userAgent: string): boolean {
+  return (
+    detectPlatform(userAgent) === 'ios' &&
+    userAgent.includes('AppleWebKit') &&
+    !userAgent.includes('Safari/')
+  )
+}
+
 export function isInAppBrowser(userAgent: string): boolean {
   if (!userAgent) return false
-  return IN_APP_MARKERS.some((m) => userAgent.includes(m))
+  return (
+    IN_APP_MARKERS.some((m) => userAgent.includes(m)) ||
+    isAndroidWebView(userAgent) ||
+    isIosWebView(userAgent)
+  )
 }
 
 export type MobilePlatform = 'android' | 'ios' | 'other'
