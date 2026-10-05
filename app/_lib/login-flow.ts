@@ -21,19 +21,13 @@ import {
   pendingIdentityCookieOptions,
 } from './session.js'
 
-export type ResolvedIdentity = { provider: PendingProvider; providerUserId: string; displayName: string }
+import { sanitizeNextDestination } from '../../src/destination.js'
 
-export function sanitizeNextDestination(destination?: string | null): string {
-  if (
-    typeof destination === 'string' &&
-    destination.startsWith('/') &&
-    !destination.startsWith('//') &&
-    !destination.includes(':')
-  ) {
-    return destination
-  }
-  return '/inbox'
-}
+// Re-exported so every caller keeps one name; the rules live in
+// src/destination.ts (week 21).
+export { sanitizeNextDestination }
+
+export type ResolvedIdentity = { provider: PendingProvider; providerUserId: string; displayName: string }
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>
 
