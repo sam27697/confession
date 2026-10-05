@@ -31,7 +31,9 @@ function isLocalPath(value: string): boolean {
   return value.startsWith('/') && !value.startsWith('//')
 }
 
-export function sanitizeNextDestination(destination?: string | null): string {
+// `unknown` because the value comes from a query string, a form field or a
+// cookie, and the first rule is that it has to be a string at all.
+export function sanitizeNextDestination(destination?: unknown): string {
   if (typeof destination !== 'string') return DEFAULT_DESTINATION
   if (!isLocalPath(destination)) return DEFAULT_DESTINATION
   if (destination.includes(':')) return DEFAULT_DESTINATION
@@ -43,6 +45,10 @@ export function sanitizeNextDestination(destination?: string | null): string {
   } catch {
     return DEFAULT_DESTINATION
   }
+  // Unreachable while the rules above hold: a single leading `/` with no `\`,
+  // `:` or control character cannot parse to another origin. It stays as the
+  // second wall, and test/71 shows the two together are what hold (removing
+  // both turns items 1 to 3 red; removing this one alone does not).
   if (parsed.origin !== SENTINEL_ORIGIN) return DEFAULT_DESTINATION
 
   // The parser percent-encodes anything outside ASCII, so this is always safe
