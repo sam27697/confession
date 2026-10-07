@@ -1,6 +1,6 @@
 # Week 22 - a sent message leaves the compose box
 
-Frozen 2026-10-07 22:0x +04, before any code. Measured on staging, which runs
+Frozen 2026-10-07 21:37 +04, before any code. Measured on staging, which runs
 the same tarball as production since week 21 (sha256 `8e9d4245512f8591...`).
 
 ## §0 What was measured
@@ -138,7 +138,7 @@ test.
 Item 1 and item 6 must be red on `main` at `7264176` (there is no
 `wireDraft` export, and no sent branch).
 
-### §4.1 Amendment after freeze, 2026-10-07 22:2x, found by running the suite
+### §4.1 Amendment after freeze, 2026-10-07 21:43, found by running the suite
 
 `test/31-draft-persistence.test.ts` AC4 pins the literal `<form action={action}>`.
 §1.3 put the key on that tag, which turns test 31 red. The old test is right
