@@ -138,6 +138,16 @@ test.
 Item 1 and item 6 must be red on `main` at `7264176` (there is no
 `wireDraft` export, and no sent branch).
 
+### §4.1 Amendment after freeze, 2026-10-07 22:2x, found by running the suite
+
+`test/31-draft-persistence.test.ts` AC4 pins the literal `<form action={action}>`.
+§1.3 put the key on that tag, which turns test 31 red. The old test is right
+about what it protects (the action binding), so the key moves instead: the form
+is wrapped in a React `Fragment` carrying the same key, which remounts the form
+the same way. Item 9 now reads: the `<form action={action}>` element is wrapped
+in an element whose `key` expression references `sent`, and the form tag itself
+is unchanged. Nothing else in §4 changes.
+
 ## §5 Deploy and verification (the build session)
 
 Staging first, then production from the same tarball. On staging, the drive

@@ -23,6 +23,81 @@ import { useEffect, useRef } from 'react'
 import { useFormStatus } from 'react-dom'
 import type { ReactNode } from 'react'
 
+/**
+ * Draft persistence for the compose box, run once when the form mounts.
+ *
+ * Exported so the decision can be tested without a browser (week 22 spec
+ * §4). Returns the cleanup for the listeners it adds, or undefined when the
+ * button is not inside a draft-enabled form.
+ *
+ * `data-draft-sent="1"` on the textarea means this render is the one after a
+ * successful send: the stored copy is the message that was just delivered,
+ * so it is removed and not offered back. Before week 22 it was restored
+ * into the empty box under «تم استعادة المسودة», and one more tap sent it
+ * twice. The page keys the form per successful send so this runs every time,
+ * including a second send from a `?sent=1` page where the URL does not change.
+ *
+ * Storage calls sit in try/catch on purpose: some private modes refuse
+ * sessionStorage outright, and there the box simply has no drafts.
+ */
+export function wireDraft(button: HTMLButtonElement | null): (() => void) | undefined {
+  if (!button) return
+  const form = button.closest('form')
+  if (!form) return
+  const textarea = form.querySelector('textarea[name="body"]') as HTMLTextAreaElement | null
+  if (!textarea) return
+  const slug = textarea.getAttribute('data-draft-slug')
+  if (!slug) return
+
+  const indicator = form.querySelector('#draft-status') as HTMLElement | null
+
+  if (textarea.getAttribute('data-draft-sent') === '1') {
+    try {
+      sessionStorage.removeItem('confession_draft_' + slug)
+    } catch {
+      void 0
+    }
+  } else {
+    let saved: string | null = null
+    try {
+      saved = sessionStorage.getItem('confession_draft_' + slug)
+    } catch {
+      void 0
+    }
+    if (saved && !textarea.value) {
+      textarea.value = saved
+      if (indicator) indicator.textContent = 'تم استعادة المسودة'
+      textarea.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  const handleInput = () => {
+    if (indicator) indicator.textContent = 'عم يحفظ...'
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      try {
+        sessionStorage.setItem('confession_draft_' + slug, textarea.value)
+        if (indicator) indicator.textContent = 'تم الحفظ تلقائياً'
+      } catch {
+        void 0
+      }
+    }, 150)
+  }
+
+  const handleSubmit = () => {
+    if (indicator) indicator.textContent = ''
+  }
+
+  textarea.addEventListener('input', handleInput)
+  form.addEventListener('submit', handleSubmit)
+  return () => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    textarea.removeEventListener('input', handleInput)
+    form.removeEventListener('submit', handleSubmit)
+  }
+}
+
 export function SubmitButton({
   children,
   className,
@@ -35,56 +110,7 @@ export function SubmitButton({
   const { pending } = useFormStatus()
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    const button = buttonRef.current
-    if (!button) return
-    const form = button.closest('form')
-    if (!form) return
-    const textarea = form.querySelector('textarea[name="body"]') as HTMLTextAreaElement | null
-    if (!textarea) return
-    const slug = textarea.getAttribute('data-draft-slug')
-    if (!slug) return
-
-    const indicator = form.querySelector('#draft-status') as HTMLElement | null
-
-    let saved: string | null = null
-    try {
-      saved = sessionStorage.getItem('confession_draft_' + slug)
-    } catch {
-      void 0
-    }
-    if (saved && !textarea.value) {
-      textarea.value = saved
-      if (indicator) indicator.textContent = 'تم استعادة المسودة'
-      textarea.dispatchEvent(new Event('input', { bubbles: true }))
-    }
-
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null
-    const handleInput = () => {
-      if (indicator) indicator.textContent = 'عم يحفظ...'
-      if (debounceTimer) clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(() => {
-        try {
-          sessionStorage.setItem('confession_draft_' + slug, textarea.value)
-          if (indicator) indicator.textContent = 'تم الحفظ تلقائياً'
-        } catch {
-          void 0
-        }
-      }, 150)
-    }
-
-    const handleSubmit = () => {
-      if (indicator) indicator.textContent = ''
-    }
-
-    textarea.addEventListener('input', handleInput)
-    form.addEventListener('submit', handleSubmit)
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer)
-      textarea.removeEventListener('input', handleInput)
-      form.removeEventListener('submit', handleSubmit)
-    }
-  }, [])
+  useEffect(() => wireDraft(buttonRef.current), [])
 
   return (
     <button ref={buttonRef} type="submit" className={className} disabled={pending} aria-busy={pending}>
