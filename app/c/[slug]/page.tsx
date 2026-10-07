@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { cache } from 'react'
+import { cache, Fragment } from 'react'
 import { getViewerAccountId } from '../../_lib/auth.js'
 import { getDb } from '../../_lib/domain/db.js'
 import { getLinkBySlug } from '../../_lib/domain/links.js'
@@ -171,59 +172,66 @@ export default async function SendPage({
           <p className="hint">ما فيك تصارح حالك، هيدا رابطك إنت.</p>
         </div>
       ) : viewerAccountId ? (
-        <form action={action}>
-          <div className="compose-starters" role="group" aria-label="أفكار للبدء">
-            <span className="compose-starters__label">أفكار للبدء:</span>
-            <div className="compose-starters__list">
-              {STARTER_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  className="starter-chip"
-                  data-starter-prompt={prompt}
-                >
-                  {prompt}
-                </button>
-              ))}
+        // Keyed per successful send so the form mounts again and
+        // SubmitButton's draft wiring runs after every send, including a
+        // second one from this same ?sent=1 URL (week 22 spec §1.3, §4.1).
+        // The key sits on a Fragment because test 31 pins the form tag.
+        <Fragment key={sent === '1' ? randomUUID() : 'compose'}>
+          <form action={action}>
+            <div className="compose-starters" role="group" aria-label="أفكار للبدء">
+              <span className="compose-starters__label">أفكار للبدء:</span>
+              <div className="compose-starters__list">
+                {STARTER_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    className="starter-chip"
+                    data-starter-prompt={prompt}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
-            }}
-          />
-          <div className="field-row">
-            {/* The field had a placeholder and no label, so a screen reader
-                announced it as an unnamed text area. The label is visually
-                hidden rather than shown because the h1 above already names
-                the screen; nothing about the field's name or validation
-                changes (spec §0, acceptance item 17). */}
-            <label className="sr-only" htmlFor="body">رسالتك</label>
-            <textarea
-              id="body"
-              className="textarea textarea--hero"
-              name="body"
-              data-draft-slug={slug}
-              required
-              minLength={1}
-              maxLength={4000}
-              rows={5}
-              placeholder="اكتب اللي بقلبك..."
-              aria-describedby={error ? 'body-error' : undefined}
-              aria-invalid={error ? 'true' : undefined}
-              autoFocus={Boolean(error)}
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
+              }}
             />
-          </div>
-          <div className="compose-meta">
-            <span className="hint" aria-live="polite">الحد الأقصى 4000 حرف</span>
-            <span className="compose-rule" aria-live="polite">حرفين على الأقل للبدء</span>
-            <span id="draft-status" className="draft-indicator" aria-live="polite" />
-          </div>
-          <p className="notice">
-            اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
-          </p>
-          <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
-        </form>
+            <div className="field-row">
+              {/* The field had a placeholder and no label, so a screen reader
+                  announced it as an unnamed text area. The label is visually
+                  hidden rather than shown because the h1 above already names
+                  the screen; nothing about the field's name or validation
+                  changes (spec §0, acceptance item 17). */}
+              <label className="sr-only" htmlFor="body">رسالتك</label>
+              <textarea
+                id="body"
+                className="textarea textarea--hero"
+                name="body"
+                data-draft-slug={slug}
+                data-draft-sent={sent === '1' ? '1' : undefined}
+                required
+                minLength={1}
+                maxLength={4000}
+                rows={5}
+                placeholder="اكتب اللي بقلبك..."
+                aria-describedby={error ? 'body-error' : undefined}
+                aria-invalid={error ? 'true' : undefined}
+                autoFocus={Boolean(error)}
+              />
+            </div>
+            <div className="compose-meta">
+              <span className="hint" aria-live="polite">الحد الأقصى 4000 حرف</span>
+              <span className="compose-rule" aria-live="polite">حرفين على الأقل للبدء</span>
+              <span id="draft-status" className="draft-indicator" aria-live="polite" />
+            </div>
+            <p className="notice">
+              اسمك ما بيوصل للي عم تبعتله. بس رسالتك مربوطة بحسابك عنا، وإدارة التطبيق بتقدر تشوفه.
+            </p>
+            <SubmitButton className="btn btn--primary btn--block" loadingText="عم يبعت...">ابعت {ACTION_EMOJI.send}</SubmitButton>
+          </form>
+        </Fragment>
       ) : (
         <SignInCard slug={slug} ownerDisplayName={link.ownerDisplayName} />
       )}
