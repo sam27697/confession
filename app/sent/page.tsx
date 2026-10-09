@@ -5,6 +5,7 @@ import { getLinkForOwner } from '../_lib/domain/links.js'
 import type { SentConfession } from '../_lib/domain/views.js'
 import { formatHourStamp } from '../../src/hourstamp.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../_lib/emoji.js'
+import Script from 'next/script'
 
 // Week 15 §3.1: what the offer page's actions just did, keyed, never free
 // text from the URL.
@@ -232,7 +233,9 @@ export default async function SentPage({
           </div>
         )
       })}
-      <script
+      <Script
+        id="sent-copy"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(){document.addEventListener('click',async function(e){var b=e.target.closest('button[data-copy-text]');if(!b)return;var txt=b.getAttribute('data-copy-text');if(!txt)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(txt);}else{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1500);}catch(err){b.textContent='فشل النسخ';setTimeout(function(){b.textContent='انسخ النص';},1500);}});})();`,
         }}

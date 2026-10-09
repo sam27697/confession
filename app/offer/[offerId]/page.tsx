@@ -4,6 +4,7 @@ import { getPendingOfferForSender } from '../../_lib/domain/views.js'
 import { NotYourConfessionError, OfferNotPendingError, RevealOfferNotFoundError } from '../../_lib/domain/errors.js'
 import { acceptOfferAction, declineOfferAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
+import Script from 'next/script'
 
 const ERROR_COPY: Record<string, string> = {
   short: 'جوابك لازم يكون حرفين على الأقل.',
@@ -107,7 +108,9 @@ export default async function OfferPage({
             ))}
           </div>
         </div>
-        <script
+        <Script
+          id="response-starters"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){document.addEventListener('click',function(e){var b=e.target.closest('button[data-response-prompt]');if(!b)return;var f=b.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="senderAnswer"]');if(!ta)return;ta.value=b.getAttribute('data-response-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
           }}

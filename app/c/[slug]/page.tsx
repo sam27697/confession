@@ -12,6 +12,7 @@ import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
 import { CopyLink } from '../../_components/CopyLink.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
+import Script from 'next/script'
 
 // Share-card spec §1, §3: an enabled link gets the personalised card; a
 // disabled link or a missing slug gets the generic card. Returning {} here
@@ -193,7 +194,9 @@ export default async function SendPage({
                 ))}
               </div>
             </div>
-            <script
+            <Script
+              id="starter-chips"
+              strategy="afterInteractive"
               dangerouslySetInnerHTML={{
                 __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
               }}
