@@ -17,6 +17,7 @@ import { CopyLink } from '../_components/CopyLink.js'
 import { StoryCard } from '../_components/StoryCard.js'
 import { SubmitButton } from '../_components/SubmitButton.js'
 import { RevealCard, QUESTION_SUGGESTIONS, STAKE_SUGGESTIONS } from '../_components/RevealCard.js'
+import Script from 'next/script'
 
 const ERROR_COPY: Record<string, string> = {
   short: 'كل خانة بدها حرفين على الأقل. كمّلها وجرب كمان مرة.',
@@ -283,7 +284,9 @@ export default async function InboxPage({
         <p className="daily-spark__prompt">«{sparkOfTheDay}»</p>
         <span className="daily-spark__hint">انشره بستوري أو حالة ليسألوك عنه بالسر</span>
       </div>
-      <script
+      <Script
+        id="daily-spark-copy"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(){document.addEventListener('click',function(e){var b=e.target.closest('.daily-spark__copy');if(!b)return;var text=b.getAttribute('data-spark-text')||'';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){var orig=b.textContent;b.textContent='تم النسخ ✅';b.classList.add('btn--copied');setTimeout(function(){b.textContent=orig;b.classList.remove('btn--copied');},1600);});}});})();`,
         }}
