@@ -24,7 +24,7 @@ export async function sendConfessionAction(slug: string, formData: FormData) {
   const db = getDb()
   try {
     // A blocked sender gets the same result as anyone else, and his message
-    // goes where only he can see it — never special-cased here, never
+    // goes where only he can see it. Never special-cased here, never
     // logged (spec §5.3, week 24).
     await sendConfession(db, { senderAccountId, linkSlug: slug, body })
   } catch (err) {
