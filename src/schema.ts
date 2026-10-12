@@ -112,6 +112,18 @@ export const confessions = pgTable('confessions', {
   status: confessionStatusEnum('status').notNull().default('delivered'),
 })
 
+// A send to a link whose owner blocked the sender (week 24). Read by the
+// sender's own views and nothing else; see drizzle/0006_withheld_messages.sql
+// for why it is not a status on confessions.
+export const withheldMessages = pgTable('withheld_messages', {
+  id: uuid('id').primaryKey().default(sqlDefaultRandomUuid()),
+  linkId: uuid('link_id').notNull().references(() => links.id),
+  senderAccountId: uuid('sender_account_id').notNull().references(() => accounts.id),
+  body: text('body').notNull(),
+  // Same CHECK as confessions.created_hour, in the migration.
+  createdHour: timestamp('created_hour', { withTimezone: true }).notNull(),
+})
+
 // The administrator's own identity (spec §1.1, week 7). Deliberately not a
 // row in `accounts`: an administrator is not a product user, does not own a
 // link, is not a sender - see drizzle/0002_admin.sql for the full list of

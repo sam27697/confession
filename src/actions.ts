@@ -4,9 +4,8 @@
 // and adminReveal (a write that returns a read). Every rejection in
 // sendConfession is a distinct typed error EXCEPT the blocked-sender path,
 // which must be indistinguishable from success to the sender (spec §2) —
-// see the comment on that branch below.
+// see the comment on sendConfession below.
 
-import { randomUUID } from 'node:crypto'
 import { and, eq, gte, lt, sql } from 'drizzle-orm'
 import type { Db } from './db.js'
 import {
@@ -19,6 +18,7 @@ import {
   revealAnswers,
   revealOffers,
   sendCounters,
+  withheldMessages,
 } from './schema.js'
 import {
   ConfessionNotFoundError,
@@ -113,8 +113,17 @@ export async function adminRevealByAdminUser(
 
 export type SendConfessionResult = { confessionId: string }
 
-// Checks, in order (spec §2): link exists and enabled; sender not blocked
-// on that link; sender's account not disabled; rate limits; then inserts.
+// Checks, in order (spec §2, week 24 §1): link exists and enabled; sender's
+// account not disabled; then, in one transaction, the block, both rate
+// limits, the insert and the counter.
+//
+// The block check must be indistinguishable from success to the sender
+// (spec §2): a blocked sender who learns he is blocked learns the recipient
+// acted on him. Returning success and writing nothing was not enough: his
+// own /sent list did not move, and he was the one sender the rate limits
+// never reached. So a blocked send goes through every step an ordinary send
+// does and lands in withheld_messages instead of confessions, which nothing
+// on the recipient's or the admin's side reads (week 24 §1, §2).
 export async function sendConfession(
   db: Db,
   { senderAccountId, linkSlug, body }: { senderAccountId: string; linkSlug: string; body: string },
@@ -128,21 +137,6 @@ export async function sendConfession(
   if (!link) throw new LinkNotFoundError(linkSlug)
   if (!link.enabled) throw new LinkDisabledError(linkSlug)
 
-  const [blocked] = await db
-    .select({ id: linkBlocks.id })
-    .from(linkBlocks)
-    .where(and(eq(linkBlocks.linkId, link.id), eq(linkBlocks.blockedAccountId, senderAccountId)))
-    .limit(1)
-
-  if (blocked) {
-    // The block check must be indistinguishable from success to the
-    // sender (spec §2): a blocked sender who gets an error learns he is
-    // blocked, which tells him the recipient acted on him. So: return a
-    // success-shaped result and write nothing. The id is not tied to any
-    // row — there is nothing in the database to look up it against.
-    return { confessionId: randomUUID() }
-  }
-
   const [sender] = await db
     .select({ disabledAt: accounts.disabledAt, deletedAt: accounts.deletedAt })
     .from(accounts)
@@ -155,10 +149,17 @@ export async function sendConfession(
   // are the same fact — sending is refused, full stop — and deleteAccount
   // already stamps disabled_at alongside deleted_at (spec §2.2), so this
   // check is explicit rather than relying on that as an accident of the
-  // tombstone shape.
+  // tombstone shape. It now runs for a blocked sender too: before week 24 a
+  // blocked, disabled sender was told his message went through.
   if (sender.disabledAt !== null || sender.deletedAt !== null) throw new SenderAccountDisabledError()
 
   return db.transaction(async (tx) => {
+    const [blocked] = await tx
+      .select({ id: linkBlocks.id })
+      .from(linkBlocks)
+      .where(and(eq(linkBlocks.linkId, link.id), eq(linkBlocks.blockedAccountId, senderAccountId)))
+      .limit(1)
+
     // Widening Db to the driver-agnostic PgDatabase type (spec §4.1) means
     // tx.execute<T>() can no longer be typed to a concrete row shape — the
     // base PgQueryResultHKT carries no `rows` field, only a driver's
@@ -199,15 +200,15 @@ export async function sendConfession(
       throw new PerAccountRateLimitExceededError(MAX_PER_ACCOUNT_PER_DAY)
     }
 
-    const [inserted] = await tx
-      .insert(confessions)
-      .values({
-        linkId: link.id,
-        senderAccountId,
-        body,
-        createdHour: sql`date_trunc('hour', now())`,
-      })
-      .returning({ id: confessions.id })
+    const values = {
+      linkId: link.id,
+      senderAccountId,
+      body,
+      createdHour: sql`date_trunc('hour', now())`,
+    }
+    const [inserted] = blocked
+      ? await tx.insert(withheldMessages).values(values).returning({ id: withheldMessages.id })
+      : await tx.insert(confessions).values(values).returning({ id: confessions.id })
 
     await tx.execute(sql`
       insert into ${sendCounters} (sender_account_id, link_id, window_hour, count)
