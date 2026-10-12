@@ -408,9 +408,10 @@ export default async function InboxPage({
                   <input type="hidden" name="confessionId" value={m.id} />
                   <SubmitButton className="btn btn--danger btn--sm">احظر صاحبها</SubmitButton>
                   {/* Said where the decision is taken, not after it (week 15
-                      §3.4). True because a blocked sender's send returns
-                      success and writes nothing, and v1 has no notifications
-                      at all. */}
+                      §3.4). True because a blocked sender's send goes
+                      through every step an ordinary send does and lands
+                      where only he can see it (week 24), and v1 has no
+                      notifications at all. */}
                   <span className="hint">الحظر بيوقف رسايله إلك، وما بيوصله إشعار.</span>
                 </form>
                 <form action={reportConfessionAction}>

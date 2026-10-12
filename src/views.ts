@@ -29,6 +29,7 @@ import {
   links,
   revealAnswers,
   revealOffers,
+  withheldMessages,
 } from './schema.js'
 import {
   ViewerNotLinkOwnerError,
@@ -324,7 +325,24 @@ export async function getSentForSender(
     // Same order and same reason as getInboxForRecipient (week 15 §2.1).
     .orderBy(desc(confessions.createdHour), confessions.id)
 
-  if (confessionRows.length === 0) return []
+  // What he sent to links whose owner blocked him (week 24). To him each is
+  // a delivered message nobody answered, so it takes the same shape with no
+  // offer, and goes in the same list in the same order.
+  const withheldRows = await db
+    .select({
+      confessionId: withheldMessages.id,
+      body: withheldMessages.body,
+      createdHour: withheldMessages.createdHour,
+      recipientDisplayName: accounts.displayName,
+    })
+    .from(withheldMessages)
+    .innerJoin(links, eq(links.id, withheldMessages.linkId))
+    .innerJoin(accounts, eq(accounts.id, links.ownerAccountId))
+    .where(eq(withheldMessages.senderAccountId, senderAccountId))
+
+  const withheld: SentConfession[] = withheldRows.map((w) => ({ ...w, offer: { kind: 'none' } }))
+
+  if (confessionRows.length === 0) return sortSent(withheld)
 
   const confessionIds = confessionRows.map((c) => c.confessionId)
 
@@ -363,7 +381,7 @@ export async function getSentForSender(
     answersByOfferId.set(a.offerId, entry)
   }
 
-  return confessionRows.map((c) => {
+  const delivered = confessionRows.map((c): SentConfession => {
     const offer = offerByConfessionId.get(c.confessionId)
     let reveal: SentReveal = { kind: 'none' }
 
@@ -402,6 +420,20 @@ export async function getSentForSender(
       offer: reveal,
     }
   })
+
+  return withheld.length === 0 ? delivered : sortSent([...delivered, ...withheld])
+}
+
+// Newest hour first, then id ascending: the ORDER BY above, applied to the
+// merged list. Postgres compares uuids byte by byte, which for the lowercase
+// hex text form is plain string order, so the two sources interleave exactly
+// as one query over both would have ordered them.
+function sortSent(rows: SentConfession[]): SentConfession[] {
+  return rows.sort(
+    (a, b) =>
+      b.createdHour.getTime() - a.createdHour.getTime() ||
+      (a.confessionId < b.confessionId ? -1 : a.confessionId > b.confessionId ? 1 : 0),
+  )
 }
 
 // The tab badges on /inbox and /sent (week 15 §2.2). Each tab used to read
@@ -421,15 +453,17 @@ export async function countVisibleInboxForLink(db: Db, { linkId }: { linkId: str
   return row?.n ?? 0
 }
 
-// Confessions the viewer sent. The WHERE clause is getSentForSender's own,
+// Confessions the viewer sent. The WHERE clauses are getSentForSender's own,
 // filtered on the viewer's id, so no other person's identity is involved.
+// Both tables, so the badge moves for a withheld send exactly as it does
+// for a delivered one (week 24).
 export async function countSentForSender(
   db: Db,
   { senderAccountId }: { senderAccountId: string },
 ): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(confessions)
-    .where(eq(confessions.senderAccountId, senderAccountId))
-  return row?.n ?? 0
+  const [[delivered], [withheld]] = await Promise.all([
+    db.select({ n: count() }).from(confessions).where(eq(confessions.senderAccountId, senderAccountId)),
+    db.select({ n: count() }).from(withheldMessages).where(eq(withheldMessages.senderAccountId, senderAccountId)),
+  ])
+  return (delivered?.n ?? 0) + (withheld?.n ?? 0)
 }

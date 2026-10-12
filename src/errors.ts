@@ -3,8 +3,9 @@
 // Typed errors for the send path and the reveal state machine (spec §2:
 // "each rejection is a distinct typed error"). Deliberately NOT used for the
 // blocked-sender case in sendConfession: that path returns success and
-// writes nothing, because a typed error there would tell a blocked sender
-// he is blocked (spec §2 sendConfession).
+// stores the message where only the sender reads it, because a typed error
+// there would tell a blocked sender he is blocked (spec §2 sendConfession,
+// week 24).
 
 export class LinkNotFoundError extends Error {
   constructor(slug: string) {
