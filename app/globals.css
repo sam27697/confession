@@ -325,7 +325,14 @@
    the default. */
 *,*::before,*::after{box-sizing:border-box}
 html{direction:rtl;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg-page);color:var(--text-body);font:var(--type-body);text-wrap:pretty}
+/* overflow-wrap:anywhere (week 25): a pasted link or a long «هههه» is one
+   word, and with nothing allowed to break it the browser kept it whole and
+   widened every flex parent to hold it -- one message made the recipient's
+   inbox 2459px wide on a 360px phone. A word now breaks only where it would
+   not otherwise fit. `anywhere` and not `break-word`, because only `anywhere`
+   lowers the min-content width that a flex item shrinks to; with
+   `break-word` four of the eight measured pages still overflowed. */
+body{margin:0;background:var(--bg-page);color:var(--text-body);font:var(--type-body);text-wrap:pretty;overflow-wrap:anywhere}
 /* Spotlight effect when confessing */
 body::before {
   content: "";
