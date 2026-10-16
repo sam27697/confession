@@ -124,7 +124,7 @@ test('item 1: all eight fixtures exist, contain no script tags, and post-send fi
     const html = readFileSync(fixturePath, 'utf8')
     await page.setContent(html)
 
-    const matchingTexts = await page.evaluate(() => {
+    const matchingTexts: string[] = await page.evaluate(() => {
       const all = Array.from(document.querySelectorAll('*'))
       const matches: string[] = []
       for (const el of all) {
