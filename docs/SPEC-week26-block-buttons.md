@@ -215,3 +215,14 @@ the copy button is tapped for real, and the landing page's buttons are still
 one line. Production has no dev login: fetch its stylesheet from outside and
 confirm it carries the new `.btn--block` rule, and confirm the route table
 and `check-origins.mjs` as in week 25.
+
+## §6 Amendment, 2026-10-16 22:3x, after the change was rendered
+
+§0.4 says no one-line label changes under §1. One does: the post-send copy
+button for the short name «هادي» at 360. Its label had 4.7 px each side of
+the border box, which is 3.7 px inside the 1 px border, less than the 4 px
+padding, so it now goes to two lines (52 to 69 px). Today it is one line
+because it already runs into the padding. It is the button whose label
+carries a name, and at 320 the same label spills 15 px today, so two lines is
+where it lands for almost any name. Acceptance item 4 never covered this
+button; nothing in §4 changes.
