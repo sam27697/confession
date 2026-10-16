@@ -1,6 +1,6 @@
 # Week 26 - a long name no longer pushes the post-send screen off the phone
 
-Frozen 2026-10-16 22:1x +04, before any code. Measured on staging, which runs
+Frozen 2026-10-16 21:4x +04, before any code. Measured on staging, which runs
 the same tarball as production since week 25 (`main` = `f8683b1`).
 
 ## §0 What was measured
@@ -216,7 +216,7 @@ one line. Production has no dev login: fetch its stylesheet from outside and
 confirm it carries the new `.btn--block` rule, and confirm the route table
 and `check-origins.mjs` as in week 25.
 
-## §6 Amendment, 2026-10-16 22:3x, after the change was rendered
+## §6 Amendment, 2026-10-16 21:5x, after the change was rendered
 
 §0.4 says no one-line label changes under §1. One does: the post-send copy
 button for the short name «هادي» at 360. Its label had 4.7 px each side of
