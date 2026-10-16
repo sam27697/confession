@@ -770,7 +770,23 @@ main{
 
 .btn--md{height:46px;padding:0 20px;font-size:var(--size-body-sm)}
 .btn--sm{height:var(--control-h-sm);min-height:var(--control-h-sm);padding:0 14px;font-size:var(--size-caption)}
-.btn--block{width:100%}
+/* A full-width button wraps (week 26). .btn forbids wrapping, which is right
+   for a button in a row and wrong for one with nothing beside it: the share
+   button after a send carries the recipient's name, and a three-part Arabic
+   name made that page 398px wide on a 360px phone. A label that does not fit
+   now goes to a second line and the button grows to hold it; balance keeps
+   the lines even so neither reaches the pill's curved ends. The side padding
+   drops to 4px because labels already sit inside the old 26px (the Google
+   button has 25.7px at 360); centred text that fits does not move. */
+.btn--block{
+  width:100%;
+  height:auto;
+  min-height:var(--control-h);
+  padding:var(--space-2) var(--space-1);
+  white-space:normal;
+  text-wrap:balance;
+  line-height:var(--lh-tight);
+}
 
 .empty{
   display:flex;
