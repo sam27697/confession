@@ -195,3 +195,22 @@ two link block buttons whole at 320; screenshots of `/inbox` at 280, 320 and
 360. The logout button is tapped for real at 320 and signs out. Production has
 no dev login: fetch its stylesheet from outside and confirm it carries §1,
 then the route table and `check-origins.mjs` as in week 26.
+
+## §6 Amendment, 2026-10-19 22:4x, after the acceptance file was first run
+
+§3 and §4 item 1 describe `onboarding.html` as a signed-in page. It is not:
+`app/layout.tsx` reads the viewer's account only once the terms are
+accepted, so `/onboarding` renders the signed-out header, one `.nav__item`
+«تسجيل دخول» and no logout button, exactly like `landing`. The test author
+read item 1 literally and it failed on that fixture, which is the right
+result for a wrong sentence. Corrected:
+
+- Item 1: `landing` **and `onboarding`** each have one `.nav__item` with text
+  «تسجيل دخول» and no logout button; the other seven have the two links and
+  the logout button.
+- Item 5: "every fixture except `landing` **and `onboarding`**".
+
+Nothing else in §4 changes. The first run also found, without being asked,
+that at 280 on the old tree the logout button sits 4.7 px outside the header
+(item 4, seven fixtures). That is the same crowding as §0.1 and item 4 already
+covers it.
