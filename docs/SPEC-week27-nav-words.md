@@ -18,7 +18,7 @@ its own glyphs land on more than one line box.
   above the header is one row and nothing is split.
 - 360 is the most common Android width; 320 and 280 are what a 360 phone
   reports with a larger display size, and 280 is the Galaxy Fold cover screen.
-- Separately, on `/inbox` at 320 the «بطاقة الستوري ✨» button's label is
+- Separately, on `/inbox` at 320 the «بطاقة الستوري» button's label is
   wider than the button (scrollWidth 115 in a 113 px box; 105 in 93 at 280),
   and its first letter and the sparkle are cut at the edges. Week 26 recorded
   this as a 4 px spill.
@@ -61,7 +61,7 @@ second row inside the header instead of crushing the labels.
 For the link block, cutting the side padding alone does not stop the cut at
 320 (the label plus its sparkle still runs past the edge); letting the label
 wrap at its space with 4 px padding, as week 26 did for `.btn--block`, puts
-«بطاقة / الستوري ✨» on two lines at 320 and below, and at 360 and above both
+«بطاقة / الستوري» on two lines at 320 and below, and at 360 and above both
 labels stay on one line at 40 px. The only pixels that move at 340 to 390 are
 the sparkle glyph, by under 5 px, now fully inside the button; at 412 the
 block is pixel-identical.

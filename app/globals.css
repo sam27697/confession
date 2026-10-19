@@ -494,10 +494,17 @@ main{
   color: transparent;
 }
 
+/* The nav wraps (week 27). Below 375px the two labels and the logout button
+   do not fit on one row, and with body's overflow-wrap:anywhere the browser
+   shrank the labels instead, splitting «صندوقك» mid-word on every signed-in
+   page at 360. A wrapping row moves an item that does not fit to the next
+   row whole, so the labels keep their words. No breakpoint: label widths
+   come from the phone's own Arabic font. */
 .nav{
   display:flex;
   gap:var(--space-1);
-  flex-wrap:nowrap;
+  flex-wrap:wrap;
+  justify-content:flex-end;
   align-items:center;
 }
 @media (max-width:419px){
@@ -1075,6 +1082,16 @@ main{
   gap:var(--space-2);
 }
 .linkblock__buttons > *{flex:1;min-width:0}
+/* Week 27: at 320 «بطاقة الستوري» was wider than its half of the row and
+   .btn's nowrap cut it at both edges. The label now wraps at its space, the
+   same way .btn--block does since week 26; 4px side padding keeps both labels
+   on one line from 360 up. */
+.linkblock__buttons .btn{
+  height:auto;
+  padding:var(--space-2) var(--space-1);
+  white-space:normal;
+  text-wrap:balance;
+}
 
 .linkblock__hint{
   font:var(--type-caption);
