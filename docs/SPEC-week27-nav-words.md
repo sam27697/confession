@@ -214,3 +214,38 @@ Nothing else in §4 changes. The first run also found, without being asked,
 that at 280 on the old tree the logout button sits 4.7 px outside the header
 (item 4, seven fixtures). That is the same crowding as §0.1 and item 4 already
 covers it.
+
+## §7 Amendment, 2026-10-19 23:0x, after the mutants ran: §1 loses one declaration
+
+`test/77` as written, re-run by me: old tree 187 tests, 155 pass, 32 red
+(item 3 at 360, 320 and 280 on the seven signed-in fixtures, item 4 at 280,
+item 6 at 320 and 280); §1 as frozen, 187 of 187.
+
+The mutants (`work/confession-app/probes/w27-mutants.py`):
+
+| mutant | result |
+|---|---|
+| M1 old tree | 32 red |
+| M2 `overflow-wrap:normal` on the labels only | 25 red (items 2 and 4: the page is wider than 280) |
+| M3 the `.nav` wrap only | **red only on item 6**, which M3 does not touch; every header item green |
+| M4 link block padding cut, no wrapping | 4 red (item 6 at 320 and 280) |
+| M5 ellipsis on the link block | 8 red (item 6) |
+| M6 link block keeps 14 px padding | 4 red (item 7 at 360 and 375) |
+| M7 §1 plus `white-space:nowrap` on the labels | green |
+
+**M3 says the wrap alone removes every split.** A wrapping flex row places
+each item at its full width and moves what does not fit to the next row, so
+it never shrinks a label below its words. `overflow-wrap:normal` on the
+labels therefore buys nothing measured, and it costs something: a label too
+long for a whole row would then widen the page instead of breaking, which is
+the failure week 25 exists to prevent. **Dropped from `.nav__item`, and from
+the link block rule for the same reason.** §1 is now the `.nav` wrap and the
+link block rule without `overflow-wrap`. M7 being green is the same fact seen
+from the other side and is not a requirement.
+
+My first M4 removed only `white-space:normal` and stayed green. In Chromium
+`text-wrap:balance` is a shorthand that also sets `text-wrap-mode:wrap`, so
+it turned wrapping back on by itself. The M4 above removes both. Measured on
+the live staging page with the padding cut and no wrapping: at 320 the label
+runs from 39.8 to 159.1 px in a button from 43 to 156, so §0.3's claim that
+the padding alone does not stop the cut stands.
