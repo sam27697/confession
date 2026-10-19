@@ -1,6 +1,6 @@
 # Week 27 - the header no longer splits its own words on a phone
 
-Frozen 2026-10-19 22:0x +04, before the change is written. Author of the
+Frozen 2026-10-19 21:40 +04, before the change is written. Author of the
 change and author of the acceptance file are different (§4).
 
 ## §0 What was measured
@@ -196,7 +196,7 @@ two link block buttons whole at 320; screenshots of `/inbox` at 280, 320 and
 no dev login: fetch its stylesheet from outside and confirm it carries §1,
 then the route table and `check-origins.mjs` as in week 26.
 
-## §6 Amendment, 2026-10-19 22:4x, after the acceptance file was first run
+## §6 Amendment, 2026-10-19 21:54, after the acceptance file was first run
 
 §3 and §4 item 1 describe `onboarding.html` as a signed-in page. It is not:
 `app/layout.tsx` reads the viewer's account only once the terms are
@@ -215,7 +215,7 @@ that at 280 on the old tree the logout button sits 4.7 px outside the header
 (item 4, seven fixtures). That is the same crowding as §0.1 and item 4 already
 covers it.
 
-## §7 Amendment, 2026-10-19 23:0x, after the mutants ran: §1 loses one declaration
+## §7 Amendment, 2026-10-19 22:00, after the mutants ran: §1 loses one declaration
 
 `test/77` as written, re-run by me: old tree 187 tests, 155 pass, 32 red
 (item 3 at 360, 320 and 280 on the seven signed-in fixtures, item 4 at 280,
