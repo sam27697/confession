@@ -890,8 +890,15 @@ main{
   padding:var(--space-6) var(--space-4);
 }
 
+/* The switch wraps (week 28). With body's overflow-wrap:anywhere the text
+   column used to shrink beside the button until «الرابط» split over three
+   lines at 280. The text now asks for 9em, about «الناس تقدر تبعتلك» at
+   caption size; when it cannot have that beside the button, the button moves
+   to its own row. From 360 up the row looks as it did. In em and not a
+   breakpoint because the width comes from the phone's own Arabic font. */
 .toggle{
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:space-between;
   gap:var(--space-4);
@@ -899,6 +906,7 @@ main{
   padding-top:var(--space-2);
   border-top:1px solid var(--line-faint);
 }
+.toggle>span{flex:1 1 9em}
 .toggle strong{display:block;font:var(--type-body-strong);color:var(--text-1)}
 .toggle span{display:block;font:var(--type-caption);color:var(--text-2)}
 
@@ -1577,9 +1585,13 @@ main{
    three, and never five, which is the count that made /c/[slug] unpleasant
    before section 9.8 cut it back. */
 
-/* The inbox header counter badge pops in on entrance. */
+/* The inbox header counter badge pops in on entrance. The row wraps (week
+   28): when «صندوقك» and the chip do not fit side by side the chip moves
+   under the heading whole, where before the heading was shrunk and split
+   mid-word at 280, the same squeeze week 27 fixed in the nav. */
 .inbox-header{
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:space-between;
   gap:var(--space-3);

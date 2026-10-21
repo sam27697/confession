@@ -180,3 +180,21 @@ real at 280 (off, then on) and the page reloads with the button on its own
 row. Production has no dev login: fetch its stylesheet from outside and
 confirm it carries §1, then the route table and `check-origins.mjs` as in
 week 27.
+
+## §6 Results, 2026-10-21 21:5x, after the acceptance file was first run
+
+`test/78-heading-rows.test.ts`, 121 items, written by a separate author in a
+worktree that never held §1, then re-run by me.
+
+- Old tree: 104 pass, 17 red. Item 3 at 280 (all three fixtures), item 5 at
+  280, 300 and 320 (all three), item 6 at 280 (all three) and also at 300
+  and 320 on `inbox-link-off`. The brief predicted item 6 red at 280 only;
+  the extra two are the longer link-off caption («ما حدا يقدر يبعتلك لحد ما
+  تشغلو.») on three lines at 300 and 320, which §0.1 had measured. The
+  author reported the difference instead of bending the test; the test
+  stands.
+- Fixed tree: 121 of 121.
+- Mutants (`work/confession-app/probes/w28-mutants.py`): M1 17 red, M2 16,
+  M3 4 (item 7 at 360 on all three, and 375 on link-off), M4 16, M5 16, M6
+  2 (item 5 at 280, the chip on more than one line in the two fixtures whose
+  chip is «جاهز للرسايل ✨»). None stayed green, so nothing in §1 is dropped.
