@@ -254,17 +254,24 @@ So, replacing the parts of §1.1, §1.3 and §3 they contradict:
 6. §4's mutant "`everSent` counts messages" is replaced by "a `senders`
    column is put back on the day rows".
 
-What is left and accepted, with the reason:
+What is left and accepted, with the reason. A second pass of the same
+review, on `c28eb35`, found both closed in the code and said this paragraph
+first undersold the two residuals; it now says what they are.
 
 - `signups` and `messages` share a day row. With five accounts, "one signup
-  and three messages on the 20th" suggests the new account sent them. The
-  page names no account and lists none, so turning that into a person needs
-  data the admin surface does not show; inside the product the reveal is
-  still the only way to a name. Rejected to close it: dropping one of the two
-  series (the owner's question needs both), weekly buckets (the same
-  co-occurrence, coarser), suppressing counts under a threshold (at this
-  traffic every number is under it and the page would say nothing).
-- The totals are live. An admin reloading the page can see `messages.total`
-  step up and time a message more finely than its stored hour. The hour
-  truncation exists against the recipient (week 2), and this needs someone
-  watching at the moment of the send.
+  and one message on the 20th" lets an admin who knows which accounts are his
+  own guess the sender of that message with no `admin_reveal_log` row. It is
+  a guess, not a proof and not a grouping of several messages, but it does
+  weaken the privacy page's "every lookup is logged" in spirit at this
+  traffic. Rejected to close it: dropping one of the two series (the owner's
+  question needs both), weekly buckets (the same co-occurrence, coarser),
+  suppressing counts under a threshold (at this traffic every number is
+  under it and the page would say nothing).
+- The totals are live and nothing audits or rate-limits reading them. A
+  script holding an admin session can reload every minute; if
+  `accounts.live` steps up and `messages.total` steps up a minute later,
+  that ties the new account to that message to the minute, again with no
+  log row. The hour truncation exists against the recipient (week 2), and
+  the operator can already read the database itself, so this is recorded
+  rather than closed. Closing it would mean logging every read of this
+  page, which is a slice of its own.
