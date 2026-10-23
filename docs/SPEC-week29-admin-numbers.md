@@ -217,3 +217,54 @@ Each must turn at least one item red.
 The change is written by the session that froze this spec. The acceptance
 file is written by a different engine in a worktree that never held the
 change, from this document alone.
+
+## §6 Amendment after review, 2026-10-23 22:0x +04: no count of people beside a count of messages
+
+An independent privacy review of the change as first written (`3abc9c5`)
+returned FAIL, and it is right. §1.2 forbade crossing senders with signups
+and missed the plainer cross: a count of distinct senders next to a count of
+messages groups the messages by sender.
+
+- Measured on production tonight: `everSent` would read 1 and
+  `messages.total` 4. That says all four messages came from one account. One
+  reveal through `/admin/reveal` writes one `admin_reveal_log` row and names
+  the sender of all four.
+- A day row reading messages 3, senders 1 does the same for that day; a row
+  reading 2 and 2 proves two messages have different senders.
+- The privacy page is live with: «إدارة التطبيق فيها تشوف مين بعت أي رسالة،
+  وكل مرة حدا من الإدارة يشوف هالشي بينسجل بسجل ثابت ما بيتغير»
+  (`src/privacy.ts`, `admin`). The first version of this page would have
+  made that sentence false for every message after the first one revealed.
+
+So, replacing the parts of §1.1, §1.3 and §3 they contradict:
+
+1. `AdminStats` loses `everSent` and `everReceived`. `AdminStatsDay` loses
+   `senders` and `recipients`. Nothing else in the result changes.
+2. The page loses the lines «بعتو رسالة وحدة عالأقل» and «وصلتهن رسالة وحدة
+   عالأقل» and the table loses the columns «مرسلين» and «مستلمين».
+3. §3 item 5 becomes: the result has no key named `everSent`,
+   `everReceived`, `senders` or `recipients` at any depth, and the top-level
+   keys are exactly `timeZone, accounts, links, messages, reports, blocks,
+   offers, days, lastSignupDay, lastMessageDay`; every day entry's keys are
+   exactly `day, signups, messages, offers`.
+4. §3 item 10 becomes: three messages from two senders to two recipients on
+   one day give that day `messages` 3, and the day entry carries no other
+   count of them.
+5. §3 item 13's leaf counts follow from the new shape.
+6. §4's mutant "`everSent` counts messages" is replaced by "a `senders`
+   column is put back on the day rows".
+
+What is left and accepted, with the reason:
+
+- `signups` and `messages` share a day row. With five accounts, "one signup
+  and three messages on the 20th" suggests the new account sent them. The
+  page names no account and lists none, so turning that into a person needs
+  data the admin surface does not show; inside the product the reveal is
+  still the only way to a name. Rejected to close it: dropping one of the two
+  series (the owner's question needs both), weekly buckets (the same
+  co-occurrence, coarser), suppressing counts under a threshold (at this
+  traffic every number is under it and the page would say nothing).
+- The totals are live. An admin reloading the page can see `messages.total`
+  step up and time a message more finely than its stored hour. The hour
+  truncation exists against the recipient (week 2), and this needs someone
+  watching at the moment of the send.
