@@ -2566,3 +2566,10 @@ main{
   margin-top:var(--space-2);
   text-align:center;
 }
+
+/* Week 29: the day table on /admin/stats. The wrapper scrolls so a narrow
+   phone scrolls the table, not the page. */
+.stats-table{overflow-x:auto}
+.stats-table table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.stats-table th,.stats-table td{padding:var(--space-2);border-bottom:1px solid var(--border-card);text-align:start;white-space:nowrap}
+.stats-table th{color:var(--text-2);font-weight:600}

@@ -20,6 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </a>
         <nav className="nav">
           <a className="nav__item" href="/admin">لوحة الإدارة</a>
+          <a className="nav__item" href="/admin/stats">الأرقام</a>
           <a className="nav__item" href="/admin/reports">البلاغات</a>
           <form action="/admin/logout" method="post">
             <button type="submit" className="btn btn--secondary btn--sm">تسجيل خروج</button>
