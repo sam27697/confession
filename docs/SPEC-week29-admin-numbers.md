@@ -1,6 +1,6 @@
 # Week 29 - the admin can see whether anyone is using the product
 
-Frozen 2026-10-23 21:55 +04, before the change is written. Author of the
+Frozen 2026-10-23 21:34 +04 (the commit time of `402ec04`), before the change is written. Author of the
 change and author of the acceptance file are different (§5).
 
 ## §0 What was measured
