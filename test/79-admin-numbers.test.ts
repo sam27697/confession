@@ -1,10 +1,11 @@
 // test/79-admin-numbers.test.ts
 //
 // Written from docs/SPEC-week29-admin-numbers.md section 1.1 (the
-// getAdminStats contract), section 1.2 (what the result must never
-// contain), and section 3 items 1 to 15. Not written from src/stats.ts:
-// that module is not in this tree. Every expected number and day string
-// below is taken from the spec text and the fixture rows in that test.
+// getAdminStats contract) as amended by section 6, section 1.2 (what the
+// result must never contain), and section 3 items 1 to 15 as amended by
+// section 6. Not written from src/stats.ts: that module is not in this
+// tree. Every expected number and day string below is taken from the spec
+// text and the fixture rows in that test.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -73,16 +74,35 @@ const WINDOW_ENDING_2026_10_23 = [
   '2026-10-23',
 ] as const
 
-// Section 1.1 AdminStatsDay, restated here because this file may import
-// only the three names section 3 fixes.
+// Amended section 1.1 day entry, restated here because this file may import
+// only the three names section 3 fixes. Section 6 point 3 lists these keys
+// and no others.
 type DayRow = {
   day: string
   signups: number
   messages: number
-  senders: number
-  recipients: number
   offers: number
 }
+
+// Section 6 point 3. Compared as a set: same names, nothing else. The spec
+// lists them in type order and does not say the enumeration order is part
+// of the contract.
+const TOP_LEVEL_KEYS = [
+  'timeZone',
+  'accounts',
+  'links',
+  'messages',
+  'reports',
+  'blocks',
+  'offers',
+  'days',
+  'lastSignupDay',
+  'lastMessageDay',
+] as const
+
+const DAY_KEYS = ['day', 'signups', 'messages', 'offers'] as const
+
+const REMOVED_COUNT_KEYS: ReadonlySet<string> = new Set(['everSent', 'everReceived', 'senders', 'recipients'])
 
 // Item 13: strings are allowed only on the time zone and the day fields
 // section 1.1 types as text. lastSignupDay and lastMessageDay are
@@ -90,8 +110,10 @@ type DayRow = {
 const STRING_FIELDS = new Set(['timeZone', 'day', 'lastSignupDay', 'lastMessageDay'])
 const NULL_FIELDS = new Set(['lastSignupDay', 'lastMessageDay'])
 
-// Numeric leaves in section 1.1, with 14 day rows of 5 counts each.
-const SPEC_NUMBER_COUNT = 5 + 2 + 2 + 5 + 2 + 5 + 14 * 5
+// Numeric leaves of the amended section 1.1 shape, with 14 day rows.
+// accounts 5, links 2, messages 5, reports and blocks 2, offers 5,
+// each day signups, messages, offers: 5 + 2 + 5 + 2 + 5 + 14 * 3.
+const SPEC_NUMBER_COUNT = 5 + 2 + 5 + 2 + 5 + 14 * 3
 
 type DbClient = Awaited<ReturnType<typeof freshDb>>['client']
 
@@ -199,9 +221,26 @@ function findDay(days: DayRow[], day: string): DayRow {
 function assertDayCounts(row: DayRow, expected: Omit<DayRow, 'day'>): void {
   assert.equal(row.signups, expected.signups, `${row.day} signups`)
   assert.equal(row.messages, expected.messages, `${row.day} messages`)
-  assert.equal(row.senders, expected.senders, `${row.day} senders`)
-  assert.equal(row.recipients, expected.recipients, `${row.day} recipients`)
   assert.equal(row.offers, expected.offers, `${row.day} offers`)
+}
+
+function assertKeySet(value: object, expected: readonly string[], label: string): void {
+  assert.deepEqual(Object.keys(value).sort(), [...expected].sort(), label)
+}
+
+// Section 6 point 3: none of the four removed names, on this object or on
+// anything nested inside it. Own enumerable keys, which is what a caller
+// reads off the result.
+function assertNoRemovedCountKeys(value: unknown, path: string): void {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => assertNoRemovedCountKeys(entry, `${path}[${index}]`))
+    return
+  }
+  if (value === null || typeof value !== 'object') return
+  for (const key of Object.keys(value)) {
+    assert.equal(REMOVED_COUNT_KEYS.has(key), false, `${path} has removed key ${key}`)
+    assertNoRemovedCountKeys((value as Record<string, unknown>)[key], `${path}.${key}`)
+  }
 }
 
 type WalkSeen = { numbers: number; strings: number; nulls: number }
@@ -276,8 +315,6 @@ test('item 1: empty database totals are zero', async () => {
   assert.equal(stats.accounts.deleted, 0)
   assert.equal(stats.accounts.google, 0)
   assert.equal(stats.accounts.facebook, 0)
-  assert.equal(stats.everSent, 0)
-  assert.equal(stats.everReceived, 0)
   assert.equal(stats.links.on, 0)
   assert.equal(stats.links.off, 0)
   assert.equal(stats.messages.total, 0)
@@ -298,8 +335,6 @@ test('item 1: empty database totals are zero', async () => {
   for (const day of stats.days) {
     assert.equal(day.signups, 0)
     assert.equal(day.messages, 0)
-    assert.equal(day.senders, 0)
-    assert.equal(day.recipients, 0)
     assert.equal(day.offers, 0)
   }
 
@@ -403,10 +438,13 @@ test('item 4: live, disabled, deleted and provider totals, with the deleted sign
 })
 
 // ---------------------------------------------------------------------------
-// item 5: everSent and everReceived (spec section 3 item 5, section 1.1)
+// item 5: removed people-count keys and the exact key sets
+// (spec section 6 point 3, replacing section 3 item 5). messages.total is
+// still every row in confessions (section 1.1), including one whose sender
+// was deleted through deleteAccount.
 // ---------------------------------------------------------------------------
 
-test('item 5: everSent and everReceived count accounts, not messages', async () => {
+test('item 5: no everSent, everReceived, senders or recipients, and a deleted sender stays in the total', async () => {
   const { db, client } = await freshDb()
   const createdAt = new Date('2026-10-20T10:00:00Z')
   const hour = new Date('2026-10-20T10:00:00Z')
@@ -444,11 +482,14 @@ test('item 5: everSent and everReceived count accounts, not messages', async () 
 
   const stats = await getAdminStats(db, { now: NOW_DUBAI_2026_10_24, days: STATS_DAYS })
 
-  // Three messages from one live sender to one live recipient, plus the
-  // deleted sender's confession, which stays in the message total.
-  assert.equal(stats.everSent, 1)
-  assert.equal(stats.everReceived, 1)
+  // Three messages from one live sender, plus the deleted sender's
+  // confession. Section 1.1 still counts every confessions row.
   assert.equal(stats.messages.total, 4)
+  assertKeySet(stats, TOP_LEVEL_KEYS, 'top-level keys')
+  for (const day of stats.days) {
+    assertKeySet(day, DAY_KEYS, `${day.day} keys`)
+  }
+  assertNoRemovedCountKeys(stats, 'result')
 
   await client.close()
 })
@@ -728,37 +769,32 @@ test('item 9: day buckets follow Dubai midnight', async () => {
   assertDayCounts(findDay(stats.days, '2026-10-23'), {
     signups: 1,
     messages: 1,
-    senders: 1,
-    recipients: 1,
     offers: 1,
   })
   assertDayCounts(findDay(stats.days, '2026-10-24'), {
     signups: 1,
     messages: 1,
-    senders: 1,
-    recipients: 1,
     offers: 1,
   })
   assertDayCounts(findDay(stats.days, '2026-10-11'), {
     signups: 1,
     messages: 0,
-    senders: 0,
-    recipients: 0,
     offers: 0,
   })
   for (const day of stats.days) {
     if (day.day === '2026-10-11' || day.day === '2026-10-23' || day.day === '2026-10-24') continue
-    assertDayCounts(day, { signups: 0, messages: 0, senders: 0, recipients: 0, offers: 0 })
+    assertDayCounts(day, { signups: 0, messages: 0, offers: 0 })
   }
 
   await client.close()
 })
 
 // ---------------------------------------------------------------------------
-// item 10: distinct senders and recipients (spec section 3 item 10)
+// item 10: one day, three messages, no other count of them
+// (spec section 6 point 4, replacing section 3 item 10)
 // ---------------------------------------------------------------------------
 
-test('item 10: one day with two senders, three messages and two recipients', async () => {
+test('item 10: three messages from two senders to two recipients are messages 3', async () => {
   const { db, client } = await freshDb()
   const createdAt = new Date('2026-10-12T08:00:00Z')
 
@@ -813,8 +849,9 @@ test('item 10: one day with two senders, three messages and two recipients', asy
   const stats = await getAdminStats(db, { now: NOW_DUBAI_2026_10_24, days: STATS_DAYS })
   const day = findDay(stats.days, '2026-10-20')
   assert.equal(day.messages, 3)
-  assert.equal(day.senders, 2)
-  assert.equal(day.recipients, 2)
+  // Section 6 point 4: that day carries no other count of these messages.
+  // Point 3's day key set is day, signups, messages, offers.
+  assertKeySet(day, DAY_KEYS, '2026-10-20 keys')
   const messagesInWindow = stats.days.reduce((sum: number, entry: DayRow) => sum + entry.messages, 0)
   assert.equal(messagesInWindow, 3)
 
