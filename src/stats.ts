@@ -1,9 +1,11 @@
 // src/stats.ts
 //
 // The numbers behind /admin/stats (docs/SPEC-week29-admin-numbers.md). Counts
-// only: nothing in the result names an account, a link or a message, and no
-// count is crossed with signups (spec §1.2), so this page cannot be used to
-// see who sent what without going through /admin/reveal and its log.
+// only: nothing in the result names an account, a link or a message. There is
+// no count of distinct senders or recipients anywhere (spec §6): beside a
+// count of messages it groups the messages by sender, and one logged reveal
+// would then name the sender of the whole group. The privacy page promises
+// every such lookup is logged.
 //
 // Days are computed and formatted inside Postgres. node-postgres turns a
 // `date` into a JavaScript Date at the server's local midnight, and the
@@ -28,16 +30,12 @@ export type AdminStatsDay = {
   day: string
   signups: number
   messages: number
-  senders: number
-  recipients: number
   offers: number
 }
 
 export type AdminStats = {
   timeZone: string
   accounts: { live: number; disabled: number; deleted: number; google: number; facebook: number }
-  everSent: number
-  everReceived: number
   links: { on: number; off: number }
   messages: { total: number; delivered: number; hidden: number; reported: number; withheld: number }
   reports: number
@@ -74,11 +72,6 @@ export async function getAdminStats(
       deleted: n(sql`count(*) filter (where ${accounts.deletedAt} is not null)`),
       google: n(sql`count(*) filter (where ${accounts.deletedAt} is null and ${accounts.provider} = 'google')`),
       facebook: n(sql`count(*) filter (where ${accounts.deletedAt} is null and ${accounts.provider} = 'facebook')`),
-      everSent: n(sql`count(*) filter (where ${accounts.deletedAt} is null and exists (
-        select 1 from ${confessions} where ${confessions.senderAccountId} = ${accounts.id}))`),
-      everReceived: n(sql`count(*) filter (where ${accounts.deletedAt} is null and exists (
-        select 1 from ${confessions} join ${links} on ${links.id} = ${confessions.linkId}
-        where ${links.ownerAccountId} = ${accounts.id}))`),
       lastSignupDay: sql<string | null>`${dayOf(sql`max(${accounts.createdAt})`)}`,
     })
     .from(accounts)
@@ -131,12 +124,8 @@ export async function getAdminStats(
         from ${accounts} group by 1
       ),
       m as (
-        select ((${confessions.createdHour}) at time zone ${tz})::date as d,
-               count(*) as c,
-               count(distinct ${confessions.senderAccountId}) as snd,
-               count(distinct ${links.ownerAccountId}) as rcp
-        from ${confessions} join ${links} on ${links.id} = ${confessions.linkId}
-        group by 1
+        select ((${confessions.createdHour}) at time zone ${tz})::date as d, count(*) as c
+        from ${confessions} group by 1
       ),
       o as (
         select ((${revealOffers.createdAt}) at time zone ${tz})::date as d, count(*) as c
@@ -145,8 +134,6 @@ export async function getAdminStats(
       select to_char(series.d, 'YYYY-MM-DD') as day,
              coalesce(s.c, 0)::int as signups,
              coalesce(m.c, 0)::int as messages,
-             coalesce(m.snd, 0)::int as senders,
-             coalesce(m.rcp, 0)::int as recipients,
              coalesce(o.c, 0)::int as offers
       from series
       left join s on s.d = series.d
@@ -158,8 +145,6 @@ export async function getAdminStats(
     day: String(r.day),
     signups: Number(r.signups),
     messages: Number(r.messages),
-    senders: Number(r.senders),
-    recipients: Number(r.recipients),
     offers: Number(r.offers),
   }))
 
@@ -172,8 +157,6 @@ export async function getAdminStats(
       google: acc.google,
       facebook: acc.facebook,
     },
-    everSent: acc.everSent,
-    everReceived: acc.everReceived,
     links: { on: lnk.on, off: lnk.off },
     messages: {
       total: msg.total,

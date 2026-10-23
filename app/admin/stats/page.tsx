@@ -2,9 +2,9 @@ import { getDb } from '../../_lib/domain/db.js'
 import { getAdminStats, STATS_DAYS } from '../../../src/stats.js'
 import { requireAdminUserId } from '../_lib/auth.js'
 
-// Counts only (docs/SPEC-week29-admin-numbers.md §1.2). Nothing on this page
-// names an account or a message; finding out who sent something still goes
-// through /admin/reveal and its log.
+// Counts only (docs/SPEC-week29-admin-numbers.md §1.2, §6). Nothing on this
+// page names an account or a message or counts distinct senders; finding out
+// who sent something still goes through /admin/reveal and its log.
 export default async function AdminStatsPage() {
   const db = getDb()
   await requireAdminUserId(db)
@@ -23,8 +23,6 @@ export default async function AdminStatsPage() {
         <p>منها Google: {s.accounts.google}، Facebook: {s.accounts.facebook}</p>
         <p>موقوفة: {s.accounts.disabled}</p>
         <p>انحذفت: {s.accounts.deleted}</p>
-        <p>بعتو رسالة وحدة عالأقل: {s.everSent}</p>
-        <p>وصلتهن رسالة وحدة عالأقل: {s.everReceived}</p>
       </div>
 
       <div className="card">
@@ -62,8 +60,6 @@ export default async function AdminStatsPage() {
                 <th scope="col">اليوم</th>
                 <th scope="col">حسابات جديدة</th>
                 <th scope="col">رسايل</th>
-                <th scope="col">مرسلين</th>
-                <th scope="col">مستلمين</th>
                 <th scope="col">عروض</th>
               </tr>
             </thead>
@@ -73,8 +69,6 @@ export default async function AdminStatsPage() {
                   <td dir="ltr">{d.day}</td>
                   <td>{d.signups}</td>
                   <td>{d.messages}</td>
-                  <td>{d.senders}</td>
-                  <td>{d.recipients}</td>
                   <td>{d.offers}</td>
                 </tr>
               ))}
