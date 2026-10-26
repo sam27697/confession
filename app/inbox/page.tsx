@@ -332,7 +332,7 @@ export default async function InboxPage({
             <input type="hidden" name="enabled" value={link.enabled ? '0' : '1'} />
             <div className="toggle">
               <span>
-                <strong>الرابط شغال</strong>
+                <strong>الرابط</strong>
                 <span>{link.enabled ? 'الناس تقدر تبعتلك هلق.' : 'ما حدا يقدر يبعتلك لحد ما تشغلو.'}</span>
               </span>
               <SubmitButton className="btn btn--secondary btn--md">
