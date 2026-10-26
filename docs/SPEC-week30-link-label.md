@@ -99,3 +99,17 @@ SPEC-week28-heading-rows.md` §4 says they mean.
 
 Re-run the row probe on staging with all three name sets, link on and off,
 at 280, 300, 320 and 360 (Sam's card asks for this), and compare with §0.2.
+
+## §5 Review, 2026-10-26 (added after the test was written)
+
+Independent review returned PASS. Recorded, not changed:
+
+- `design/masaraha-design-system/components/app/LinkBlock.jsx` also carries
+  «الرابط شغال» as sample copy. Same reason as `Toggle.*` in §1.1: the design
+  system's own example, imported by nothing under `app/` or `src/`.
+- Item 4 reads the fixture file's bytes. The old label written as two text
+  nodes with a `<!-- -->` between them would pass it; item 2 still checks the
+  label itself.
+- Week 28's "whole" holds for a word with no rendered boxes, so a label
+  hidden with `display:none` passes items 6 and 8. That is the shared
+  definition, and changing it is a change to test/78 too.
