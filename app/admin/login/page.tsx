@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { ADMIN_SID_COOKIE, verifyAdminSessionCookieValue } from '../_lib/session.js'
+import { getDb } from '../../_lib/domain/db.js'
+import { adminUserIdFromCookie } from '../_lib/auth.js'
+import { ADMIN_SID_COOKIE } from '../_lib/session.js'
 import { adminLoginAction } from './actions.js'
 
 // One fixed message for every failure case (spec §3.1): unknown username,
@@ -15,13 +17,12 @@ export default async function AdminLoginPage({
   searchParams: Promise<{ error?: string }>
 }) {
   // If the request already carries a valid admin_sid, 307 to /admin
-  // instead (spec §3.1). "Valid" here is the cookie's own cryptographic
-  // validity, not a database lookup -- the database re-check that also
-  // covers a disabled administrator happens once, in requireAdminUserId,
-  // for the pages that actually need the identity.
+  // instead (spec §3.1). "Valid" is the same full check every protected
+  // admin page makes, database included: a revoked or disabled
+  // administrator's cookie gets the form, never a redirect /admin would
+  // only send back here (week 31b spec §0).
   const store = await cookies()
-  const raw = store.get(ADMIN_SID_COOKIE)?.value
-  if (raw && verifyAdminSessionCookieValue(raw)) {
+  if (await adminUserIdFromCookie(getDb(), store.get(ADMIN_SID_COOKIE)?.value)) {
     redirect('/admin')
   }
 
