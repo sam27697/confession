@@ -122,3 +122,17 @@ non-zero box and `visibility` not hidden. Widths 280, 320, 360, 390, 412.
   CSS. A browser without `:has()` (Firefox before 121, Safari before 15.4)
   shows both headers, as today. The compose spotlight already depends on
   `:has()`.
+
+## §6 Amendment, 2026-10-28 22:0x, before the test was written
+
+Item 9 as frozen ("identical to the fixture with this week's CSS removed")
+cannot be checked from the fixture alone. It is read as: the table's header
+row is exactly «اليوم», «حسابات جديدة», «رسايل», «عروض», in that order; it
+has 14 body rows of 4 cells; each row's first cell is a `YYYY-MM-DD` date,
+one day apart, newest first; the other three cells are whole numbers. That
+pins the table's content, which is what item 9 was for.
+
+Fixtures, captured from staging at `9ed5749` by
+`work/confession-app/probes/w31-capture.mjs`, in `test/fixtures/w31/`:
+`admin-login.html` (signed out), `admin.html`, `admin-stats.html`,
+`admin-reports.html` (signed in).
