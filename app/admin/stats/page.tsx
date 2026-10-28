@@ -75,8 +75,8 @@ export default async function AdminStatsPage() {
             </tbody>
           </table>
         </div>
-        <p>آخر حساب جديد: {s.lastSignupDay ? <span dir="ltr">{s.lastSignupDay}</span> : 'ولا شي'}</p>
-        <p>آخر رسالة: {s.lastMessageDay ? <span dir="ltr">{s.lastMessageDay}</span> : 'ولا شي'}</p>
+        <p>آخر حساب جديد: {s.lastSignupDay ? <span className="stats-day" dir="ltr">{s.lastSignupDay}</span> : 'ولا شي'}</p>
+        <p>آخر رسالة: {s.lastMessageDay ? <span className="stats-day" dir="ltr">{s.lastMessageDay}</span> : 'ولا شي'}</p>
       </div>
     </div>
   )

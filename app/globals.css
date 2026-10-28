@@ -2570,6 +2570,12 @@ main{
 /* Week 29: the day table on /admin/stats. The wrapper scrolls so a narrow
    phone scrolls the table, not the page. */
 .stats-table{overflow-x:auto}
-.stats-table table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-.stats-table th,.stats-table td{padding:var(--space-2);border-bottom:1px solid var(--border-card);text-align:start;white-space:nowrap}
-.stats-table th{color:var(--text-2);font-weight:600}
+.stats-table table{border-collapse:collapse;width:100%;font:var(--type-body-sm);font-variant-numeric:tabular-nums}
+.stats-table th,.stats-table td{padding:var(--space-2) 4px;border-bottom:1px solid var(--border-card);text-align:start;white-space:nowrap}
+/* Headers wrap at their spaces but never inside a word, so all four columns
+   fit from 360; below that the box scrolls sideways (week 31 spec §1.3). */
+.stats-table th{color:var(--text-2);font-weight:600;white-space:normal;overflow-wrap:normal}
+.stats-day{white-space:nowrap}
+/* The product header is rendered by the root layout on every page; on the
+   admin surface the admin header replaces it (week 31 spec §1.2). */
+body:has(.admin-shell) .site:not(.site--plain){display:none}
