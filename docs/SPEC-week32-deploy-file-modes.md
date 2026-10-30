@@ -153,3 +153,77 @@ On asam-prod-01, in a scratch directory, never in a live app directory:
    untarred under `umask 077`: `deploy.sh` refuses, and staging still
    answers 200 from outside on the image it had.
 5. Production, after staging, from the same tarball, under `umask 022`.
+
+## §5 Amended 2026-10-30, after the independent review
+
+The review (verdict FAIL, no blocker) found four holes, all measured, and
+this section closes them. §1 to §4 stand except where changed here.
+
+### §5.1 What the review found
+
+1. `deploy.sh` trusted the exit code alone. `node --input-type=module -`
+   with an empty stdin exits 0 and prints nothing, so a truncated or empty
+   `check-image-readable.mjs` let any image through.
+2. The check proved that what is present is readable, not that what the
+   entrypoint needs is present. A missing `server.js` or `migrate.mjs`
+   passes and then restart-loops after the swap: the week 31 outage by
+   another road.
+3. Run as uid 0, `access()` says yes to everything readable and the check
+   is a silent no-op. Nothing refused that.
+4. Test 83 could not tell `access()` from a check on the owner mode bits
+   (every fixture is owned by the test user), and the Dockerfile tests were
+   text-only: removing `-R` from the chmod still passed all 29.
+
+### §5.2 The change
+
+1. **The script refuses uid 0**: exit 1, `runs as root` on stderr, before
+   any path is checked. It also refuses when `process.getuid` is absent.
+2. **A missing path is a failure the script names**, as `cannot stat`
+   already was. A directory that cannot be listed (`readdirSync` throws)
+   is reported as a failure with its error code instead of a stack trace.
+3. **On success the last line of stdout is exactly**
+   `check-image-readable: OK <count> paths usable by uid <uid>`.
+4. **`deploy.sh` passes the files the entrypoint and CMD need by name**,
+   after the entrypoint and before `/app`: `/app/server.js`,
+   `/app/check-env.mjs`, `/app/migrate.mjs`, `/app/bootstrap-admin.mjs`.
+5. **`deploy.sh` captures the check's stdout and goes on only when the exit
+   is 0 and stdout has a line matching**
+   `^check-image-readable: OK [1-9][0-9]* paths usable by uid [1-9][0-9]*$`.
+   Anything else refuses, prints the exit code, and removes the refused
+   image's tag (`docker image rm`, failure ignored) so a later manual
+   `compose up` cannot start it. The running stack is not touched.
+6. **The check's `docker run` carries no `--user`/`-u`, `--privileged`,
+   `--cap-add`, `-p`/`--publish` or `--add-host`.**
+
+### §5.3 What the test must add
+
+11. A stub `docker run` that exits 0 and prints nothing: `deploy.sh`
+    refuses, and the record holds no `compose`. Same for a stub printing
+    `check-image-readable: OK 0 paths usable by uid 1000` and for one
+    printing the line with uid 0.
+12. On refusal, the record holds `image rm` (or `rmi`) with the image tag,
+    after `run` and with no `compose`.
+13. The check's arguments are exactly
+    `/usr/local/bin/docker-entrypoint.sh /app/server.js /app/check-env.mjs /app/migrate.mjs /app/bootstrap-admin.mjs /app`.
+14. A missing path given as an argument: exit 1, named.
+15. A directory that is readable and enterable but whose listing fails is
+    not constructible as a non-root user; skip it. A directory with mode
+    100 (enterable, not readable): exit 1, named, no stack trace on stderr.
+16. The success line format of §5.2.3, with the right count.
+17. **The Dockerfile chmod, run.** Take the `RUN find ...` line from the
+    `build` stage, run its command with `sh -c` and the working path
+    `/app` replaced by a temporary directory holding a tree of 600 files,
+    700 directories at two levels of nesting, one 700 script and a
+    `node_modules/` whose file is 600. After: every file outside
+    `node_modules` is 644 or 755 (the script 755), every directory 755,
+    the `node_modules` file still 600.
+18. The flags of §5.2.6 are absent from the check's `docker run`.
+
+The uid 0 refusal and the root-owned 600 case cannot be produced by a
+non-root test. They are proved on the server (§5.4), not in test 83.
+
+### §5.4 Added to §4
+
+6. The fixed image run as `--user 0`: the check refuses.
+7. The fixed image with `/app/migrate.mjs` deleted in a throwaway
+   container layer: the check refuses and names it.
