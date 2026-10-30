@@ -71,6 +71,21 @@ export CONFESSION_IMAGE_TAG="confession-web:${VERSION}"
 echo "deploy: building ${CONFESSION_IMAGE_TAG}"
 docker build -t "$CONFESSION_IMAGE_TAG" "$REPO_DIR"
 
+# compose up stops the running container before the new one has proved it
+# can start, so anything that stops the new image from starting must be
+# caught here or it is an outage (week 32 spec §0: 503 for eleven minutes on
+# 2026-10-28, an entrypoint the container user could not read). The check
+# runs inside the new image as its own user, with no .env and no network;
+# the script reaches it on stdin so the image is not changed to carry it.
+echo "deploy: checking that ${CONFESSION_IMAGE_TAG} can read its own files"
+if ! docker run --rm -i --network none --entrypoint node "$CONFESSION_IMAGE_TAG" \
+    --input-type=module - /usr/local/bin/docker-entrypoint.sh /app \
+    < "$REPO_DIR/scripts/check-image-readable.mjs"; then
+  echo "deploy: REFUSED -- ${CONFESSION_IMAGE_TAG} cannot read its own files (listed above)." >&2
+  echo "        The running stack was not touched." >&2
+  exit 1
+fi
+
 echo "deploy: bringing the stack up"
 docker compose -f "$REPO_DIR/docker-compose.yml" --project-directory "$APP_DIR" -p "$STACK_NAME" up -d --remove-orphans
 
