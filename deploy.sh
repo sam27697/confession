@@ -71,6 +71,36 @@ export CONFESSION_IMAGE_TAG="confession-web:${VERSION}"
 echo "deploy: building ${CONFESSION_IMAGE_TAG}"
 docker build -t "$CONFESSION_IMAGE_TAG" "$REPO_DIR"
 
+# compose up stops the running container before the new one has proved it
+# can start, so anything that stops the new image from starting must be
+# caught here or it is an outage (week 32 spec §0: 503 for eleven minutes on
+# 2026-10-28, an entrypoint the container user could not read). The check
+# runs inside the new image as its own user, with no .env and no network;
+# the script reaches it on stdin so the image is not changed to carry it.
+echo "deploy: checking that ${CONFESSION_IMAGE_TAG} can read its own files"
+# The exit code alone is not enough: an empty or truncated copy of the
+# script exits 0 having checked nothing, so the OK line is required too
+# (spec §5.2.5). The named files are what the entrypoint and CMD run; a
+# missing one passes a walk of /app and then restart-loops after the swap.
+check_rc=0
+check_out="$(docker run --rm -i --network none --entrypoint node "$CONFESSION_IMAGE_TAG" \
+    --input-type=module - /usr/local/bin/docker-entrypoint.sh \
+    /app/server.js /app/check-env.mjs /app/migrate.mjs /app/bootstrap-admin.mjs /app \
+    < "$REPO_DIR/scripts/check-image-readable.mjs")" || check_rc=$?
+if [ -n "$check_out" ]; then
+  echo "$check_out"
+fi
+# A here-string, not a pipe: under pipefail a grep -q that stops reading
+# early can fail the printf feeding it and refuse a good image.
+if [ "$check_rc" != "0" ] || ! grep -Eq \
+    '^check-image-readable: OK [1-9][0-9]* paths usable by uid [1-9][0-9]*$' <<<"$check_out"; then
+  echo "deploy: REFUSED -- ${CONFESSION_IMAGE_TAG} failed the file check (exit ${check_rc})." >&2
+  echo "        The running stack was not touched. Removing the refused image's tag" >&2
+  echo "        so a later compose up cannot start it." >&2
+  docker image rm "$CONFESSION_IMAGE_TAG" >/dev/null 2>&1 || true
+  exit 1
+fi
+
 echo "deploy: bringing the stack up"
 docker compose -f "$REPO_DIR/docker-compose.yml" --project-directory "$APP_DIR" -p "$STACK_NAME" up -d --remove-orphans
 
