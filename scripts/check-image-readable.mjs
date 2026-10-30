@@ -3,12 +3,14 @@
 // image's node on stdin:
 //
 //   docker run --rm -i --network none --entrypoint node <image> \
-//     --input-type=module - /usr/local/bin/docker-entrypoint.sh /app < check-image-readable.mjs
+//     --input-type=module - /usr/local/bin/docker-entrypoint.sh /app/server.js ... /app \
+//     < check-image-readable.mjs
 //
-// Every argument is a path that must be usable by whoever runs this: a
-// directory must be readable and enterable, a file readable, and the first
-// argument (the entrypoint) also executable. Directories are walked. A
-// symlink is checked by what it points at, and a dangling one is a failure.
+// Every argument is a path that must exist and be usable by whoever runs
+// this: a directory must be readable and enterable, a file readable, and
+// the first argument (the entrypoint) also executable. Directories are
+// walked. A symlink is checked by what it points at, and a dangling one is a
+// failure. It refuses to run as root, where every check passes.
 //
 // Week 31: the tree was untarred under umask 077, every file came out 600
 // owned by root inside the image, the container user could not read the
@@ -27,7 +29,16 @@ if (!entrypoint) {
   process.exit(2)
 }
 
+// Run as root, access() says yes to everything and the check proves
+// nothing (spec §5.1.3). Refuse before looking at a single path.
+const uid = typeof process.getuid === 'function' ? process.getuid() : undefined
+if (uid === undefined || uid === 0) {
+  console.error(`check-image-readable: runs as root (uid ${uid ?? 'unknown'}), which can read anything; refusing to report on a check that proves nothing`)
+  process.exit(1)
+}
+
 const bad = []
+const seen = new Set()
 let checked = 0
 
 function fail(p, why) {
@@ -44,6 +55,9 @@ function can(p, mode) {
 }
 
 function visit(p) {
+  // The files deploy.sh names are also under /app; check each path once.
+  if (seen.has(p)) return
+  seen.add(p)
   checked++
   let st
   try {
@@ -71,23 +85,32 @@ function visit(p) {
       fail(p, 'directory not readable and enterable')
       return
     }
-    for (const name of readdirSync(p)) visit(path.join(p, name))
+    let names
+    try {
+      names = readdirSync(p)
+    } catch (err) {
+      fail(p, `cannot list directory (${err.code ?? err.message})`)
+      return
+    }
+    for (const name of names) visit(path.join(p, name))
     return
   }
   if (!can(p, constants.R_OK)) fail(p, 'not readable')
 }
 
+seen.add(entrypoint)
 checked++
 if (!can(entrypoint, constants.R_OK | constants.X_OK)) {
   fail(entrypoint, 'entrypoint not readable and executable')
 }
 for (const root of roots) visit(root)
 
-const uid = typeof process.getuid === 'function' ? process.getuid() : '?'
 if (bad.length > 0) {
   console.error(`check-image-readable: ${bad.length} of ${checked} paths are unusable by uid ${uid}:`)
   for (const line of bad.slice(0, LIMIT)) console.error(`  ${line}`)
   if (bad.length > LIMIT) console.error(`  ... and ${bad.length - LIMIT} more`)
   process.exit(1)
 }
-console.log(`check-image-readable: ${checked} paths usable by uid ${uid}`)
+// deploy.sh goes on only when it sees this exact line (spec §5.2.3): an
+// empty or truncated copy of this script exits 0 without printing it.
+console.log(`check-image-readable: OK ${checked} paths usable by uid ${uid}`)
