@@ -19,7 +19,7 @@ COPY . .
 # eleven minutes on 2026-10-28 for that reason (week 32 spec §0). The image
 # decides its own modes instead: readable by all, writable by root only.
 # node_modules is left alone, the deps stage wrote it under a sane umask.
-RUN find . -mindepth 1 -maxdepth 1 ! -name node_modules -exec chmod -R a+rX,go-w {} +
+RUN find /app -mindepth 1 -maxdepth 1 ! -name node_modules -exec chmod -R a+rX,go-w {} +
 ENV NEXT_TELEMETRY_DISABLED=1
 # The build must not reach the database or the network. Every value below is
 # a placeholder that satisfies src/env.ts at build time only; the real ones
