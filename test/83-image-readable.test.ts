@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import {
   chmodSync,
@@ -402,6 +402,72 @@ test('§5.3.16 on success the last line of stdout is exactly the OK line with th
     assert.equal(lines[lines.length - 1], `check-image-readable: OK 5 paths usable by uid ${uid}`)
   })
 })
+
+// §6.19 -- access(), not "any permission bit". A file the test user owns
+// with mode 044 and a directory with mode 055 are readable by group and
+// other but not by their owner; a check on mode & 0o444 would let them by.
+
+test('§6.19 a file owned by the test user with mode 044 exits 1 and is named', () => {
+  withTempDir((dir) => {
+    const entry = makeEntrypoint(dir)
+    const app = makeDir(path.join(dir, 'app'))
+    put(path.join(app, 'fine.txt'), 0o644)
+    const odd = put(path.join(app, 'nested', 'group-other-only.txt'), 0o044)
+    const { status, stdout, stderr } = check([entry, app])
+    assert.equal(status, 1)
+    assert.ok(stderr.includes(odd), `stderr must name ${odd}: ${stderr}`)
+    assert.doesNotMatch(stdout, /check-image-readable: OK/, 'a failing run must not print the OK line')
+  })
+})
+
+test('§6.19 a directory owned by the test user with mode 055 exits 1 and is named', () => {
+  withTempDir((dir) => {
+    const entry = makeEntrypoint(dir)
+    const app = makeDir(path.join(dir, 'app'))
+    put(path.join(app, 'odd', 'x.txt'), 0o644)
+    const odd = path.join(app, 'odd')
+    chmodSync(odd, 0o055)
+    const { status, stdout, stderr } = check([entry, app])
+    assert.equal(status, 1)
+    assert.ok(stderr.includes(odd), `stderr must name ${odd}: ${stderr}`)
+    assert.doesNotMatch(stdout, /check-image-readable: OK/, 'a failing run must not print the OK line')
+  })
+})
+
+// §6.20 -- the uid 0 refusal. A --import preload changes what the script
+// sees from process.getuid; the script is passed by path so that argv lines
+// up, and everything it is given is readable, so the uid is the only reason
+// to fail.
+
+const ROOT_PRELOADS: { name: string; body: string }[] = [
+  { name: 'getuid returns 0', body: 'process.getuid = () => 0\n' },
+  { name: 'getuid is absent', body: 'delete process.getuid\n' },
+]
+
+for (const { name, body } of ROOT_PRELOADS) {
+  test(`§6.20 when ${name}: exit 1, "runs as root" on stderr, no OK line, no path reported`, () => {
+    assert.ok(existsSync(CHECK_SCRIPT), 'scripts/check-image-readable.mjs does not exist')
+    withTempDir((dir) => {
+      const entry = makeEntrypoint(dir)
+      const app = makeDir(path.join(dir, 'app'))
+      put(path.join(app, 'a.txt'), 0o644)
+      const preload = put(path.join(dir, 'preload', 'uid.mjs'), 0o644, body)
+      const result = spawnSync(
+        process.execPath,
+        ['--import', pathToFileURL(preload).href, CHECK_SCRIPT, entry, app],
+        { encoding: 'utf8', env: { PATH: process.env.PATH ?? '' } as unknown as NodeJS.ProcessEnv },
+      )
+      const stdout = result.stdout ?? ''
+      const stderr = result.stderr ?? ''
+      assert.equal(result.status, 1, stderr)
+      assert.match(stderr, /runs as root/)
+      assert.doesNotMatch(stdout, /check-image-readable: OK/, 'no OK line may be printed')
+      assert.ok(!stderr.includes(entry) && !stderr.includes(app), `no path may be reported: ${stderr}`)
+      assert.ok(!stdout.includes(entry) && !stdout.includes(app), `no path may be reported: ${stdout}`)
+      assert.doesNotMatch(stderr, /^\s+at\s/m, `stderr must not hold a stack trace: ${stderr}`)
+    })
+  })
+}
 
 // §3.9 -- the Dockerfile text. The behaviour is proved on the server (§4);
 // this guards the text against a revert.
