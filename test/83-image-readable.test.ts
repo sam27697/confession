@@ -88,10 +88,15 @@ function check(args: string[]): { status: number | null; stdout: string; stderr:
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
 }
 
-function firstInteger(text: string): number {
-  const m = /\d+/.exec(text)
-  assert.ok(m, `no number in: ${JSON.stringify(text)}`)
-  return Number(m[0])
+const OK_LINE = /^check-image-readable: OK ([1-9][0-9]*) paths usable by uid ([1-9][0-9]*)$/
+
+// §5.2.3: on success the last line of stdout is exactly the OK line.
+function okLine(stdout: string): { count: number; uid: number; line: string } {
+  const lines = stdout.split('\n').filter((l) => l.length > 0)
+  const line = lines[lines.length - 1] ?? ''
+  const m = OK_LINE.exec(line)
+  assert.ok(m, `the last line of stdout must be the OK line: ${JSON.stringify(stdout)}`)
+  return { count: Number(m[1]), uid: Number(m[2]), line }
 }
 
 // An executable entrypoint outside the walked directory, as in the image
@@ -118,12 +123,9 @@ test('§3.1 a fully readable tree exits 0 and the count matches the paths given 
     // three files (6).
     const { status, stdout, stderr } = check([entry, app])
     assert.equal(status, 0, stderr)
-    assert.equal(stdout.trim().split('\n').length, 1, 'exactly one line on stdout')
-    assert.equal(firstInteger(stdout), 8)
-    const uid = process.getuid?.()
-    if (uid !== undefined) {
-      assert.ok(stdout.replace(/\d+/, '').includes(String(uid)), `the uid ${uid} must be named: ${stdout}`)
-    }
+    const ok = okLine(stdout)
+    assert.equal(ok.count, 8)
+    assert.equal(ok.uid, process.getuid?.())
   })
 })
 
@@ -132,12 +134,12 @@ test('§3.1 the count grows by exactly the number of files added', () => {
     const entry = makeEntrypoint(dir)
     const app = makeDir(path.join(dir, 'app'))
     put(path.join(app, 'a.txt'), 0o644)
-    const before = firstInteger(check([entry, app]).stdout)
+    const before = okLine(check([entry, app]).stdout).count
     for (let i = 0; i < 5; i++) put(path.join(app, 'more', `f${i}.txt`), 0o644)
     const after = check([entry, app])
     assert.equal(after.status, 0, after.stderr)
     // five files and the new directory holding them
-    assert.equal(firstInteger(after.stdout) - before, 6)
+    assert.equal(okLine(after.stdout).count - before, 6)
   })
 })
 
@@ -148,7 +150,7 @@ test('§3.1 files given as arguments are counted with the entrypoint', () => {
     const f2 = put(path.join(dir, 'two.txt'), 0o600)
     const { status, stdout, stderr } = check([entry, f1, f2])
     assert.equal(status, 0, stderr)
-    assert.equal(firstInteger(stdout), 3)
+    assert.equal(okLine(stdout).count, 3)
   })
 })
 
@@ -351,6 +353,56 @@ test('§3.8 no arguments exits 2 with a usage line', () => {
   assert.match(stdout + stderr, /usage/i)
 })
 
+// §5.3.14
+
+test('§5.3.14 a missing path given as an argument exits 1 and is named', () => {
+  withTempDir((dir) => {
+    const entry = makeEntrypoint(dir)
+    const app = makeDir(path.join(dir, 'app'))
+    put(path.join(app, 'a.txt'), 0o644)
+    const missing = path.join(dir, 'app', 'server.js')
+    const { status, stdout, stderr } = check([entry, missing, app])
+    assert.equal(status, 1)
+    assert.ok(stderr.includes(missing), `stderr must name ${missing}: ${stderr}`)
+    assert.doesNotMatch(stdout, /check-image-readable: OK/, 'a failing run must not print the OK line')
+  })
+})
+
+// §5.3.15
+
+test('§5.3.15 a directory with mode 100 (enterable, not readable) exits 1, is named, and prints no stack trace', () => {
+  withTempDir((dir) => {
+    const entry = makeEntrypoint(dir)
+    const app = makeDir(path.join(dir, 'app'))
+    put(path.join(app, 'noread', 'x.txt'), 0o644)
+    const noread = path.join(app, 'noread')
+    chmodSync(noread, 0o100)
+    const { status, stdout, stderr } = check([entry, app])
+    assert.equal(status, 1)
+    assert.ok(stderr.includes(noread), `stderr must name ${noread}: ${stderr}`)
+    assert.doesNotMatch(stderr, /^\s+at\s/m, `stderr must not hold a stack trace: ${stderr}`)
+    assert.doesNotMatch(stderr, /node:internal/, `stderr must not hold a stack trace: ${stderr}`)
+    assert.doesNotMatch(stdout, /check-image-readable: OK/, 'a failing run must not print the OK line')
+  })
+})
+
+// §5.3.16
+
+test('§5.3.16 on success the last line of stdout is exactly the OK line with the right count and uid', () => {
+  withTempDir((dir) => {
+    const entry = makeEntrypoint(dir)
+    const app = makeDir(path.join(dir, 'app'))
+    put(path.join(app, 'a.txt'), 0o644)
+    put(path.join(app, 'sub', 'b.txt'), 0o600)
+    // entrypoint, app, a.txt, sub, b.txt
+    const { status, stdout, stderr } = check([entry, app])
+    assert.equal(status, 0, stderr)
+    const uid = process.getuid?.()
+    const lines = stdout.split('\n').filter((l) => l.length > 0)
+    assert.equal(lines[lines.length - 1], `check-image-readable: OK 5 paths usable by uid ${uid}`)
+  })
+})
+
 // §3.9 -- the Dockerfile text. The behaviour is proved on the server (§4);
 // this guards the text against a revert.
 
@@ -424,6 +476,57 @@ test('§2 the runtime stage does not hand the app code to node or re-chmod it in
   }
 })
 
+// §5.3.17 -- the Dockerfile chmod, run. The RUN find line is taken from the
+// Dockerfile at test time and run with sh -c, with /app replaced by a
+// temporary directory.
+
+function modeOf(p: string): number {
+  return lstatSync(p).mode & 0o7777
+}
+
+test('§5.3.17 the Dockerfile RUN find line, run on a 600/700 tree, leaves 644/755 outside node_modules and node_modules alone', () => {
+  const build = dockerfileInstructions().filter((i) => i.stage === 'build')
+  const line = build.find((i) => /^RUN\s+find\b/i.test(i.text) && /a\+rX,go-w/.test(i.text))
+  assert.ok(line, 'the build stage must hold a "RUN find ..." line that sets a+rX,go-w')
+  const command = line.text.replace(/^RUN\s+/i, '')
+  withTempDir((tmp) => {
+    const root = makeDir(path.join(tmp, 'app'), 0o755)
+    const files = [
+      path.join(root, 'package.json'),
+      path.join(root, 'src', 'a.ts'),
+      path.join(root, 'src', 'lib', 'b.ts'),
+      path.join(root, 'drizzle', 'meta', 'c.sql'),
+    ]
+    for (const f of files) put(f, 0o600)
+    // loose modes are tightened as well: go-w
+    const loose = put(path.join(root, 'src', 'loose.ts'), 0o666)
+    const script = put(path.join(root, 'docker-entrypoint.sh'), 0o700, '#!/bin/sh\nexec "$@"\n')
+    const nmFile = put(path.join(root, 'node_modules', 'pkg', 'index.js'), 0o600)
+    const dirs = [
+      path.join(root, 'src'),
+      path.join(root, 'src', 'lib'),
+      path.join(root, 'drizzle'),
+      path.join(root, 'drizzle', 'meta'),
+    ]
+    // deepest first, so a parent at 700 does not hide a child
+    for (const d of [...dirs].reverse()) chmodSync(d, 0o700)
+    const wide = makeDir(path.join(root, 'public'), 0o777)
+    dirs.push(wide)
+    chmodSync(path.join(root, 'node_modules', 'pkg'), 0o700)
+
+    const replaced = command.replace(/\/app(?![A-Za-z0-9_])/g, root)
+    const result = spawnSync('sh', ['-c', replaced], { cwd: root, encoding: 'utf8' })
+    assert.equal(result.status, 0, `${replaced}\n${result.stderr}`)
+
+    for (const f of files) assert.equal(modeOf(f).toString(8), '644', `${f} must be 644`)
+    assert.equal(modeOf(loose).toString(8), '644', 'a group- and world-writable file must lose go-w')
+    assert.equal(modeOf(script).toString(8), '755', 'the executable script must be 755')
+    for (const d of dirs) assert.equal(modeOf(d).toString(8), '755', `${d} must be 755`)
+    assert.equal(modeOf(root).toString(8), '755')
+    assert.equal(modeOf(nmFile).toString(8), '600', 'node_modules is written by the deps stage and must be left alone')
+  })
+})
+
 // §3.10 -- deploy.sh run against a stub docker.
 
 type Call = { argv: string[] }
@@ -435,6 +538,12 @@ type DeployRun = {
   runStdin: string | null
 }
 
+type StubRun = {
+  exit?: number
+  stdout?: string
+  imageRmExit?: number
+}
+
 const STUB_DOCKER = `#!/bin/sh
 # Records each invocation as one line of tab-separated argv.
 {
@@ -444,10 +553,16 @@ const STUB_DOCKER = `#!/bin/sh
 case "$1" in
   run)
     cat > "$STUB_RUN_STDIN"
+    if [ -n "\${STUB_RUN_STDOUT:-}" ]; then
+      printf '%s\\n' "$STUB_RUN_STDOUT"
+    fi
     if [ "\${STUB_RUN_EXIT:-0}" != "0" ]; then
       echo "stub docker: run failed" >&2
     fi
     exit "\${STUB_RUN_EXIT:-0}"
+    ;;
+  image|rmi)
+    exit "\${STUB_IMAGE_RM_EXIT:-0}"
     ;;
   inspect)
     echo healthy
@@ -458,8 +573,14 @@ exit 0
 `
 
 const VERSION = 'w32test1'
+const TAG = `confession-web:${VERSION}`
 
-function runDeploy(runExit: number): DeployRun {
+// What a real check prints on success (§5.2.3), with a nonzero count and uid.
+const GOOD_STDOUT = 'check-image-readable: OK 2609 paths usable by uid 1000'
+
+function runDeploy(stub: StubRun = {}): DeployRun {
+  const runExit = stub.exit ?? 0
+  const runStdout = stub.stdout ?? GOOD_STDOUT
   return withTempDir((tmp) => {
     assert.ok(existsSync(CHECK_SCRIPT), 'scripts/check-image-readable.mjs does not exist')
     const app = path.join(tmp, 'app')
@@ -505,6 +626,8 @@ function runDeploy(runExit: number): DeployRun {
         STUB_LOG: log,
         STUB_RUN_STDIN: stdinFile,
         STUB_RUN_EXIT: String(runExit),
+        STUB_RUN_STDOUT: runStdout,
+        STUB_IMAGE_RM_EXIT: String(stub.imageRmExit ?? 0),
       } as unknown as NodeJS.ProcessEnv,
     })
     const calls = readFileSync(log, 'utf8')
@@ -524,8 +647,12 @@ function subcommands(r: DeployRun): string[] {
   return r.calls.map((c) => c.argv[0]).filter((s) => ['build', 'run', 'compose'].includes(s))
 }
 
+function isImageRemoval(c: Call): boolean {
+  return (c.argv[0] === 'rmi' || (c.argv[0] === 'image' && c.argv[1] === 'rm')) && c.argv.includes(TAG)
+}
+
 test('§3.10 deploy.sh with a failing check: build and run are recorded, compose is not, exit is 1', () => {
-  const r = runDeploy(1)
+  const r = runDeploy({ exit: 1, stdout: '' })
   assert.deepEqual(subcommands(r), ['build', 'run'], r.output)
   assert.equal(r.status, 1, r.output)
   assert.match(r.output, /refus/i, 'deploy.sh must say that it refused')
@@ -533,19 +660,24 @@ test('§3.10 deploy.sh with a failing check: build and run are recorded, compose
 })
 
 test('§3.10 deploy.sh with a passing check: build, run, then compose, in that order, exit 0', () => {
-  const r = runDeploy(0)
+  const r = runDeploy()
+  assert.deepEqual(subcommands(r), ['build', 'run', 'compose'], r.output)
+  assert.equal(r.status, 0, r.output)
+})
+
+test('§5.3.11 a passing check may print other lines before the OK line', () => {
+  const r = runDeploy({ stdout: `some earlier line\n${GOOD_STDOUT}` })
   assert.deepEqual(subcommands(r), ['build', 'run', 'compose'], r.output)
   assert.equal(r.status, 0, r.output)
 })
 
 test('§3.10 the check is a docker run with --rm -i --network none --entrypoint node on the image just built', () => {
-  const r = runDeploy(0)
+  const r = runDeploy()
   const build = r.calls.find((c) => c.argv[0] === 'build')
   const run = r.calls.find((c) => c.argv[0] === 'run')
   assert.ok(build, r.output)
   assert.ok(run, r.output)
-  const tag = `confession-web:${VERSION}`
-  assert.equal(build.argv[build.argv.indexOf('-t') + 1], tag, 'the build must tag the image')
+  assert.equal(build.argv[build.argv.indexOf('-t') + 1], TAG, 'the build must tag the image')
   const a = run.argv
   assert.ok(a.includes('--rm'), 'the check container must be removed afterwards')
   assert.ok(a.includes('-i'), 'stdin must be attached for the script')
@@ -555,13 +687,31 @@ test('§3.10 the check is a docker run with --rm -i --network none --entrypoint 
   const ep = a.indexOf('--entrypoint')
   assert.notEqual(ep, -1, '--entrypoint is missing')
   assert.equal(a[ep + 1], 'node')
-  const img = a.indexOf(tag)
-  assert.notEqual(img, -1, `the run must name the image ${tag}`)
-  assert.deepEqual(a.slice(img + 1), ['--input-type=module', '-', ENTRYPOINT_IN_IMAGE, '/app'])
+  assert.notEqual(a.indexOf(TAG), -1, `the run must name the image ${TAG}`)
+})
+
+// §5.3.13 -- the arguments are exactly the entrypoint, the four files it and
+// CMD need by name, then /app.
+test('§5.3.13 the check arguments are the entrypoint, server.js, check-env.mjs, migrate.mjs, bootstrap-admin.mjs, then /app', () => {
+  const r = runDeploy()
+  const run = r.calls.find((c) => c.argv[0] === 'run')
+  assert.ok(run, r.output)
+  const img = run.argv.indexOf(TAG)
+  assert.notEqual(img, -1, `the run must name the image ${TAG}`)
+  assert.deepEqual(run.argv.slice(img + 1), [
+    '--input-type=module',
+    '-',
+    ENTRYPOINT_IN_IMAGE,
+    '/app/server.js',
+    '/app/check-env.mjs',
+    '/app/migrate.mjs',
+    '/app/bootstrap-admin.mjs',
+    '/app',
+  ])
 })
 
 test('§3.10 the check container gets no env file, no -e, no --env and no volume', () => {
-  const r = runDeploy(0)
+  const r = runDeploy()
   const run = r.calls.find((c) => c.argv[0] === 'run')
   assert.ok(run, r.output)
   for (const arg of run.argv) {
@@ -571,8 +721,74 @@ test('§3.10 the check container gets no env file, no -e, no --env and no volume
   }
 })
 
+// §5.3.18 -- nothing that widens the container goes into the check's run.
+test('§5.3.18 the check docker run carries no --user/-u, --privileged, --cap-add, -p/--publish or --add-host', () => {
+  const r = runDeploy()
+  const run = r.calls.find((c) => c.argv[0] === 'run')
+  assert.ok(run, r.output)
+  for (const arg of run.argv) {
+    assert.doesNotMatch(arg, /^(?:-u|--user)/, `the check must run as the image's own user: ${arg}`)
+    assert.doesNotMatch(arg, /^--privileged/, `no privileges: ${arg}`)
+    assert.doesNotMatch(arg, /^--cap-add/, `no capabilities: ${arg}`)
+    assert.doesNotMatch(arg, /^(?:-p|--publish)/, `no published ports: ${arg}`)
+    assert.doesNotMatch(arg, /^--add-host/, `no host entries: ${arg}`)
+  }
+})
+
 test('§1.3 the check script reaches the container on stdin, unchanged', () => {
-  const r = runDeploy(0)
+  const r = runDeploy()
   assert.ok(r.runStdin !== null, 'docker run received no stdin')
   assert.equal(r.runStdin, readFileSync(CHECK_SCRIPT, 'utf8'))
+})
+
+// §5.3.11 and §5.3.12 -- deploy.sh trusts the exit code and the OK line
+// together. Each case below is a refusal: no compose, the refused image's
+// tag removed after the run, exit 1.
+const REFUSALS: { name: string; stub: StubRun }[] = [
+  { name: 'exit 0 and nothing on stdout', stub: { exit: 0, stdout: '' } },
+  { name: 'exit 0 and an OK line with a count of 0', stub: { exit: 0, stdout: 'check-image-readable: OK 0 paths usable by uid 1000' } },
+  { name: 'exit 0 and an OK line with uid 0', stub: { exit: 0, stdout: 'check-image-readable: OK 2609 paths usable by uid 0' } },
+  { name: 'exit 0 and an OK line with trailing text', stub: { exit: 0, stdout: `${GOOD_STDOUT} and more` } },
+  { name: 'exit 0 and an OK line with leading text', stub: { exit: 0, stdout: `x ${GOOD_STDOUT}` } },
+  { name: 'exit 0 and some other line', stub: { exit: 0, stdout: 'all good' } },
+  { name: 'exit 7 even with a valid OK line', stub: { exit: 7, stdout: GOOD_STDOUT } },
+  { name: 'exit 1 and nothing on stdout', stub: { exit: 1, stdout: '' } },
+]
+
+for (const { name, stub } of REFUSALS) {
+  test(`§5.3.11 deploy.sh refuses on ${name}: no compose, exit 1, the stack is not touched`, () => {
+    const r = runDeploy(stub)
+    assert.deepEqual(subcommands(r), ['build', 'run'], r.output)
+    assert.ok(!r.calls.some((c) => c.argv.includes('compose')), 'no compose of any kind may be recorded')
+    assert.equal(r.status, 1, r.output)
+    assert.match(r.output, /refus/i, 'deploy.sh must say that it refused')
+    assert.match(r.output, /not (?:been )?touched|untouched/i, 'deploy.sh must say the running stack was not touched')
+  })
+
+  test(`§5.3.12 deploy.sh refusing on ${name} removes the refused image's tag after the run`, () => {
+    const r = runDeploy(stub)
+    const runAt = r.calls.findIndex((c) => c.argv[0] === 'run')
+    const rmAt = r.calls.findIndex(isImageRemoval)
+    assert.notEqual(runAt, -1, r.output)
+    assert.notEqual(rmAt, -1, `no "image rm ${TAG}" (or rmi) was recorded: ${r.output}`)
+    assert.ok(rmAt > runAt, 'the removal must come after the run')
+    assert.ok(!r.calls.some((c) => c.argv.includes('compose')), 'no compose of any kind may be recorded')
+  })
+}
+
+test('§5.2.5 deploy.sh prints the exit code of a failed check', () => {
+  const r = runDeploy({ exit: 7, stdout: '' })
+  assert.match(r.output, /\b7\b/, r.output)
+})
+
+test('§5.2.5 a failing image removal is ignored: deploy.sh still refuses with exit 1 and no compose', () => {
+  const r = runDeploy({ exit: 1, stdout: '', imageRmExit: 1 })
+  assert.deepEqual(subcommands(r), ['build', 'run'], r.output)
+  assert.equal(r.status, 1, r.output)
+  assert.ok(r.calls.some(isImageRemoval), 'the removal must still be attempted')
+})
+
+test('§5.3.12 a passing check does not remove the image', () => {
+  const r = runDeploy()
+  assert.ok(!r.calls.some((c) => c.argv[0] === 'rmi' || (c.argv[0] === 'image' && c.argv[1] === 'rm')), 'the image must be kept')
 })
