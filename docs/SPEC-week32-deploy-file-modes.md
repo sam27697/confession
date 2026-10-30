@@ -227,3 +227,20 @@ non-root test. They are proved on the server (§5.4), not in test 83.
 6. The fixed image run as `--user 0`: the check refuses.
 7. The fixed image with `/app/migrate.mjs` deleted in a throwaway
    container layer: the check refuses and names it.
+
+## §6 Amended 2026-10-30, after the second review
+
+The second review passed the change and found that §5.3 was wrong to call
+two cases untestable without root.
+
+19. **`access()`, not "any permission bit".** A file the test user owns with
+    mode 044, and a directory with mode 055, are readable by group and
+    other but not by their owner: `access()` refuses them, a check on
+    `mode & 0o444` would not. Both: exit 1, named.
+20. **The uid 0 refusal.** Run the script with a `--import` preload that
+    sets `process.getuid = () => 0`: exit 1, `runs as root` on stderr, no OK
+    line on stdout, and no path reported. A second preload that deletes
+    `process.getuid`: the same.
+
+Only "root can read a 600 file" itself needs real root, and that is the
+server run of §4.1 and §5.4.6.
