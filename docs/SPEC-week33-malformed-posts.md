@@ -184,5 +184,5 @@ The test author found a conflict this spec did not settle, and four gaps.
   check answers 404 before the body gate runs.
 - **`/admin/reveal`** gets acceptance too: with an admin session, a body that
   does not parse answers 400 with the «صار خطأ» document, and the
-  `admin_reveals` audit table gains no row. Use the harness test 17 and 18
+  `admin_reveal_log` audit table (`adminRevealLog` in `src/schema.ts`) gains no row. Use the harness test 17 and 18
   already use for this route.
