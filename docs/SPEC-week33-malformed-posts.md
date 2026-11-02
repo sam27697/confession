@@ -164,3 +164,25 @@ is re-aimed to assert exactly two entries: the first exactly week 18's
 next-action entry, the second exactly the content-type entry of §1.2. It must
 not get weaker than that. Every other item in test 68 stays as it is and must
 still pass.
+
+## §5 Amendment, 2026-11-02 22:1x, after the test author's first pass
+
+The test author found a conflict this spec did not settle, and four gaps.
+
+- **Test 68 §4.6 versus rule 4.** §4.6 sends a well-formed `next-action` with
+  no body and expects a pass-through. Rule 4 rejects an empty body, and §0
+  row 5 measured that same request (with the real id) as a 500 from Next.
+  §4.6 exists to prove a well-formed id gets past week 18's check; its empty
+  body was incidental. Rule 4 stands. §4.6 is re-aimed by the test author to
+  send a body that parses (`[]`, `Content-Type: text/plain;charset=UTF-8`,
+  what the page's own script sends), with every assertion it has kept.
+- **A descriptor with no closing quote** returns false (Next's own
+  `isInvalidStringActionDescriptor` treats it as invalid).
+- **Repeated `$ACTION_REF_` keys** count once per occurrence, as
+  `FormData.keys()` yields them and as Next counts them.
+- **An empty `next-action` value** is not 42 lowercase hex, so week 18's
+  check answers 404 before the body gate runs.
+- **`/admin/reveal`** gets acceptance too: with an admin session, a body that
+  does not parse answers 400 with the «صار خطأ» document, and the
+  `admin_reveals` audit table gains no row. Use the harness test 17 and 18
+  already use for this route.
