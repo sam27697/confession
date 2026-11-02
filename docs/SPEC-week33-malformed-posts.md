@@ -186,3 +186,48 @@ The test author found a conflict this spec did not settle, and four gaps.
   does not parse answers 400 with the «صار خطأ» document, and the
   `admin_reveal_log` audit table (`adminRevealLog` in `src/schema.ts`) gains no row. Use the harness test 17 and 18
   already use for this route.
+
+## §6 Independent review, 2026-11-02 22:2x: PASS, and four claims above corrected
+
+Measured on staging by the reviewer and re-measured by the build where marked.
+
+- **§1 says the gate parses "with the same parser behaviour Next will apply".
+  Not on the fetch-multipart path.** The gate parses with the edge runtime's
+  undici; Next parses a fetch action's multipart body with busboy. A part
+  header over busboy's 16 KiB cap passes the gate and still answers 500
+  (`Malformed part header`), with a digest line and no client text. It needs
+  the public action id and a crafted body. Residual, stated; closing it means
+  carrying busboy's limits into the gate, rejected in §1.4 for the same reason
+  as validating React's encoding. The no-JS path uses the same web
+  `formData()` in both places and agrees.
+- **§5's empty `next-action` item is wrong on the real server.** Next's
+  matcher only matches a valueless `has` entry when the header is non-empty,
+  so the middleware never sees an empty `next-action` (unless the body is
+  multipart). Next answers 404 itself and logs one warning with a stack and
+  no client content. Week 18 has the same gap; unchanged by this slice. The
+  unit test calls `middleware()` directly and does not see the matcher.
+- **§1.3's "unchanged for a body that parses" is wrong for multipart bodies
+  to route handlers.** A multipart `POST /admin/reveal` or `/auth/logout` with
+  no action field now gets the gate's 400. No page sends multipart there
+  (all four route-handler forms post urlencoded), so nobody is affected.
+- **Bodies over 1 MB.** A well-formed action whose body is over Next's 1 MB
+  action limit still answers 500 (`Body exceeded 1 MB limit`). Residual.
+
+### §6.1 A finding older than this slice: the log takes chosen text after 10 MB
+
+Re-measured by the build on staging: a POST that reaches the middleware with
+a body over 10 MB makes Next write
+`Request body exceeded 10MB for <path and query>` to the container log, so
+the sender chooses that text. `Next-Action: zz` with an 11 MB body to
+`/?w33canary-badid` put the canary in the log. That is week 18's own code
+path, live in production since 2026-09-28, so week 18's "nobody on the
+internet can write text of their choosing into this product's log" has been
+false for bodies over 10 MB since it shipped. This slice adds a second
+trigger (any multipart POST) and no new capability.
+
+The line is written while Next streams the body into the middleware's copy
+(`next/dist/server/body-streams.js`, `cloneBodyStream`), before middleware
+code runs, so no middleware change prevents it. Raising
+`middlewareClientMaxBodySize` only moves the threshold and buffers more per
+request. The fix is a request body cap below 10 MB at the reverse proxy,
+which is root's. It is the next slice's question, not this one's.

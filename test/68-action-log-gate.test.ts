@@ -224,10 +224,16 @@ test('§4.5 the 404 response never echoes the rejected next-action value, in bod
 test('§4.6 middleware() given a POST with a well-formed next-action passes the request through', async () => {
   const { middleware } = await loadMiddleware()
 
+  // Re-aimed by docs/SPEC-week33-malformed-posts.md §5: the request carries a
+  // body that parses ([] with the content-type the page's own script sends),
+  // because a well-formed id with an empty body is rejected by the week 33
+  // body gate. What this item proves -- a well-formed id gets past week 18's
+  // check -- is unchanged, and so is every assertion below.
   const wellFormed = hexOfLength(42, '00')
   const request = new NextRequest('https://w18-gate-test.example/', {
     method: 'POST',
-    headers: { 'next-action': wellFormed },
+    headers: { 'next-action': wellFormed, 'content-type': 'text/plain;charset=UTF-8' },
+    body: '[]',
   })
   const response = await middleware(request)
 
@@ -251,20 +257,26 @@ test('§4.7 middleware() given a request with no next-action header passes it th
 // 8. config.matcher shape
 // ---------------------------------------------------------------------------
 
-test('§4.8 config.matcher is exactly one entry, gated on the next-action header', async () => {
+// Re-aimed by docs/SPEC-week33-malformed-posts.md §4: week 18 §2's single-entry
+// clause is superseded by week 33 §1.2, which adds a second entry for multipart
+// content. The first entry is exactly week 18's; the second is exactly the
+// content-type entry of week 33 §1.2.
+test('§4.8 config.matcher is exactly two entries: the next-action entry, then the multipart content-type entry', async () => {
   const { config } = await loadMiddleware()
+  const matcher = config.matcher as unknown
 
-  assert.ok(Array.isArray(config.matcher), 'config.matcher must be an array')
-  assert.equal(config.matcher.length, 1, 'config.matcher must hold exactly one entry')
+  assert.ok(Array.isArray(matcher), 'config.matcher must be an array')
+  assert.equal(matcher.length, 2, 'config.matcher must hold exactly two entries')
 
-  const entry = config.matcher[0]
-  assert.ok(entry && typeof entry === 'object', 'the matcher entry must be an object')
-  assert.ok(Array.isArray(entry.has), 'the matcher entry must have a "has" array')
-  assert.ok(
-    entry.has.some(
-      (condition: { type?: string; key?: string }) => condition && condition.type === 'header' && condition.key === 'next-action',
-    ),
-    `matcher entry.has must include { type: 'header', key: 'next-action' }, got: ${JSON.stringify(entry.has)}`,
+  assert.deepEqual(
+    matcher[0],
+    { source: '/:path*', has: [{ type: 'header', key: 'next-action' }] },
+    'the first matcher entry must be exactly week 18\'s next-action entry',
+  )
+  assert.deepEqual(
+    matcher[1],
+    { source: '/:path*', has: [{ type: 'header', key: 'content-type', value: 'multipart/form-data.*' }] },
+    'the second matcher entry must be exactly the content-type entry of week 33 section 1.2',
   )
 })
 
