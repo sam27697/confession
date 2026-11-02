@@ -37,7 +37,24 @@ export async function POST(request: Request) {
   // below, which only wraps the reveal call itself.
   const adminUserId = await requireAdminUserId(db)
 
-  const formData = await request.formData()
+  // Week 33 spec, section 1.3: a body that is not a form gets the same
+  // error page as a failed reveal, and no audit row.
+  let formData: FormData
+  try {
+    formData = await request.formData()
+  } catch {
+    return htmlResponse(
+      revealDocument(
+        'صار خطأ',
+        html`<div>
+          <h1>صار خطأ</h1>
+          <p class="error">ما قدرنا نكشف هالرسالة.</p>
+          <a href="/admin">رجوع</a>
+        </div>`,
+      ),
+      400,
+    )
+  }
   const confessionId = String(formData.get('confessionId') ?? '')
   const reason = String(formData.get('reason') ?? '').trim()
 
