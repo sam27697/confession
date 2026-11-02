@@ -13,7 +13,14 @@ export async function POST(request: Request) {
     return new Response('not found', { status: 404 })
   }
 
-  const form = await request.formData()
+  // Week 33 spec, section 1.3: a body that is not a form is the client's
+  // mistake, not an exception.
+  let form: FormData
+  try {
+    form = await request.formData()
+  } catch {
+    return new Response('bad request', { status: 400 })
+  }
   const displayName = String(form.get('displayName') ?? '').trim().slice(0, 80)
   if (!displayName) {
     return new Response('display name required', { status: 400 })
