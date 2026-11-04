@@ -516,3 +516,82 @@ test('6: the patched body-streams.js warns once about the limit and the line car
     assert.equal(under.seen, 2 * 1024 * 1024, 'a 2 MiB body should come through whole')
   })
 })
+
+// --- 10. the url detector (spec 7.1 item 3, 7.3 item 10) ---------------
+//
+// Item 3 extended. The detector must also catch ?.url, ['url'], .originalUrl
+// and a bare ${url} template, so those shapes fail the build instead of being
+// reported as already patched; and a target that holds one known assignment
+// plus a second url in the same window must fail after the patch.
+
+const OTHER_URL_SHAPES: Array<[label: string, file: string, warning: string]> = [
+  ['?.url', 'optional-chain-url.js', 'console.warn(`Request body exceeded 10MB for ${r?.url}. Only the first 10MB`);'],
+  ["['url']", 'bracket-url.js', "console.warn(`Request body exceeded 10MB for ${r['url']}. Only the first 10MB`);"],
+  ['.originalUrl', 'original-url.js', 'console.warn(`Request body exceeded 10MB for ${r.originalUrl}. Only the first 10MB`);'],
+]
+
+for (const [label, file, warning] of OTHER_URL_SHAPES) {
+  test(`10: a warning that carries the url as ${label} fails with exit 1 and names the file`, () => {
+    withScratch((root) => {
+      const dist = buildScratchDist(root)
+      writeFixture(dist, `server/${file}`, `function a(r) {\n  ${warning}\n}\n`)
+      const r = runScript(root)
+      assertReportedFailure(r)
+      assert.ok(r.out.includes(file), `the failing file should be named: ${r.out}`)
+    })
+  })
+}
+
+test('10: a warning that carries a destructured ${url} fails with exit 1 and names the file', () => {
+  withScratch((root) => {
+    const dist = buildScratchDist(root)
+    writeFixture(
+      dist,
+      'server/destructured-url.js',
+      'function a(r) {\n  const { url } = r;\n  console.warn(`Request body exceeded 10MB for ${url}. Only the first 10MB`);\n}\n',
+    )
+    const r = runScript(root)
+    assertReportedFailure(r)
+    assert.ok(r.out.includes('destructured-url.js'), `the failing file should be named: ${r.out}`)
+  })
+})
+
+test('10: a bare ${url} template inside an inline ternary fails with exit 1 and names the file', () => {
+  withScratch((root) => {
+    const dist = buildScratchDist(root)
+    writeFixture(
+      dist,
+      'server/bare-url.js',
+      'function a(url) {\n  console.warn(`Request body exceeded 10MB${url ? ` for ${url}` : ""}. Only the first 10MB`);\n}\n',
+    )
+    const r = runScript(root)
+    assertReportedFailure(r)
+    assert.ok(r.out.includes('bare-url.js'), `the failing file should be named: ${r.out}`)
+  })
+})
+
+for (const [label, second] of [
+  ['${r.url}', '${r.url}'],
+  ['${r?.url}', '${r?.url}'],
+  ["${r['url']}", "${r['url']}"],
+] as const) {
+  test(`10: one known assignment plus a second url (${label}) in the same warning exits 1 after the patch`, () => {
+    withScratch((root) => {
+      const dist = buildScratchDist(root)
+      writeFixture(
+        dist,
+        'server/assignment-plus-second.js',
+        [
+          'function a(r) {',
+          "  const urlInfo = r.url ? ` for ${r.url}` : '';",
+          '  console.warn(`Request body exceeded 10MB${urlInfo}. Only the first 10MB. Seen at ' + second + '`);',
+          '}',
+          '',
+        ].join('\n'),
+      )
+      const r = runScript(root)
+      assertReportedFailure(r)
+      assert.ok(r.out.includes('assignment-plus-second.js'), `the failing file should be named: ${r.out}`)
+    })
+  })
+}
