@@ -181,3 +181,83 @@ that ships, after the build:
 **Acceptance, added to §5 (same author):** item 5 becomes this section's
 strings; a new item shows `<dir>` mode patches a scratch tree laid out like
 `.next/standalone` and leaves a sibling `node_modules/next/dist` untouched.
+
+## §7 Amendment, 2026-11-04 22:5x, after the independent review (FAIL)
+
+The review measured the patched build and confirmed §1 to §6 on the
+artifact: the standalone server loads exactly one `body-streams.js`, the
+patched one, and three 11 MB requests (plain, multipart, chunked, canaries in
+path, query and a header) leave the bare warning and no canary. It failed
+the slice on two things this spec had implied and not measured: that the
+log promise of week 18 is restored. It is not, and two more requests break
+it. Re-measured by the build on a local standalone build before this
+section was written:
+
+- **F1, `/_next/image`.** The app uses no `next/image` and sets no `images`
+  config, so Next's optimizer endpoint is live. `GET
+  /_next/image?url=%2Fc%2Fw34canary-img1%0AFORGED&w=640&q=75` answered 400
+  and wrote `The requested resource isn't a valid image for /c/w34canary-img1`
+  followed by a second line `FORGED received null`: the sender chose the
+  text and, through `%0A`, forged a line. The optimizer also fetched
+  `/c/<slug>` internally, which rendered the page (with the database down
+  locally, the failed query printed the slug as a parameter).
+- **F2, a foreign `Origin` on an action.** `POST /c/abc` with a well-formed
+  `Next-Action`, `Content-Type: text/plain;charset=UTF-8`, body `[]` and
+  `Origin: http://w34canary-origin2.example/c/x` answered 500 and wrote
+  `` `x-forwarded-host` header with value `127.0.0.1:3934` does not match
+  `origin` header with value `w34canary-origin2.example` ... `` Next's
+  `limitUntrustedHeaderValueForLogs` caps the length; the host part of a
+  parsed URL cannot hold a newline. No account or real action id is needed.
+
+### §7.1 Changes
+
+1. **`next.config.mjs`: `images: { unoptimized: true }`.** Next then answers
+   `/_next/image` with its 404 page (`next-server.js`
+   `handleNextImageRequest`: `loader !== 'default' || unoptimized` renders
+   404) and never fetches or names the url. Nothing in `app/` or `src/` uses
+   `next/image`.
+2. **`src/origin-gate.ts`, called first in `middleware.ts`.** For a request
+   the middleware sees (an action, or a multipart body) with method `POST`
+   and an `Origin` header: parse it with `new URL`; if that throws, or its
+   `host` differs from the expected host, answer a bare **403** before Next's
+   action handler runs. The expected host is Next's own rule
+   (`action-handler.js` `parseHostHeader`): the first comma-separated value
+   of `x-forwarded-host`, trimmed, else `host`. No `Origin` header passes
+   through unchanged (Next's own warning for that case is a fixed string).
+   The comparison is exact and case-sensitive, as Next's is; the app sets no
+   `serverActions.allowedOrigins`, so no other origin is acceptable to Next
+   either. The 403 writes nothing.
+3. **`scripts/patch-next-body-warning.mjs`, F3 of the review.** The url
+   detector also catches `?.url`, `.originalUrl`, `['url']` and a bare
+   `${url}` template within the window, so those shapes fail the build
+   instead of being reported as already patched. It stays a tripwire for
+   the shapes it knows: a future warning that interpolates a header value
+   would pass it. That is stated, not claimed away.
+
+### §7.2 Residuals
+
+- **Not every Next log line is closed by this slice.** The claim this slice
+  makes is narrow: the three requests measured above (a body over 10 MB, the
+  image endpoint, a foreign Origin) no longer write sender text. Week 18's
+  wider sentence remains a promise to keep measuring, not a proven property.
+- **A page render that fails on the database logs the query parameters**
+  (review F6), slug included. It needs the database to be down; it is not a
+  request a sender can cause on a healthy server.
+- **The 10 MB proxy cap** (§3) is still wanted for memory and bandwidth.
+
+### §7.3 Acceptance, added to §5 (same author)
+
+7. With `next.config.mjs` loaded, `images.unoptimized` is `true`; no file
+   under `app/` or `src/` imports `next/image`.
+8. `src/origin-gate.ts` as a unit: a matching Origin passes; a mismatched
+   one, an unparseable one (`null`, `garbage`) and a mismatched port are
+   refused; no Origin passes; the expected host comes from the first
+   `x-forwarded-host` value (with `a.example, b.example` only `a.example`
+   matches), else `host`; a GET is never refused.
+9. `middleware()` called directly answers 403 with an empty body for a
+   foreign Origin on a well-formed action, before the body gate, and passes
+   a same-origin one through to the body gate as before.
+10. Item 3 extended: a target whose warning uses `?.url`, `['url']` or a
+    destructured `${url}` makes the patch exit 1; and a target with one
+    known assignment plus a second url elsewhere in the window exits 1 after
+    the patch (the post-patch check).
