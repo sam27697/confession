@@ -7,8 +7,11 @@ const nextConfig = {
 
   // Week 34 spec §7. Nothing here uses next/image, and the optimizer at
   // /_next/image writes the url it was asked for into the log, newlines and
-  // all. Unoptimized, Next answers that path with its 404 page.
-  images: { unoptimized: true },
+  // all. Unoptimized, Next answers that path with its 404 page. Next still
+  // builds its image cache before it looks at `unoptimized`, and that tries
+  // to create .next/cache, which the image keeps unwritable (spec §7.5);
+  // a disk cache size of 0 stops it trying.
+  images: { unoptimized: true, maximumDiskCacheSize: 0 },
 
   // Week 15 §1 item 5. Referrer-Policy is `same-origin` and deliberately not
   // `no-referrer`: under `no-referrer` a browser sends `Origin: null` on a
