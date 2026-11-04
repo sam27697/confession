@@ -24,7 +24,10 @@ const WARNING = 'Request body exceeded'
 // the same statement. The real copies keep it within about 60 characters.
 const WINDOW = 400
 const ASSIGNMENT = /([\w$]+)\s*=\s*([\w$]+)\.url\s*\?\s*` for \$\{\2\.url\}`\s*:\s*(''|"")/g
-const ANY_URL = /[\w$)\]]\s*\.url\b/
+// Also `?.url`, `.originalUrl`, `['url']` and a destructured `${url}`
+// (week 34 spec §7, review F3). A warning that interpolates a header value
+// would still pass; this knows the shapes the url comes in, nothing more.
+const ANY_URL = /(?:[\w$)\]]\s*|\?)\.\s*(?:url|originalUrl)\b|\[\s*['"`](?:url|originalUrl)['"`]\s*\]|\$\{\s*(?:url|originalUrl)\s*\}/
 
 function fail(message) {
   console.error(`patch-next-body-warning: ${message}`)

@@ -5,6 +5,11 @@ const nextConfig = {
   // Nobody reading a response needs to know which framework built it.
   poweredByHeader: false,
 
+  // Week 34 spec §7. Nothing here uses next/image, and the optimizer at
+  // /_next/image writes the url it was asked for into the log, newlines and
+  // all. Unoptimized, Next answers that path with its 404 page.
+  images: { unoptimized: true },
+
   // Week 15 §1 item 5. Referrer-Policy is `same-origin` and deliberately not
   // `no-referrer`: under `no-referrer` a browser sends `Origin: null` on a
   // POST, and Next refuses a Server Action whose Origin does not match the
