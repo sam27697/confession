@@ -261,3 +261,41 @@ section was written:
     destructured `${url}` makes the patch exit 1; and a target with one
     known assignment plus a second url elsewhere in the window exits 1 after
     the patch (the post-patch check).
+
+### §7.4 Amendment, 2026-11-04 23:1x: the expected host comes from APP_ORIGIN
+
+§7.1 item 2 as first built read `x-forwarded-host` and `host` off the
+request. The suite then failed `test/14`'s header-read tripwire (§6.9 of
+week 6, amended week 19), on `src/origin-gate.ts` lines 5 and 18. The
+tripwire is right to fire: the gate does not need to read where the request
+says it is going, because the app knows its own origin. The tripwire is not
+changed.
+
+**The rule now.** `originAllowed(headers, method, appOrigin)`: for a `POST`
+with an `Origin` header, allow only when both `Origin` and `appOrigin`
+parse with `new URL` and their `host` values are equal (port included,
+exact). An `Origin` that does not parse, a missing or unparseable
+`appOrigin`, or a different host is refused. No `Origin`, or any method but
+`POST`, is allowed. The only header read is `origin`. `middleware.ts` passes
+`process.env.APP_ORIGIN`.
+
+**Measured on a local standalone build**, built with the Dockerfile's
+placeholder `APP_ORIGIN=http://localhost:3000` and run with
+`APP_ORIGIN=http://127.0.0.1:3934`: Origin `http://127.0.0.1:3934` passes
+to Next (404, the unknown action); `http://localhost:3000`,
+`http://w34canary-o.example` and `null` get 403; no Origin passes (404). So
+the middleware reads the run-time value, not the build-time one.
+
+**What this buys over Next's rule.** Whatever Next later logs about an
+Origin can only be this app's own host. Where the two rules differ (a
+request whose `x-forwarded-host` is not the public name, which behind the
+proxy only a request made on the server itself can produce) Next's own
+check still runs after ours.
+
+**Acceptance, items 8 and 9 re-aimed (same author):** item 8's cases are
+expressed against `appOrigin` (matching, mismatched host, mismatched port,
+unparseable Origin, unparseable or missing `appOrigin`, no Origin, GET); the
+`x-forwarded-host` cases become: a request whose `x-forwarded-host` or
+`host` equals the Origin while `appOrigin` differs is refused, so the
+request's own headers cannot talk the gate round. Item 9 sets
+`process.env.APP_ORIGIN` for the call (and restores it).
