@@ -299,3 +299,27 @@ unparseable Origin, unparseable or missing `appOrigin`, no Origin, GET); the
 `host` equals the Origin while `appOrigin` differs is refused, so the
 request's own headers cannot talk the gate round. Item 9 sets
 `process.env.APP_ORIGIN` for the call (and restores it).
+
+### §7.5 Amendment, 2026-11-04 23:3x: the image cache directory
+
+Measured on staging after the §7.4 deploy (`ee5a7fc`), one request at a
+time with the container's EACCES count read between them: `GET /`, `GET
+/c/abc`, a same-origin and a foreign-origin action left it unchanged; `GET
+/_next/image?url=%2Fog%2Fdefault.png&w=640&q=75` added an `EACCES:
+permission denied, mkdir '/app/.next/cache'` block and an
+`unhandledRejection` block. Fixed text, nothing from the request, but any
+visitor can write it.
+
+Cause, read in `next/dist/server/next-server.js` and `image-optimizer.js`:
+`handleNextImageRequest` constructs `ImageOptimizerCache` **before** it
+checks `unoptimized`, and the constructor starts a disk LRU under
+`.next/cache/images` unless `images.maximumDiskCacheSize` is `0`. The image
+leaves `/app/.next` unwritable to the container user on purpose (week 32).
+So this predates tonight: any `/_next/image` request has done it since the
+image became read-only; §7.1 only made every such request end there.
+
+**Change:** `images: { unoptimized: true, maximumDiskCacheSize: 0 }`. The
+directory stays unwritable; Next no longer tries to create it.
+
+**Acceptance, added to item 7 (same author):** `images.maximumDiskCacheSize`
+is `0`.
