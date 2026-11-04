@@ -5,9 +5,8 @@
   "description": "The confession app: schema, domain layer and the Next.js web surfaces.",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/patch-next-body-warning.mjs",
     "build": "next build",
-    "postbuild": "node scripts/patch-next-body-warning.mjs --check .next/standalone",
+    "postbuild": "node scripts/patch-next-body-warning.mjs .next/standalone && node scripts/patch-next-body-warning.mjs --check .next/standalone",
     "start": "next start",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",

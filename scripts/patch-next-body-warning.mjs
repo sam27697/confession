@@ -1,7 +1,7 @@
 // Take the URL out of Next's "Request body exceeded" warning (week 34 spec).
 //
-//   node scripts/patch-next-body-warning.mjs                       patch node_modules/next/dist
-//   node scripts/patch-next-body-warning.mjs --check <dir>         verify, change nothing
+//   node scripts/patch-next-body-warning.mjs [dir]           patch dir, default node_modules/next/dist
+//   node scripts/patch-next-body-warning.mjs --check <dir>   verify, change nothing
 //
 // When a POST body that reaches the middleware passes 10 MB, Next's
 // cloneBodyStream() logs `Request body exceeded 10MB for <path and query>`.
@@ -10,11 +10,11 @@
 //
 //   urlInfo = readable.url ? ` for ${readable.url}` : ''
 //
-// to `urlInfo = ''` in every copy of that code in the installed package. The
+// to `urlInfo = ''` in every copy of that code under the directory. The
 // warning itself stays. A copy this script does not recognise fails the run,
 // so a Next upgrade that moves the code stops the build instead of shipping
-// the old line. package.json runs the patch as prebuild and the check over
-// .next/standalone as postbuild.
+// the old line. package.json runs the patch and then the check over
+// .next/standalone as postbuild, so node_modules is never changed (spec §6).
 
 import { readFileSync, writeFileSync, readdirSync, lstatSync } from 'node:fs'
 import path from 'node:path'
@@ -90,8 +90,8 @@ const args = process.argv.slice(2)
 if (args[0] === '--check') {
   if (!args[1]) fail('usage: --check <dir>')
   check(args[1])
-} else if (args.length === 0) {
-  patch(path.join('node_modules', 'next', 'dist'))
+} else if (args.length <= 1) {
+  patch(args[0] ?? path.join('node_modules', 'next', 'dist'))
 } else {
   fail(`unknown arguments: ${args.join(' ')}`)
 }
