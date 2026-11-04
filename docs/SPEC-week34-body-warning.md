@@ -323,3 +323,30 @@ directory stays unwritable; Next no longer tries to create it.
 
 **Acceptance, added to item 7 (same author):** `images.maximumDiskCacheSize`
 is `0`.
+
+## §8 Independent review, second pass, 2026-11-05 00:0x: PASS
+
+Reviewed at `1890a85`, measured on staging (`005e0df`, same runtime code).
+Real forms driven in Chromium with JS on and off: dev login, terms, a send
+(fetch action and no-JS multipart), the link switch, report, hide, block,
+the reveal offer, logout, account deletion; every one 303 or its normal
+page, the log unchanged. About 55 probes with canaries through the three
+closed paths and their neighbours (the 1 MB action limit, router and RSC
+headers, React reply references, auth and admin routes): zero canary lines
+in the container log. Notes, recorded rather than closed:
+
+- **A well-formed unknown action id is still logged** (`Failed to find
+  Server Action "<42 hex>"`). Week 18 §3 row 2, unchanged: 42 hex
+  characters, no newline, about 21 bytes a request.
+- **The url detector still passes `const {url: u} = readable`**, a
+  rename-destructure, and anything built from headers or `nextUrl`. §7.1
+  item 3 already says it is a tripwire for known shapes; the rename form is
+  a known shape it misses. Next slice, with its test.
+- **The middleware does not see urlencoded POSTs** (matcher: `next-action`
+  or multipart). Measured: they log nothing.
+- **The proxy replaces `Referrer-Policy`.** Both public origins answer
+  `strict-origin-when-cross-origin` (measured from outside, `via: 1.1
+  Caddy`); the app sends `same-origin` (week 15). Paths still do not leave
+  the site, but an outbound link now tells the other site that the visitor
+  came from this app, which week 15 chose to hide. Nothing in the privacy
+  copy promises otherwise. The proxy is root's.
