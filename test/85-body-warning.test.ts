@@ -382,13 +382,71 @@ test('4f: --check follows nothing outside the directory it was given', () => {
 
 // --- 5. package.json ---------------------------------------------------
 
-test('5: prebuild and postbuild in package.json are exactly spec 1.2', () => {
+// Spec §6 replaces §1.2: no prebuild (nothing touches node_modules), and a
+// postbuild that patches the standalone copy and then checks it.
+test('5: package.json has no prebuild and the postbuild string of spec 6', () => {
   const pkg = JSON.parse(readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')) as {
     scripts?: Record<string, string>
   }
-  assert.equal(pkg.scripts?.prebuild, 'node scripts/patch-next-body-warning.mjs')
-  assert.equal(pkg.scripts?.postbuild, 'node scripts/patch-next-body-warning.mjs --check .next/standalone')
+  assert.ok(!('prebuild' in (pkg.scripts ?? {})), 'there must be no prebuild script')
+  assert.equal(
+    pkg.scripts?.postbuild,
+    'node scripts/patch-next-body-warning.mjs .next/standalone && node scripts/patch-next-body-warning.mjs --check .next/standalone',
+  )
   assert.equal(pkg.scripts?.build, 'next build', 'build itself stays as it was')
+})
+
+// --- 5b. <dir> mode (spec 6) ---------------------------------------------
+
+test('5b: <dir> mode patches a standalone-shaped tree and leaves a sibling node_modules/next/dist byte-identical', () => {
+  withScratch((root) => {
+    // The sibling stands for the installed package: the real three copies.
+    const siblingDist = buildScratchDist(root)
+    const siblingBefore = snapshot(siblingDist)
+
+    // The standalone tree holds only the traced CJS copy (spec 0).
+    const standalone = path.join(root, '.next', 'standalone')
+    const traced = path.join(standalone, 'node_modules', 'next', 'dist', 'server', 'body-streams.js')
+    mkdirSync(path.dirname(traced), { recursive: true })
+    const original = readFileSync(path.join(REAL_DIST, COPIES[0]), 'utf8')
+    writeFileSync(traced, original)
+
+    const r = runScript(root, ['.next/standalone'])
+    assert.equal(r.status, 0, `<dir> mode should exit 0: ${r.out}`)
+    assertOnlyAssignmentReplaced(original, readFileSync(traced, 'utf8'), 'standalone body-streams.js')
+    assert.equal(count(r.stdout, 'already patched'), 0, 'first run should not say already patched')
+    assert.ok(count(r.stdout, 'patched') >= 1, `expected a patched line: ${r.stdout}`)
+    assert.match(r.stdout, /\b1\b/, 'expected the count 1 in the output')
+
+    // Nothing under the sibling node_modules was touched, by content or by file set.
+    assertSameSnapshot(siblingBefore, snapshot(siblingDist), '<dir> mode, sibling node_modules')
+
+    // The postbuild's second half passes on the patched standalone tree, and a
+    // second <dir> run changes nothing.
+    const afterFirst = snapshot(standalone)
+    const check = runScript(root, ['--check', '.next/standalone'])
+    assert.equal(check.status, 0, `--check should exit 0 on the patched standalone: ${check.out}`)
+    const again = runScript(root, ['.next/standalone'])
+    assert.equal(again.status, 0, `second <dir> run should exit 0: ${again.out}`)
+    assertSameSnapshot(afterFirst, snapshot(standalone), 'second <dir> run')
+    assertSameSnapshot(siblingBefore, snapshot(siblingDist), 'second <dir> run, sibling node_modules')
+  })
+})
+
+test('5c: <dir> mode with no target under the directory exits 1, even with targets beside it', () => {
+  withScratch((root) => {
+    // Targets exist in the default location, so a script that ignored <dir>
+    // and patched node_modules/next/dist would wrongly succeed.
+    const siblingDist = buildScratchDist(root)
+    const siblingBefore = snapshot(siblingDist)
+    const standalone = path.join(root, '.next', 'standalone')
+    writeFixture(standalone, 'server.js', 'module.exports = 1\n')
+    writeFixture(standalone, 'node_modules/next/dist/server/other.js', 'exports.x = 2\n')
+
+    const r = runScript(root, ['.next/standalone'])
+    assertReportedFailure(r)
+    assertSameSnapshot(siblingBefore, snapshot(siblingDist), '<dir> mode, sibling node_modules')
+  })
 })
 
 // --- 6. the patched module, loaded and run -----------------------------
