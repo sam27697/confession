@@ -1,6 +1,7 @@
 // test/86-origin-and-image.test.ts
 //
-// docs/SPEC-week34-body-warning.md §7.3, items 7 to 9: acceptance for the two
+// docs/SPEC-week34-body-warning.md §7.3, items 7 to 9 (items 8 and 9 re-aimed
+// by §7.4: the expected host comes from APP_ORIGIN, never from the request): acceptance for the two
 // requests the review found still writing sender text into the log -- the
 // image optimizer endpoint (/_next/image) and a foreign Origin on a server
 // action. Written from the spec only (§5's rule, carried into §7): neither
@@ -22,16 +23,17 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { NextRequest } from 'next/server'
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const NEXT_CONFIG_PATH = path.join(REPO_ROOT, 'next.config.mjs')
+const ORIGIN_GATE_PATH = path.join(REPO_ROOT, 'src', 'origin-gate.ts')
 
 type OriginGateModule = {
-  originAllowed: (headers: Headers, method: string) => boolean
+  originAllowed: (headers: Headers, method: string, appOrigin: string | undefined) => boolean
 }
 
 const ORIGIN_GATE_SPECIFIER = '../src/origin-gate.js'
@@ -84,88 +86,183 @@ test('7: next.config.mjs sets images.unoptimized to true, and nothing in app/ or
   )
 })
 
-// --- 8. src/origin-gate.ts as a unit -----------------------------------
+// --- 8. src/origin-gate.ts as a unit (spec 7.4) -------------------------
 
 function headersOf(entries: Record<string, string>): Headers {
   return new Headers(entries)
 }
 
-test('8: a matching Origin passes; a mismatched host is refused', async () => {
+const APP = 'https://app.w34-test.example'
+
+test('8: an Origin whose host equals the appOrigin host passes; another host is refused', async () => {
   const { originAllowed } = await loadOriginGate()
-  const host = 'app.w34-test.example'
-  assert.equal(originAllowed(headersOf({ host, origin: `https://${host}` }), 'POST'), true, 'https origin, same host')
-  assert.equal(originAllowed(headersOf({ host, origin: `http://${host}` }), 'POST'), true, 'the scheme is not part of the comparison')
-  assert.equal(originAllowed(headersOf({ host, origin: `https://${host}/c/x` }), 'POST'), true, 'a path after the host is ignored')
-  assert.equal(originAllowed(headersOf({ host, origin: 'https://evil.w34-test.example' }), 'POST'), false, 'another host')
+  assert.equal(originAllowed(headersOf({ origin: APP }), 'POST', APP), true, 'same origin')
+  assert.equal(originAllowed(headersOf({ origin: 'http://app.w34-test.example' }), 'POST', APP), true, 'the scheme is not part of the comparison')
+  assert.equal(originAllowed(headersOf({ origin: `${APP}/c/x` }), 'POST', APP), true, 'a path after the host is ignored')
+  assert.equal(originAllowed(headersOf({ origin: 'https://evil.w34-test.example' }), 'POST', APP), false, 'another host')
+  assert.equal(originAllowed(headersOf({ origin: 'https://w34-test.example' }), 'POST', APP), false, 'a parent domain')
+  assert.equal(originAllowed(headersOf({ origin: 'https://app.w34-test.example.evil.example' }), 'POST', APP), false, 'a longer host that starts the same')
   assert.equal(
-    originAllowed(headersOf({ host: '127.0.0.1:3934', origin: 'http://w34canary-origin2.example/c/x' }), 'POST'),
+    originAllowed(headersOf({ origin: 'http://w34canary-origin2.example/c/x' }), 'POST', 'http://127.0.0.1:3934'),
     false,
     'the shape the review measured',
   )
+  assert.equal(originAllowed(headersOf({ origin: 'http://127.0.0.1:3934' }), 'POST', 'http://127.0.0.1:3934'), true, 'the measured same-origin shape')
 })
 
 test('8: an Origin that does not parse is refused', async () => {
   const { originAllowed } = await loadOriginGate()
-  const host = 'app.w34-test.example'
   for (const origin of ['null', 'garbage', 'app.w34-test.example', '//app.w34-test.example']) {
-    assert.equal(originAllowed(headersOf({ host, origin }), 'POST'), false, `Origin: ${origin}`)
+    assert.equal(originAllowed(headersOf({ origin }), 'POST', APP), false, `Origin: ${origin}`)
   }
-  // The control: the same host, written as a real origin, passes.
-  assert.equal(originAllowed(headersOf({ host, origin: `https://${host}` }), 'POST'), true)
+  // The control: the same appOrigin with a real origin passes.
+  assert.equal(originAllowed(headersOf({ origin: APP }), 'POST', APP), true)
 })
 
 test('8: the port is part of the host: a mismatched port is refused, a matching one passes', async () => {
   const { originAllowed } = await loadOriginGate()
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example:3000', origin: 'http://app.w34-test.example:3000' }), 'POST'), true)
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example:3000', origin: 'http://app.w34-test.example:3001' }), 'POST'), false)
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example:3000', origin: 'http://app.w34-test.example' }), 'POST'), false)
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example', origin: 'http://app.w34-test.example:3000' }), 'POST'), false)
+  const app = 'http://app.w34-test.example:3000'
+  assert.equal(originAllowed(headersOf({ origin: 'http://app.w34-test.example:3000' }), 'POST', app), true)
+  assert.equal(originAllowed(headersOf({ origin: 'http://app.w34-test.example:3001' }), 'POST', app), false)
+  assert.equal(originAllowed(headersOf({ origin: 'http://app.w34-test.example' }), 'POST', app), false)
+  assert.equal(originAllowed(headersOf({ origin: 'http://app.w34-test.example:3000' }), 'POST', 'http://app.w34-test.example'), false)
 })
 
-test('8: no Origin header passes, with and without a host', async () => {
+test('8: a missing or unparseable appOrigin refuses every POST that carries an Origin', async () => {
   const { originAllowed } = await loadOriginGate()
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example' }), 'POST'), true)
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example', 'x-forwarded-host': 'other.example' }), 'POST'), true)
-  assert.equal(originAllowed(headersOf({}), 'POST'), true)
-  // The control: the same request with a foreign Origin is refused.
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example', origin: 'https://other.example' }), 'POST'), false)
+  // The control: with a good appOrigin the same request passes.
+  assert.equal(originAllowed(headersOf({ origin: APP }), 'POST', APP), true, 'control')
+  for (const appOrigin of [undefined, '', 'garbage', 'null', 'app.w34-test.example']) {
+    assert.equal(originAllowed(headersOf({ origin: APP }), 'POST', appOrigin), false, `appOrigin: ${String(appOrigin)}`)
+    assert.equal(originAllowed(headersOf({ origin: 'garbage' }), 'POST', appOrigin), false, `garbage origin, appOrigin: ${String(appOrigin)}`)
+  }
 })
 
-test('8: the expected host is the first x-forwarded-host value, else host', async () => {
+test('8: no Origin header passes, whatever the appOrigin', async () => {
   const { originAllowed } = await loadOriginGate()
-  const xfh = 'a.example, b.example'
-  assert.equal(originAllowed(headersOf({ host: 'c.example', 'x-forwarded-host': xfh, origin: 'https://a.example' }), 'POST'), true, 'first value matches')
-  assert.equal(originAllowed(headersOf({ host: 'c.example', 'x-forwarded-host': xfh, origin: 'https://b.example' }), 'POST'), false, 'second value does not')
-  assert.equal(originAllowed(headersOf({ host: 'c.example', 'x-forwarded-host': xfh, origin: 'https://c.example' }), 'POST'), false, 'host is not consulted when x-forwarded-host is present')
-  assert.equal(originAllowed(headersOf({ host: 'c.example', 'x-forwarded-host': 'a.example , b.example', origin: 'https://a.example' }), 'POST'), true, 'the first value is trimmed')
-  assert.equal(originAllowed(headersOf({ host: 'c.example', origin: 'https://c.example' }), 'POST'), true, 'without x-forwarded-host, host is used')
-  assert.equal(originAllowed(headersOf({ host: 'c.example', origin: 'https://a.example' }), 'POST'), false, 'without x-forwarded-host, a foreign origin is refused')
+  assert.equal(originAllowed(headersOf({}), 'POST', APP), true)
+  assert.equal(originAllowed(headersOf({}), 'POST', undefined), true)
+  assert.equal(originAllowed(headersOf({}), 'POST', 'garbage'), true)
+  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example' }), 'POST', APP), true)
+  // The control: a foreign Origin on the same request is refused.
+  assert.equal(originAllowed(headersOf({ origin: 'https://other.example' }), 'POST', APP), false)
 })
 
-test('8: the comparison is exact and case-sensitive on the expected host', async () => {
+test('8: the request headers cannot talk the gate round: only appOrigin counts', async () => {
   const { originAllowed } = await loadOriginGate()
-  // new URL lowercases the Origin's host; the expected host is taken as sent,
-  // as Next's own rule does, so a mixed-case host header never matches.
-  assert.equal(originAllowed(headersOf({ host: 'app.w34-test.example', origin: 'https://app.w34-test.example' }), 'POST'), true)
-  assert.equal(originAllowed(headersOf({ host: 'App.W34-Test.example', origin: 'https://app.w34-test.example' }), 'POST'), false)
+  const foreign = 'https://evil.w34-test.example'
+  // host and x-forwarded-host both name the Origin's host, appOrigin differs: refused.
+  assert.equal(originAllowed(headersOf({ host: 'evil.w34-test.example', origin: foreign }), 'POST', APP), false, 'host equals the Origin')
+  assert.equal(originAllowed(headersOf({ 'x-forwarded-host': 'evil.w34-test.example', origin: foreign }), 'POST', APP), false, 'x-forwarded-host equals the Origin')
+  assert.equal(
+    originAllowed(headersOf({ host: 'evil.w34-test.example', 'x-forwarded-host': 'evil.w34-test.example, b.example', origin: foreign }), 'POST', APP),
+    false,
+    'both equal the Origin',
+  )
+  assert.equal(
+    originAllowed(headersOf({ 'x-forwarded-host': 'a.example, b.example', origin: 'https://a.example' }), 'POST', APP),
+    false,
+    'the first forwarded host equals the Origin',
+  )
+  assert.equal(originAllowed(headersOf({ host: 'evil.w34-test.example', origin: foreign }), 'POST', undefined), false, 'no appOrigin: headers still do not count')
+  // The converse: wrong host headers do not refuse an Origin that matches appOrigin.
+  assert.equal(originAllowed(headersOf({ host: 'evil.w34-test.example', 'x-forwarded-host': 'evil.w34-test.example', origin: APP }), 'POST', APP), true)
 })
 
-test('8: a GET is never refused, whatever its Origin', async () => {
+test('8: any method but POST is never refused, whatever the Origin and appOrigin', async () => {
   const { originAllowed } = await loadOriginGate()
-  const host = 'app.w34-test.example'
   // The control: the same headers on a POST are refused.
-  assert.equal(originAllowed(headersOf({ host, origin: 'https://evil.example' }), 'POST'), false)
-  assert.equal(originAllowed(headersOf({ host, origin: 'https://evil.example' }), 'GET'), true)
-  assert.equal(originAllowed(headersOf({ host, origin: 'null' }), 'GET'), true)
-  assert.equal(originAllowed(headersOf({ host, origin: 'garbage' }), 'GET'), true)
+  assert.equal(originAllowed(headersOf({ origin: 'https://evil.example' }), 'POST', APP), false)
+  for (const method of ['GET', 'HEAD', 'OPTIONS', 'PUT', 'PATCH', 'DELETE']) {
+    assert.equal(originAllowed(headersOf({ origin: 'https://evil.example' }), method, APP), true, `${method}, foreign origin`)
+    assert.equal(originAllowed(headersOf({ origin: 'null' }), method, APP), true, `${method}, Origin: null`)
+    assert.equal(originAllowed(headersOf({ origin: 'garbage' }), method, undefined), true, `${method}, garbage origin, no appOrigin`)
+  }
 })
 
-// --- 9. middleware() answers 403 before the body gate ------------------
+// The only header the gate may read is origin (spec 7.4). The source is read
+// at run time, comments stripped, so this fails while the file is absent.
+// Copied from test/84 (itself copied from test/68 and test/63).
+function stripComments(src: string): string {
+  let out = ''
+  let i = 0
+  const n = src.length
+  while (i < n) {
+    const two = src.slice(i, i + 2)
+    if (two === '//') {
+      while (i < n && src[i] !== '\n') i++
+      continue
+    }
+    if (two === '/*') {
+      i += 2
+      while (i < n && src.slice(i, i + 2) !== '*/') i++
+      i += 2
+      continue
+    }
+    const c = src[i]
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c
+      out += c
+      i++
+      while (i < n && src[i] !== quote) {
+        if (src[i] === '\\' && i + 1 < n) {
+          out += src[i] + src[i + 1]
+          i += 2
+          continue
+        }
+        out += src[i]
+        i++
+      }
+      if (i < n) {
+        out += src[i]
+        i++
+      }
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
+
+test('8: src/origin-gate.ts reads no header but origin', () => {
+  assert.ok(existsSync(ORIGIN_GATE_PATH), 'src/origin-gate.ts does not exist')
+  const code = stripComments(readFileSync(ORIGIN_GATE_PATH, 'utf8'))
+  const lines = code.split('\n')
+  const getCalls: Array<{ line: number; arg: string }> = []
+  lines.forEach((text, index) => {
+    for (const m of text.matchAll(/headers\.get\(\s*([^)]*)\)/g)) getCalls.push({ line: index + 1, arg: m[1].trim() })
+  })
+  assert.ok(getCalls.length >= 1, 'the gate must read the Origin header with headers.get(')
+  for (const call of getCalls) {
+    assert.match(call.arg, /^(['"`])origin\1$/i, `line ${call.line}: .get(${call.arg}) reads a header other than origin`)
+  }
+  assert.ok(!/x-forwarded|['"`]host['"`]|referer|user-agent|forwarded/i.test(code), 'the gate must not name any other request header')
+  // No wholesale header reads that would sidestep the .get check.
+  assert.ok(!/headers\s*(?:\.\s*(?:entries|keys|values|forEach)\b|\[\s*Symbol\.iterator)|\.\.\.\s*headers\b|Object\.\w+\(\s*headers\b/.test(code), 'the gate must not iterate the headers')
+})
+
+// --- 9. middleware() answers 403 before the body gate (spec 7.4) ---------
 
 const SAME_HOST = 'app.w34-test.example'
 const REQUEST_URL = `https://${SAME_HOST}/c/abc`
 const ACTION_ID = '00'.repeat(21)
 const FOREIGN_ORIGIN = 'http://w34canary-origin2.example/c/x'
+
+// Sets process.env.APP_ORIGIN for the duration of fn and restores whatever was
+// there (including nothing) afterwards. `undefined` removes the variable.
+async function withAppOrigin<T>(value: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const had = Object.prototype.hasOwnProperty.call(process.env, 'APP_ORIGIN')
+  const before = process.env.APP_ORIGIN
+  if (value === undefined) delete process.env.APP_ORIGIN
+  else process.env.APP_ORIGIN = value
+  try {
+    return await fn()
+  } finally {
+    if (had) process.env.APP_ORIGIN = before
+    else delete process.env.APP_ORIGIN
+  }
+}
 
 function actionRequest(body: BodyInit | null, headers: Record<string, string>): NextRequest {
   return new NextRequest(REQUEST_URL, {
@@ -191,18 +288,22 @@ function assertPassedThrough(response: Response | undefined, label: string): voi
 
 test('9: a foreign Origin on a well-formed action answers 403 with an empty body', async () => {
   const { middleware } = await loadMiddleware()
-  await assertRefused403(await middleware(actionRequest('[]', { origin: FOREIGN_ORIGIN })), 'foreign origin, JSON body')
+  await withAppOrigin(APP, async () => {
+    await assertRefused403(await middleware(actionRequest('[]', { origin: FOREIGN_ORIGIN })), 'foreign origin, JSON body')
+  })
 })
 
 test('9: the 403 comes before the body gate: a foreign Origin with a body the gate would answer 400 still gets 403', async () => {
   const { middleware } = await loadMiddleware()
-  // Control: the same body from the same origin is the body gate's 400.
-  const control = await middleware(actionRequest('{{{', { origin: `https://${SAME_HOST}` }))
-  assert.ok(control, 'control: a response')
-  assert.equal(control.status, 400, 'control: same origin, non-JSON body, the body gate answers 400')
+  await withAppOrigin(APP, async () => {
+    // Control: the same body from the same origin is the body gate's 400.
+    const control = await middleware(actionRequest('{{{', { origin: APP }))
+    assert.ok(control, 'control: a response')
+    assert.equal(control.status, 400, 'control: same origin, non-JSON body, the body gate answers 400')
 
-  await assertRefused403(await middleware(actionRequest('{{{', { origin: FOREIGN_ORIGIN })), 'foreign origin, non-JSON body')
-  await assertRefused403(await middleware(actionRequest(null, { origin: FOREIGN_ORIGIN })), 'foreign origin, no body')
+    await assertRefused403(await middleware(actionRequest('{{{', { origin: FOREIGN_ORIGIN })), 'foreign origin, non-JSON body')
+    await assertRefused403(await middleware(actionRequest(null, { origin: FOREIGN_ORIGIN })), 'foreign origin, no body')
+  })
 })
 
 test('9: a foreign Origin on a multipart body answers 403', async () => {
@@ -214,36 +315,70 @@ test('9: a foreign Origin on a multipart body answers 403', async () => {
     headers: { host: SAME_HOST, 'next-action': ACTION_ID, origin: FOREIGN_ORIGIN },
     body: form,
   })
-  await assertRefused403(await middleware(request), 'foreign origin, multipart')
+  await withAppOrigin(APP, async () => {
+    await assertRefused403(await middleware(request), 'foreign origin, multipart')
+  })
 })
 
 test('9: an unparseable Origin answers 403', async () => {
   const { middleware } = await loadMiddleware()
-  await assertRefused403(await middleware(actionRequest('[]', { origin: 'null' })), 'Origin: null')
-  await assertRefused403(await middleware(actionRequest('[]', { origin: 'garbage' })), 'Origin: garbage')
+  await withAppOrigin(APP, async () => {
+    await assertRefused403(await middleware(actionRequest('[]', { origin: 'null' })), 'Origin: null')
+    await assertRefused403(await middleware(actionRequest('[]', { origin: 'garbage' })), 'Origin: garbage')
+  })
 })
 
 test('9: a same-origin action passes through to the body gate as before', async () => {
   const { middleware } = await loadMiddleware()
-  // The first line is what fails before the change; the rest holds today.
-  await assertRefused403(await middleware(actionRequest('[]', { origin: FOREIGN_ORIGIN })), 'control: foreign origin')
+  await withAppOrigin(APP, async () => {
+    // The first line is what fails before the change; the rest holds today.
+    await assertRefused403(await middleware(actionRequest('[]', { origin: FOREIGN_ORIGIN })), 'control: foreign origin')
 
-  assertPassedThrough(await middleware(actionRequest('["$K1"]', { origin: `https://${SAME_HOST}` })), 'same origin, JSON body')
-  assertPassedThrough(await middleware(actionRequest('["$K1"]', {})), 'no Origin header, JSON body')
+    assertPassedThrough(await middleware(actionRequest('["$K1"]', { origin: APP })), 'same origin, JSON body')
+    assertPassedThrough(await middleware(actionRequest('["$K1"]', {})), 'no Origin header, JSON body')
 
-  const rejected = await middleware(actionRequest('{{{', { origin: `https://${SAME_HOST}` }))
-  assert.ok(rejected)
-  assert.equal(rejected.status, 400, 'same origin, non-JSON body: the body gate still answers 400')
-  assert.equal(await rejected.text(), '', 'the 400 stays empty')
+    const rejected = await middleware(actionRequest('{{{', { origin: APP }))
+    assert.ok(rejected)
+    assert.equal(rejected.status, 400, 'same origin, non-JSON body: the body gate still answers 400')
+    assert.equal(await rejected.text(), '', 'the 400 stays empty')
+  })
 })
 
-test('9: the expected host is the first x-forwarded-host value when the request carries one', async () => {
+test('9: the request headers cannot talk the gate round: host and x-forwarded-host naming the Origin do not help', async () => {
   const { middleware } = await loadMiddleware()
-  const behindProxy = { 'x-forwarded-host': 'a.example, b.example' }
-  await assertRefused403(
-    await middleware(actionRequest('[]', { ...behindProxy, origin: `https://${SAME_HOST}` })),
-    'origin equal to host but not to the forwarded host',
-  )
-  assertPassedThrough(await middleware(actionRequest('["$K1"]', { ...behindProxy, origin: 'https://a.example' })), 'origin equal to the first forwarded host')
-  await assertRefused403(await middleware(actionRequest('[]', { ...behindProxy, origin: 'https://b.example' })), 'origin equal to the second forwarded host')
+  await withAppOrigin(APP, async () => {
+    const foreignHost = 'w34canary-origin2.example'
+    await assertRefused403(
+      await middleware(actionRequest('[]', { host: foreignHost, 'x-forwarded-host': foreignHost, origin: `http://${foreignHost}` })),
+      'host and x-forwarded-host equal to the Origin',
+    )
+    await assertRefused403(
+      await middleware(actionRequest('[]', { 'x-forwarded-host': 'a.example, b.example', origin: 'https://a.example' })),
+      'first forwarded host equal to the Origin',
+    )
+    // The converse: odd host headers do not refuse an Origin that matches APP_ORIGIN.
+    assertPassedThrough(
+      await middleware(actionRequest('["$K1"]', { host: foreignHost, 'x-forwarded-host': foreignHost, origin: APP })),
+      'Origin equal to APP_ORIGIN, host headers elsewhere',
+    )
+  })
+})
+
+test('9: middleware reads APP_ORIGIN at call time; a missing or unparseable APP_ORIGIN refuses an Origin-bearing POST', async () => {
+  const { middleware } = await loadMiddleware()
+  const request = (): NextRequest => actionRequest('["$K1"]', { origin: 'https://other.w34-test.example' })
+
+  await withAppOrigin(APP, async () => {
+    await assertRefused403(await middleware(request()), 'APP_ORIGIN names another host')
+  })
+  await withAppOrigin('https://other.w34-test.example', async () => {
+    assertPassedThrough(await middleware(request()), 'APP_ORIGIN names the Origin host')
+  })
+  await withAppOrigin(undefined, async () => {
+    await assertRefused403(await middleware(request()), 'APP_ORIGIN unset')
+    assertPassedThrough(await middleware(actionRequest('["$K1"]', {})), 'APP_ORIGIN unset, no Origin: still passes')
+  })
+  await withAppOrigin('garbage', async () => {
+    await assertRefused403(await middleware(request()), 'APP_ORIGIN unparseable')
+  })
 })
