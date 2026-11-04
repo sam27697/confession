@@ -10,7 +10,7 @@ import { originAllowed } from './src/origin-gate.js'
 // 33 spec, section 1.2). An action from a foreign Origin gets a bare 403
 // before Next would log that Origin (week 34 spec, section 7).
 export async function middleware(request: NextRequest) {
-  if (!originAllowed(request.headers, request.method)) {
+  if (!originAllowed(request.headers, request.method, process.env.APP_ORIGIN)) {
     return new NextResponse(null, { status: 403 })
   }
   const actionId = request.headers.get('next-action')
