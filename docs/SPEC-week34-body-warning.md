@@ -149,3 +149,35 @@ A new test file under `test/` that, without network and without a database:
    `cloneBodyStream()` a stream with a `url` carrying a canary and more than
    the limit, captures `console.warn`, and shows one line, with the warning
    text, without the canary.
+
+## §6 Amendment, 2026-11-04 22:3x, after the first test run
+
+**What was wrong with §1.2.** `prebuild` patched `node_modules/next/dist` in
+place. After any local `npm run build`, the installed Next is no longer the
+one `package-lock.json` describes, and §5's tests, which copy "the real
+installed files" as the unpatched original, went red on 5 of 15 (1, 4a, 4d,
+4e, 6; test 6's own control said `the unpatched copy should carry the
+canary`). The tests were right: the installed tree had been changed under
+them. Measured: the same file passes 15 of 15 in the test author's tree,
+where no build ran, against the same script.
+
+**The change.** Nothing touches `node_modules`. The patch runs on the copy
+that ships, after the build:
+
+- The script takes an optional directory: `patch-next-body-warning.mjs
+  <dir>` patches every target under `<dir>` by §1.1's rules; with no
+  argument it patches `node_modules/next/dist` as before (§1.1 is otherwise
+  unchanged, and §5's tests of it stand).
+- `package.json`: no `prebuild`.
+  `"postbuild": "node scripts/patch-next-body-warning.mjs .next/standalone && node scripts/patch-next-body-warning.mjs --check .next/standalone"`.
+  The standalone tree holds copies made by the trace, not links (measured:
+  different inodes), so this leaves `node_modules` byte-identical to the
+  lockfile's package.
+- §3's third residual changes: only the copies the trace put into
+  `.next/standalone` are patched (tonight, `dist/server/body-streams.js`).
+  If a later Next loads another copy, the trace carries that one in, and
+  the patch either rewrites it or fails the build on it.
+
+**Acceptance, added to §5 (same author):** item 5 becomes this section's
+strings; a new item shows `<dir>` mode patches a scratch tree laid out like
+`.next/standalone` and leaves a sibling `node_modules/next/dist` untouched.
