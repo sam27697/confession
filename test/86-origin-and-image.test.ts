@@ -74,6 +74,9 @@ test('7: next.config.mjs sets images.unoptimized to true, and nothing in app/ or
   const images = (config as { images?: { unoptimized?: unknown } } | undefined)?.images
   assert.ok(images && typeof images === 'object', 'the config must carry an images block')
   assert.equal(images.unoptimized, true, 'images.unoptimized must be exactly true')
+  // Spec 7.5: Next builds its image cache before it checks unoptimized, and
+  // would try to create .next/cache/images, which the image leaves unwritable.
+  assert.equal((images as { maximumDiskCacheSize?: unknown }).maximumDiskCacheSize, 0, 'images.maximumDiskCacheSize must be exactly 0')
 
   // The endpoint is switched off, so nothing may rely on it (spec 7.1 item 1).
   const files = [...sourceFiles(path.join(REPO_ROOT, 'app')), ...sourceFiles(path.join(REPO_ROOT, 'src'))]
