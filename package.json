@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/patch-next-body-warning.mjs .next/standalone && node scripts/patch-next-body-warning.mjs --check .next/standalone",
     "start": "next start",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
