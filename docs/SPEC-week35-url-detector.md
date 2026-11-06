@@ -192,3 +192,28 @@ what decides. The first edge fixtures measured 420 in the unpatched text
 with the assignment between the name and the warning; rewriting it shortens
 the text by about 35 characters, so the name sat about 385 away and was
 rightly flagged. The test is re-measured, the rule is unchanged.
+
+## §6 Independent review, pass 2, 2026-11-06 22:4x: PASS
+
+Reviewed the script at `9a7accb` (unchanged at `4f6c1c8`), read only,
+scratch fixtures. The four pass-1 fixtures are flagged in both modes; the
+pass-1 omissions are flagged (positional `url`, `${url.slice(0,80)}`,
+`.host`, `.hostname`, `.origin`, `.path`, `.referrer`, `.cookies`,
+`.socket`, `getHeader("host")` through the string, `.mjs` and `.cjs`) or
+named in §5.2 (`${String(u)}`, `JSON.stringify(readable)`, `baseUrl`,
+`uri`, `requestUrl`, `req.method`). No false positive on the three real
+copies or on `.next/standalone`. Measured edges: flagged up to 395
+characters after the end of the text and 397 before its start. Worst
+timing found: 2.11 s on 5 MB of dense warnings each followed by a run of
+`url`. Mutation: 39 mutants, 38 red.
+
+Recorded, not closed:
+
+- **`WINDOW = 420` survives.** The tests pin the window between about 390
+  and 420, so a drift inside that band would pass. It errs toward flagging
+  more.
+- **Carried from §5.2 and the pass-2 brief:** `ASSIGNMENT` is quadratic on
+  a long run of identifier characters (unchanged code; 150 KB of one
+  identifier took 23 s; real minified files have no such runs); a run that
+  patches one file and fails on another has written the first; a name cut
+  by the window edge can read as a shorter listed name and is flagged.
