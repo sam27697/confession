@@ -461,7 +461,11 @@ function gapOf(text: string, name: string, side: 'before' | 'after'): number {
   return side === 'after' ? nameAt - (start + WARNING_TEXT.length) : start - (nameAt + name.length)
 }
 
+// The gap is measured in the text that is judged (spec §5.4): with the known
+// assignment present, the patch run judges the text after it is rewritten, so
+// the fixture is measured on that form and the file written is the unpatched one.
 function edgeFixture(side: 'before' | 'after', gap: number, name: string, withAssignment: boolean): string {
+  const judged = (t: string): string => (withAssignment ? t.replace(KNOWN_ASSIGNMENT, PATCHED_ASSIGNMENT) : t)
   const assignment = withAssignment ? '  const ' + KNOWN_ASSIGNMENT + ';\n' : ''
   const warnLine = withAssignment ? WARNING_LINE_ASSIGNED : WARNING_LINE_PLAIN
   const build = (pad: number): string => {
@@ -470,10 +474,10 @@ function edgeFixture(side: 'before' | 'after', gap: number, name: string, withAs
     const body = side === 'after' ? assignment + warnLine + comment + marker : marker + comment + assignment + warnLine
     return 'function a(readable) {\n' + body + '}\n'
   }
-  const measured = gapOf(build(0), name, side)
+  const measured = gapOf(judged(build(0)), name, side)
   assert.ok(gap >= measured, 'the gap is too small for the fixture')
   const text = build(gap - measured)
-  assert.equal(gapOf(text, name, side), gap, 'the fixture should put the name exactly the requested distance away')
+  assert.equal(gapOf(judged(text), name, side), gap, 'the fixture should put the name exactly the requested distance away in the judged text')
   return text
 }
 
