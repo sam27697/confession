@@ -1,10 +1,10 @@
 // test/87-url-detector.test.ts
 //
-// docs/SPEC-week35-url-detector.md §3: acceptance for the wider url detector in
-// scripts/patch-next-body-warning.mjs (the destructure and object-key shape, the
-// bracket and member shapes, the bare template, and the longer list of names).
-// Written from the spec only: the change to the script was not opened while
-// writing this file.
+// docs/SPEC-week35-url-detector.md §3 and §5.3 (§5.3 wins where they differ):
+// acceptance for the wider url detector in scripts/patch-next-body-warning.mjs.
+// Any whole-word occurrence of one of 19 names within 400 characters of the
+// warning text is flagged, in .js, .mjs and .cjs targets. Written from the spec
+// only: the change to the script was not opened while writing this file.
 //
 // The script is always run as a subprocess (process.execPath) with its cwd set
 // to a scratch directory. A target is a .js file under scratch
@@ -33,7 +33,7 @@ const COPIES = [
   'compiled/next-server/server.runtime.prod.js',
 ]
 
-// Spec §1: the names the detector knows.
+// Spec §5.1: the names the detector knows.
 const NAMES = [
   'url',
   'originalUrl',
@@ -45,7 +45,18 @@ const NAMES = [
   'query',
   'headers',
   'rawHeaders',
+  'host',
+  'hostname',
+  'origin',
+  'referer',
+  'referrer',
+  'cookies',
+  'path',
+  'ip',
+  'socket',
 ]
+
+const WARNING_TEXT = 'Request body exceeded'
 
 // --- scratch helpers ---------------------------------------------------
 
@@ -118,46 +129,59 @@ function assertRejected(fileName: string, text: string): void {
 // --- fixture text ------------------------------------------------------
 
 // A function with the warning line in the middle. `before` and `after` are
-// whole statements; `inWarning` is text spliced into the warning after " for ".
-// None of it holds the known assignment.
-function fixture(opts: { before?: string[]; inWarning?: string; after?: string[] }): string {
+// whole statements; `inWarning` is text spliced into the template warning after
+// " for "; `warnLine` replaces the warning line outright; `param` is the
+// function's parameter. None of it holds the known assignment.
+function fixture(opts: {
+  param?: string
+  before?: string[]
+  inWarning?: string
+  warnLine?: string
+  after?: string[]
+}): string {
   const tail = opts.inWarning === undefined ? '' : ' for ' + opts.inWarning
-  const warn = 'console.warn(`Request body exceeded 10MB' + tail + '. Only the first 10MB`);'
-  return ['function a(r) {', ...(opts.before ?? []).map((s) => '  ' + s), '  ' + warn, ...(opts.after ?? []).map((s) => '  ' + s), '}', ''].join('\n')
+  const warn = opts.warnLine ?? 'console.warn(`Request body exceeded 10MB' + tail + '. Only the first 10MB`);'
+  return [
+    `function a(${opts.param ?? 'r'}) {`,
+    ...(opts.before ?? []).map((s) => '  ' + s),
+    '  ' + warn,
+    ...(opts.after ?? []).map((s) => '  ' + s),
+    '}',
+    '',
+  ].join('\n')
 }
 
-type Form = { label: string; before?: string[]; inWarning?: string }
+type Form = { label: string; fixture: string }
 
-// Spec §1, shapes 1 to 4, for one NAME. The first form of each shape is the one
-// the spec table names; the others are the spellings the rule lists for it.
-function formsFor(shape: 1 | 2 | 3 | 4, n: string): Form[] {
-  switch (shape) {
-    case 1:
-      return [
-        { label: `r.${n}`, inWarning: '${r.' + n + '}' },
-        { label: `r?.${n}`, inWarning: '${r?.' + n + '}' },
-      ]
-    case 2:
-      return [
-        { label: `r['${n}']`, inWarning: "${r['" + n + "']}" },
-        { label: `r["${n}"]`, inWarning: '${r["' + n + '"]}' },
-        { label: 'r[`' + n + '`]', inWarning: '${r[`' + n + '`]}' },
-      ]
-    case 3:
-      return [
-        { label: `{ ${n}: u }`, before: [`const { ${n}: u } = r;`], inWarning: '${u}' },
-        { label: `{ ${n} }`, before: [`const { ${n} } = r;`] },
-        { label: `{${n}, method}`, before: [`const {${n}, method} = r;`] },
-        { label: `{${n} = ''}`, before: [`const {${n} = ''} = r;`] },
-        { label: `{'${n}': u}`, before: [`const {'${n}': u} = r;`] },
-        { label: `, ${n} }`, before: [`const { method, ${n} } = r;`] },
-      ]
-    case 4:
-      return [
-        { label: '${' + n + '}', inWarning: '${' + n + '}' },
-        { label: '${ ' + n + ' }', inWarning: '${ ' + n + ' }' },
-      ]
-  }
+// Spec §5.3 item 1: one NAME in each of the listed positions.
+function formsFor(n: string): Form[] {
+  const tpl = (inWarning: string): string => fixture({ inWarning })
+  return [
+    { label: `member r.${n}`, fixture: tpl('${r.' + n + '}') },
+    { label: `optional member r?.${n}`, fixture: tpl('${r?.' + n + '}') },
+    { label: `bracket r['${n}']`, fixture: tpl("${r['" + n + "']}") },
+    { label: `bracket r["${n}"]`, fixture: tpl('${r["' + n + '"]}') },
+    { label: 'bracket r[`' + n + '`]', fixture: tpl('${r[`' + n + '`]}') },
+    { label: `destructure { ${n}: u }`, fixture: fixture({ before: [`const { ${n}: u } = r;`], inWarning: '${u}' }) },
+    { label: `shorthand { ${n} }`, fixture: fixture({ before: [`const { ${n} } = r;`] }) },
+    { label: `shorthand {${n}, method}`, fixture: fixture({ before: [`const {${n}, method} = r;`] }) },
+    { label: `shorthand { method, ${n} }`, fixture: fixture({ before: [`const { method, ${n} } = r;`] }) },
+    { label: `default {${n} = ''}`, fixture: fixture({ before: [`const {${n} = ''} = r;`] }) },
+    { label: `double-quoted key {"${n}": u}`, fixture: fixture({ before: [`const {"${n}": u} = r;`] }) },
+    { label: `single-quoted key {'${n}': u}`, fixture: fixture({ before: [`const {'${n}': u} = r;`] }) },
+    { label: 'bare template ${' + n + '}', fixture: tpl('${' + n + '}') },
+    { label: 'bare template ${ ' + n + ' }', fixture: tpl('${ ' + n + ' }') },
+    {
+      label: `positional argument (..., ${n})`,
+      fixture: fixture({ warnLine: `console.warn('Request body exceeded 10MB for', ${n});` }),
+    },
+    { label: `parameter (${n})`, fixture: fixture({ param: n }) },
+    { label: 'call inside a template ${' + n + '.slice(0, 80)}', fixture: tpl('${' + n + '.slice(0, 80)}') },
+    {
+      label: `concatenation '...' + ${n}`,
+      fixture: fixture({ warnLine: `console.warn('Request body exceeded 10MB for ' + ${n} + '. Only the first 10MB');` }),
+    },
+  ]
 }
 
 const SHAPE_TITLE = {
@@ -167,19 +191,18 @@ const SHAPE_TITLE = {
   4: 'bare template',
 } as const
 
-// --- 1. every NAME times shapes 1 to 4 ---------------------------------
+// --- 1. every NAME in every listed position ----------------------------
 //
-// One test per case. On a tree without the change, the cases for url and
-// originalUrl in shapes 1, 2 and 4 already pass (week 34 covered them).
+// One test per case. On the unchanged script the cases for url and originalUrl
+// in member, bracket and bare-template positions already pass (week 34 covered
+// them).
 
 for (const n of NAMES) {
-  for (const shape of [1, 2, 3, 4] as const) {
-    formsFor(shape, n).forEach((form, i) => {
-      test(`1: ${n}, shape ${shape} (${SHAPE_TITLE[shape]}), ${form.label}: patch exits 1 and leaves the file, --check exits 1`, () => {
-        assertRejected(`s${shape}-${n}-${i}.js`, fixture({ before: form.before, inWarning: form.inWarning }))
-      })
+  formsFor(n).forEach((form, i) => {
+    test(`1: ${n}, ${form.label}: patch exits 1 and leaves the file, --check exits 1`, () => {
+      assertRejected(`p${i}-${n}.js`, form.fixture)
     })
-  }
+  })
 }
 
 // --- 2. the four shapes of spec §0, as written in its table ------------
@@ -342,9 +365,29 @@ for (const [label, before] of NOT_FLAGGED) {
   })
 }
 
-// Spec §1 shape 3 flags NAME after `{` or `,` only when it is followed by `:`,
-// `,`, `}` or a `=` that is not followed by `=`. So `==` and `===` after the
-// name are comparisons and are not flagged.
+// Spec §5.3: the name is judged whole-word and case sensitive, so URL, Headers
+// and Host are not names.
+const NOT_FLAGGED_CASE: Array<[label: string, before: string[]]> = [
+  ['URL', ["const base = new URL('https://example.invalid/');"]],
+  ['Headers', ['const h = new Headers(opts.init);']],
+  ['Host', ['const H = opts.Host;']],
+]
+
+for (const [label, before] of NOT_FLAGGED_CASE) {
+  test(`5: ${label} (case differs from a name) beside the known assignment: patch exits 0, --check exits 0`, () => {
+    assertPatchedAndChecked(withKnownAssignment(before, []), 'case-sensitive.js')
+  })
+}
+
+test('5: URL, Headers and Host in one window: patch exits 0, --check exits 0', () => {
+  assertPatchedAndChecked(withKnownAssignment(NOT_FLAGGED_CASE.flatMap(([, before]) => before), []), 'case-sensitive-all.js')
+})
+
+// --- 5b. comparisons are flagged now (spec §5.1) -----------------------
+//
+// Under the first rule `, url === b` was left alone. Under the whole-word rule
+// anything that names a request part next to the warning is flagged.
+
 for (const n of ['url', 'nextUrl', 'headers']) {
   const COMPARISONS: Array<[label: string, before: string[]]> = [
     [`, ${n} === b`, [`if (ok, ${n} === b) return;`]],
@@ -354,11 +397,154 @@ for (const n of ['url', 'nextUrl', 'headers']) {
     [`{${n}===b}`, [`if (ok) {${n}===b}`]],
   ]
   for (const [label, before] of COMPARISONS) {
-    test(`5: ${label} (a comparison, not an assignment) beside the known assignment: patch exits 0, --check exits 0`, () => {
-      assertPatchedAndChecked(withKnownAssignment(before, []), 'comparison-after-name.js')
+    test(`5b: ${label} in the window: patch exits 1 and leaves the file, --check exits 1`, () => {
+      assertRejected('comparison-after-name.js', fixture({ before }))
+    })
+    test(`5b: ${label} beside the known assignment: patch exits 1 and the file on disk is unchanged`, () => {
+      withScratch((root) => {
+        const dist = distOf(root)
+        const text = withKnownAssignment(before, [])
+        const file = writeFixture(dist, 'server/comparison-plus-assignment.js', text)
+        const patch = runScript(root)
+        assertReportedFailure(patch)
+        assert.ok(patch.out.includes('comparison-plus-assignment.js'), `the failing file should be named: ${patch.out}`)
+        assert.ok(readFileSync(file, 'utf8') === text, 'the file on disk changed')
+      })
     })
   }
 }
+
+// --- 7. the review's fixtures: things before the dot or after the name -
+//
+// `/p`.url, "/p".url, {}.url and ...url passed both modes under the first rule.
+
+const REVIEW_FIXTURES: Array<[label: string, statement: string]> = [
+  ['a template literal then .url', 'const x = `/p`.url;'],
+  ['a string literal then .url', 'const x = "/p".url;'],
+  ['an empty object then .url', 'const x = {}.url;'],
+  ['a spread of url', 'const x = [...url];'],
+]
+
+REVIEW_FIXTURES.forEach(([label, statement], i) => {
+  test(`7: ${label} before the warning is flagged in both modes`, () => {
+    assertRejected(`review-${i}.js`, fixture({ before: [statement] }))
+  })
+  test(`7: ${label} after the warning is flagged in both modes`, () => {
+    assertRejected(`review-after-${i}.js`, fixture({ after: [statement] }))
+  })
+})
+
+test('7: a decoded url inside the template is flagged in both modes', () => {
+  assertRejected('decode-uri.js', fixture({ inWarning: '${decodeURI(url)}' }))
+})
+
+// --- 8. the window edges (spec §5.1, §5.3) ------------------------------
+//
+// 400 characters after the end of the warning text and 400 before its start.
+// The flagged cases put the name 390 away, the clean cases 420 away, so the
+// result does not depend on whether the edge counts the name's first or last
+// character. The padding is a line comment of x characters.
+
+const WARNING_LINE_PLAIN = "  console.warn('Request body exceeded 10MB. Only the first 10MB');\n"
+const WARNING_LINE_ASSIGNED = '  console.warn(`Request body exceeded 10MB${urlInfo}. Only the first 10MB`);\n'
+
+// The distance, in characters, from the end of the warning text to the first
+// character of `name` ('after'), or from the last character of `name` to the
+// start of the warning text ('before').
+function gapOf(text: string, name: string, side: 'before' | 'after'): number {
+  const start = text.indexOf(WARNING_TEXT)
+  assert.equal(text.indexOf(WARNING_TEXT, start + 1), -1, 'the fixture should hold the warning text once')
+  const marker = `const v = ${name};`
+  const at = text.indexOf(marker)
+  assert.notEqual(at, -1, 'the fixture should hold the marker statement')
+  const nameAt = at + 'const v = '.length
+  return side === 'after' ? nameAt - (start + WARNING_TEXT.length) : start - (nameAt + name.length)
+}
+
+function edgeFixture(side: 'before' | 'after', gap: number, name: string, withAssignment: boolean): string {
+  const assignment = withAssignment ? '  const ' + KNOWN_ASSIGNMENT + ';\n' : ''
+  const warnLine = withAssignment ? WARNING_LINE_ASSIGNED : WARNING_LINE_PLAIN
+  const build = (pad: number): string => {
+    const comment = '  // ' + 'x'.repeat(pad) + '\n'
+    const marker = `  const v = ${name};\n`
+    const body = side === 'after' ? assignment + warnLine + comment + marker : marker + comment + assignment + warnLine
+    return 'function a(readable) {\n' + body + '}\n'
+  }
+  const measured = gapOf(build(0), name, side)
+  assert.ok(gap >= measured, 'the gap is too small for the fixture')
+  const text = build(gap - measured)
+  assert.equal(gapOf(text, name, side), gap, 'the fixture should put the name exactly the requested distance away')
+  return text
+}
+
+for (const name of ['url', 'nextUrl', 'host']) {
+  for (const side of ['after', 'before'] as const) {
+    test(`8: ${name} 390 characters ${side} the warning text is flagged in both modes`, () => {
+      assertRejected(`edge-${side}-390-${name}.js`, edgeFixture(side, 390, name, false))
+    })
+    test(`8: ${name} 390 characters ${side} the warning text, beside the known assignment: patch exits 1 and the file is unchanged`, () => {
+      withScratch((root) => {
+        const text = edgeFixture(side, 390, name, true)
+        const file = writeFixture(distOf(root), 'server/edge-assigned.js', text)
+        const patch = runScript(root)
+        assertReportedFailure(patch)
+        assert.ok(readFileSync(file, 'utf8') === text, 'the file on disk changed')
+      })
+    })
+    test(`8: ${name} 420 characters ${side} the warning text is not flagged: patch exits 0, --check exits 0`, () => {
+      assertPatchedAndChecked(edgeFixture(side, 420, name, true), 'edge-420.js')
+    })
+  }
+}
+
+// --- 9. every occurrence of the warning text is judged ------------------
+
+const FILLER_LINES = Array.from({ length: 12 }, () => '// ' + 'x'.repeat(96)).join('\n')
+const CLEAN_FN = (fnName: string): string =>
+  `function ${fnName}() {\n  console.warn('Request body exceeded 10MB. Only the first 10MB');\n}\n`
+const NAMED_FN = (fnName: string): string =>
+  'function ' + fnName + '(r) {\n  console.warn(`Request body exceeded 10MB for ${r.host}. Only the first 10MB`);\n}\n'
+
+test('9: two occurrences, the first clean and the second carrying a name: both modes fail', () => {
+  assertRejected('two-occurrences-second.js', [CLEAN_FN('first'), FILLER_LINES, NAMED_FN('second')].join('\n'))
+})
+
+test('9: two occurrences, the first carrying a name and the second clean: both modes fail', () => {
+  assertRejected('two-occurrences-first.js', [NAMED_FN('first'), FILLER_LINES, CLEAN_FN('second')].join('\n'))
+})
+
+test('9: two clean occurrences far apart: patch exits 0, --check exits 0', () => {
+  withScratch((root) => {
+    const dist = distOf(root)
+    writeFixture(dist, 'server/two-clean.js', [CLEAN_FN('first'), FILLER_LINES, CLEAN_FN('second')].join('\n'))
+    const patch = runScript(root)
+    assert.equal(patch.status, 0, `patch run should exit 0: ${patch.out}`)
+    const check = runScript(root, ['--check', dist])
+    assert.equal(check.status, 0, `--check should exit 0: ${check.out}`)
+  })
+})
+
+// --- 10. .mjs and .cjs targets ------------------------------------------
+
+for (const ext of ['mjs', 'cjs']) {
+  test(`10: a .${ext} target that carries a name is found and fails in both modes`, () => {
+    assertRejected(`carries-name.${ext}`, fixture({ inWarning: '${r.host}' }))
+  })
+  test(`10: a .${ext} target with the known assignment is found, patched, and then passes --check`, () => {
+    assertPatchedAndChecked(withKnownAssignment([], []), `known.${ext}`)
+  })
+  test(`10: a .${ext} target with the known assignment plus a name fails and is left unchanged`, () => {
+    withScratch((root) => {
+      const text = withKnownAssignment(['const o = { host };'], [])
+      const file = writeFixture(distOf(root), `server/known-plus-name.${ext}`, text)
+      const patch = runScript(root)
+      assertReportedFailure(patch)
+      assert.ok(patch.out.includes(`known-plus-name.${ext}`), `the failing file should be named: ${patch.out}`)
+      assert.ok(readFileSync(file, 'utf8') === text, 'the file on disk changed')
+    })
+  })
+}
+
 
 // --- 6. regression: the three real files -------------------------------
 
