@@ -182,3 +182,13 @@ stops the build either way, so nothing ships from it.
 - New: a file with two occurrences of the warning, the first clean and the
   second carrying a name, fails.
 - New: a `.mjs` and a `.cjs` target are each found and judged like `.js`.
+
+### §5.4 Clarification, 2026-11-06 22:3x: which text the distance is measured in
+
+A distance in §5.1 and §5.3 is measured in the text being judged. For
+`--check` that is the file as it is. For the patch run it is the text
+after the known assignment is rewritten, because the post-patch check is
+what decides. The first edge fixtures measured 420 in the unpatched text
+with the assignment between the name and the warning; rewriting it shortens
+the text by about 35 characters, so the name sat about 385 away and was
+rightly flagged. The test is re-measured, the rule is unchanged.
