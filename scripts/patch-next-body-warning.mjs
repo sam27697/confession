@@ -24,10 +24,20 @@ const WARNING = 'Request body exceeded'
 // the same statement. The real copies keep it within about 60 characters.
 const WINDOW = 400
 const ASSIGNMENT = /([\w$]+)\s*=\s*([\w$]+)\.url\s*\?\s*` for \$\{\2\.url\}`\s*:\s*(''|"")/g
-// Also `?.url`, `.originalUrl`, `['url']` and a destructured `${url}`
-// (week 34 spec §7, review F3). A warning that interpolates a header value
-// would still pass; this knows the shapes the url comes in, nothing more.
-const ANY_URL = /(?:[\w$)\]]\s*|\?)\.\s*(?:url|originalUrl)\b|\[\s*['"`](?:url|originalUrl)['"`]\s*\]|\$\{\s*(?:url|originalUrl)\s*\}/
+// Any part of the request the sender writes, reached as `.name`, `?.name`,
+// `['name']`, a destructure or object key (`{url: u}`, `{ url }`,
+// `{url = ''}`) or a bare `${name}` (week 34 spec §7, review F3; week 35
+// spec §1). This knows the shapes, nothing more: a url read further away
+// than WINDOW, or through a name not listed here, still passes.
+const NAMES = 'url|originalUrl|nextUrl|href|pathname|search|searchParams|query|headers|rawHeaders'
+const ANY_URL = new RegExp(
+  [
+    String.raw`(?:[\w$)\]]\s*|\?)\.\s*(?:${NAMES})(?![\w$])`,
+    String.raw`\[\s*['"\x60](?:${NAMES})['"\x60]\s*\]`,
+    String.raw`[{,]\s*(?:${NAMES}|'(?:${NAMES})'|"(?:${NAMES})")\s*(?:[:,}]|=(?!=))`,
+    String.raw`\$\{\s*(?:${NAMES})\s*\}`,
+  ].join('|'),
+)
 
 function fail(message) {
   console.error(`patch-next-body-warning: ${message}`)
