@@ -342,6 +342,24 @@ for (const [label, before] of NOT_FLAGGED) {
   })
 }
 
+// Spec §1 shape 3 flags NAME after `{` or `,` only when it is followed by `:`,
+// `,`, `}` or a `=` that is not followed by `=`. So `==` and `===` after the
+// name are comparisons and are not flagged.
+for (const n of ['url', 'nextUrl', 'headers']) {
+  const COMPARISONS: Array<[label: string, before: string[]]> = [
+    [`, ${n} === b`, [`if (ok, ${n} === b) return;`]],
+    [`, ${n} == b`, [`if (ok, ${n} == b) return;`]],
+    [`{ ${n} == null }`, [`if (ok) { ${n} == null }`]],
+    [`{ ${n} === null }`, [`if (ok) { ${n} === null }`]],
+    [`{${n}===b}`, [`if (ok) {${n}===b}`]],
+  ]
+  for (const [label, before] of COMPARISONS) {
+    test(`5: ${label} (a comparison, not an assignment) beside the known assignment: patch exits 0, --check exits 0`, () => {
+      assertPatchedAndChecked(withKnownAssignment(before, []), 'comparison-after-name.js')
+    })
+  }
+}
+
 // --- 6. regression: the three real files -------------------------------
 
 test('6: a scratch copy of the three real files patches with exit 0 and --check exits 0', () => {
