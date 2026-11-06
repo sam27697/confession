@@ -20,24 +20,23 @@ import { readFileSync, writeFileSync, readdirSync, lstatSync } from 'node:fs'
 import path from 'node:path'
 
 const WARNING = 'Request body exceeded'
-// How far either side of the warning text a url may sit and still be part of
-// the same statement. The real copies keep it within about 60 characters.
+// How far before the start and after the end of the warning text a url may
+// sit and still be part of the same statement. The real copies keep it
+// within about 60 characters; the nearest request part in the minified copy
+// is about 600 before (week 35 spec §5.1).
 const WINDOW = 400
 const ASSIGNMENT = /([\w$]+)\s*=\s*([\w$]+)\.url\s*\?\s*` for \$\{\2\.url\}`\s*:\s*(''|"")/g
-// Any part of the request the sender writes, reached as `.name`, `?.name`,
-// `['name']`, a destructure or object key (`{url: u}`, `{ url }`,
-// `{url = ''}`) or a bare `${name}` (week 34 spec §7, review F3; week 35
-// spec §1). This knows the shapes, nothing more: a url read further away
-// than WINDOW, or through a name not listed here, still passes.
-const NAMES = 'url|originalUrl|nextUrl|href|pathname|search|searchParams|query|headers|rawHeaders'
-const ANY_URL = new RegExp(
-  [
-    String.raw`(?:[\w$)\]]\s*|\?)\.\s*(?:${NAMES})(?![\w$])`,
-    String.raw`\[\s*['"\x60](?:${NAMES})['"\x60]\s*\]`,
-    String.raw`[{,]\s*(?:${NAMES}|'(?:${NAMES})'|"(?:${NAMES})")\s*(?:[:,}]|=(?!=))`,
-    String.raw`\$\{\s*(?:${NAMES})\s*\}`,
-  ].join('|'),
-)
+// Any part of the request the sender writes, named as a whole word anywhere
+// in the window: `.url`, `['url']`, `{url: u}`, `${url}`, `f(x, url)`,
+// `url.slice(0, 80)` alike (week 34 spec §7, week 35 spec §5.1). This knows
+// names, nothing more: a part read through a name not listed here, or
+// assigned further away than WINDOW, still passes.
+const NAMES = [
+  'url', 'originalUrl', 'nextUrl', 'href', 'pathname', 'search', 'searchParams', 'query',
+  'headers', 'rawHeaders', 'host', 'hostname', 'origin', 'referer', 'referrer', 'cookies',
+  'path', 'ip', 'socket',
+]
+const ANY_URL = new RegExp(String.raw`(?<![\w$])(?:${NAMES.join('|')})(?![\w$])`)
 
 function fail(message) {
   console.error(`patch-next-body-warning: ${message}`)
@@ -50,7 +49,7 @@ function walk(dir, out) {
     const st = lstatSync(full)
     if (st.isSymbolicLink()) continue
     if (st.isDirectory()) walk(full, out)
-    else if (st.isFile() && name.endsWith('.js')) out.push(full)
+    else if (st.isFile() && /\.[cm]?js$/.test(name)) out.push(full)
   }
   return out
 }
@@ -63,7 +62,7 @@ function targets(dir) {
 function carriesUrl(text) {
   let at = text.indexOf(WARNING)
   while (at !== -1) {
-    if (ANY_URL.test(text.slice(Math.max(0, at - WINDOW), at + WINDOW))) return true
+    if (ANY_URL.test(text.slice(Math.max(0, at - WINDOW), at + WARNING.length + WINDOW))) return true
     at = text.indexOf(WARNING, at + WARNING.length)
   }
   return false
