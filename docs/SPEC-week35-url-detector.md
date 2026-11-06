@@ -108,3 +108,77 @@ there and keep passing.
 image builds on staging. The runtime code in the image is unchanged, so no
 request behaves differently; staging and production are checked from
 outside after the deploy as every week.
+
+## §5 Independent review, pass 1, 2026-11-06 22:0x: FAIL, and the amendment
+
+Reviewed at `780fdb8` by a separate reviewer, scratch fixtures only, no
+server. No false positive on the real copies, no live leak, no regex
+blow-up (`--check` 0.04 s on the real 204 KB runtime file, under 1 s on
+5 MB synthetic files). It failed the slice on conformance:
+
+1. **§1 shape 1 is narrower in code than in the spec.** The script required
+   an identifier character, `)`, `]` or `?` before the dot, so
+   `` `/p`.url ``, `"/p".url`, `{}.url` and `...url` passed both modes.
+2. **Shapes that are neither flagged nor listed in §2:** a url passed as a
+   positional argument (`console.warn('... for', url)`, a `(url)`
+   parameter); a call on the name inside the template (`${url.slice(0,80)}`,
+   `${decodeURI(u)}`); request parts outside the list (`host`, `hostname`,
+   `origin`, `path`, `referrer`, `cookies`); a `.mjs` or `.cjs` copy (the
+   walk read only `.js`); and the window ran from the start of the warning
+   text, so the side after it was about 20 characters short.
+3. **Tests that §1 states and nothing pins:** the double-quoted key, the
+   window edge, "every occurrence", and case sensitivity.
+
+### §5.1 The rule now (replaces §1's four shapes)
+
+Within the window, **any whole-word occurrence of a NAME** is flagged:
+the name not preceded and not followed by an identifier character
+(`[A-Za-z0-9_$]`), case sensitive. The four shapes of §1 are special cases
+of this, and it also catches positional arguments, parameters, calls on the
+name, concatenation and comparisons. So `if (ok, url === b)`, which §1 left
+alone, is now flagged: anything that names a request part next to the
+warning stops the build and gets read by a person. That is the tripwire's
+job; a false alarm costs a look, a miss costs the promise.
+
+NAME is now: `url`, `originalUrl`, `nextUrl`, `href`, `pathname`, `search`,
+`searchParams`, `query`, `headers`, `rawHeaders`, `host`, `hostname`,
+`origin`, `referer`, `referrer`, `cookies`, `path`, `ip`, `socket`.
+
+The window is `WINDOW` (400) characters before the start of the warning
+text and `WINDOW` characters after its end, for every occurrence.
+
+The walk reads `.js`, `.mjs` and `.cjs` files.
+
+Measured before amending: with the known assignment rewritten, the three
+real copies have **no** hit of any of the nineteen names in a 400 window.
+At 800 the minified copy would trip (`url`, `headers`, `host`, `query` from
+about 600 characters before), so `WINDOW` stays 400 and the margin is about
+200 characters.
+
+### §5.2 What this still does not claim (adds to §2)
+
+A request part reached through a name not in the list or assigned more than
+400 characters away; the whole request object passed on
+(`JSON.stringify(readable)`, `${readable}`); a warning whose text is split
+(`'Request body ' + 'exceeded'`) or reworded, which the walk does not find;
+symlinked directories, which it does not follow. A run that patches one
+file and then fails on another has already written the first; postbuild
+stops the build either way, so nothing ships from it.
+
+### §5.3 Acceptance, replacing §3 where they differ (same test author)
+
+- Item 1 becomes every NAME of §5.1, whole word, in at least these
+  positions: member, optional member, bracket in each quote, destructure
+  with `:`, shorthand, default and double-quoted key, bare template,
+  positional argument, parameter, call inside a template, concatenation.
+- Item 5 keeps the whole-name negatives (`urlInfo`, `hrefLang`,
+  `searchTerm`, `queryKey`, `headersSent`, `${urlInfo}`) and adds case:
+  `URL`, `Headers`, `Host` are not flagged. The `==` / `===` cases that
+  were negatives under §1 are now positives.
+- New: the review's four §5 item 1 fixtures are flagged in both modes.
+- New: a name 390 characters after the end of the warning text is
+  flagged; one 420 characters after it is not; the same on the side before,
+  measured from the start of the text.
+- New: a file with two occurrences of the warning, the first clean and the
+  second carrying a name, fails.
+- New: a `.mjs` and a `.cjs` target are each found and judged like `.js`.
