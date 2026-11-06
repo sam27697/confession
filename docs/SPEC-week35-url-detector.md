@@ -1,6 +1,6 @@
 # Week 35: the body-warning tripwire knows the destructure and request-part shapes
 
-Frozen 2026-11-06 22:0x, before the change to the script and before the
+Frozen 2026-11-06 21:4x, before the change to the script and before the
 test was written.
 
 ## §0 What is wrong, measured
