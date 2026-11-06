@@ -383,6 +383,37 @@ test('5: URL, Headers and Host in one window: patch exits 0, --check exits 0', (
   assertPatchedAndChecked(withKnownAssignment(NOT_FLAGGED_CASE.flatMap(([, before]) => before), []), 'case-sensitive-all.js')
 })
 
+// Spec §5.1: a name is also not preceded by an identifier character, so a
+// listed name that ends a longer identifier is not a name either.
+const NOT_FLAGGED_LEFT: Array<[label: string, before: string[]]> = [
+  ['curl', ['const curl = 1;', 'const k = opts.curl;']],
+  ['baseurl', ['const baseurl = 2;', 'const l = opts.baseurl;']],
+  ['$path', ['const $path = 3;', 'const m = opts.$path;']],
+  ['_host', ['const _host = 4;', 'const n = opts._host;']],
+  ['myheaders', ['const myheaders = 5;', 'const o = opts.myheaders;']],
+  ['x9search', ['const x9search = 6;', 'const p = opts.x9search;']],
+]
+
+test('5: curl, baseurl, $path, _host, myheaders and x9search in one window: patch exits 0, --check exits 0', () => {
+  assertPatchedAndChecked(
+    withKnownAssignment(['const curl = 1, baseurl = 2, $path = 3, _host = 4, myheaders = 5, x9search = 6;'], []),
+    'whole-names-left-combined.js',
+  )
+})
+
+test('5: every left-extended name in one window, as declarations and members: patch exits 0, --check exits 0', () => {
+  assertPatchedAndChecked(
+    withKnownAssignment(NOT_FLAGGED_LEFT.flatMap(([, before]) => before), []),
+    'whole-names-left-all.js',
+  )
+})
+
+for (const [label, before] of NOT_FLAGGED_LEFT) {
+  test(`5: ${label} (a name with a character before it) alone beside the known assignment: patch exits 0, --check exits 0`, () => {
+    assertPatchedAndChecked(withKnownAssignment(before, []), 'whole-names-left-one.js')
+  })
+}
+
 // --- 5b. comparisons are flagged now (spec §5.1) -----------------------
 //
 // Under the first rule `, url === b` was left alone. Under the whole-word rule
