@@ -1,6 +1,6 @@
 # Week 36 - a visitor can write before signing in
 
-Frozen 2026-11-09 22:2x +04, before any code. Measured on staging, which runs
+Frozen 2026-11-09 21:3x +04, before any code. Measured on staging, which runs
 the same tarball as production since week 35 (`898824d`).
 
 ## §0 What was measured
@@ -178,7 +178,7 @@ visit still comes before the compose box.
 
 ## §5 Amendments
 
-### §5.1 A new client component, authorised here (22:4x)
+### §5.1 A new client component, authorised here (21:4x)
 
 `test/21-design-system.test.ts` item 10b lists every `'use client'` file by
 name and says a new one "is a decision that belongs in the spec first". This
