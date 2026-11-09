@@ -477,11 +477,12 @@ test('88.14b: GuestSignIn imports only react and ./SubmitButton.js (spec section
   assert.deepEqual(extra, [], `GuestSignIn may import only react and ./SubmitButton.js, found: ${JSON.stringify(extra)}`)
 })
 
-// Re-aimed for spec 5.2: the effect may now set exactly one attribute,
+// Re-aimed for spec 5.2 and 5.3: the effect may now set exactly one attribute,
 // data-draft-ready, on the [data-compose] root and set textarea.disabled =
-// false. The ban on setAttribute( is narrowed to "any other attribute"; every
-// other ban is unchanged.
-test('88.15: GuestSignIn does nothing at click time: no handler, no value read, no navigation, no href change; its only writes are data-draft-ready and textarea.disabled = false', () => {
+// false, and its cleanup may remove that same attribute. The ban on
+// setAttribute( is narrowed to "any other attribute", removeAttribute( is
+// allowed for data-draft-ready only; every other ban is unchanged.
+test('88.15: GuestSignIn does nothing at click time: no handler, no value read, no navigation, no href change; its only writes are data-draft-ready (set, then removed in the cleanup) and textarea.disabled = false', () => {
   const src = readGuestSignIn()
   const banned = /\bonClick\b|\bonMouseDown\b|\bonPointerDown\b|addEventListener\(\s*['"](?:click|mousedown|pointerdown|touchstart)|\.value\b|preventDefault|\blocation\b|window\.open|useRouter|\brouter\b|\.href\s*=|\bfetch\s*\(|sendBeacon|XMLHttpRequest|<form\b/
   const hit = banned.exec(src)
@@ -490,8 +491,11 @@ test('88.15: GuestSignIn does nothing at click time: no handler, no value read, 
   const attrCalls = src.match(/\bsetAttribute\(/g) ?? []
   assert.equal(attrCalls.length, attrNames.length, 'every setAttribute call names its attribute with a string literal')
   for (const name of attrNames) assert.equal(name, 'data-draft-ready', `the only attribute GuestSignIn may set is data-draft-ready, found ${name}`)
+  const removeNames = [...src.matchAll(/\bremoveAttribute\(\s*(['"])([^'"]*)\1/g)].map((m) => m[2])
+  assert.equal((src.match(/\bremoveAttribute\(/g) ?? []).length, removeNames.length, 'every removeAttribute call names its attribute with a string literal')
+  for (const name of removeNames) assert.equal(name, 'data-draft-ready', `the only attribute GuestSignIn may remove is data-draft-ready, found ${name}`)
   for (const m of src.matchAll(/\.dataset\.(\w+)/g)) assert.equal(m[1], 'draftReady', 'dataset may only carry draftReady')
-  assert.ok(!/\b(?:removeAttribute|toggleAttribute|classList|innerHTML|outerHTML|insertAdjacent\w*|appendChild|textContent\s*=)/.test(src), 'no other DOM writes')
+  assert.ok(!/\b(?:toggleAttribute|classList|innerHTML|outerHTML|insertAdjacent\w*|appendChild|textContent\s*=)/.test(src), 'no other DOM writes')
   for (const m of src.matchAll(/\.(\w+)\s*=(?!=)/g)) assert.equal(m[1], 'disabled', `the only property GuestSignIn may assign is disabled, found .${m[1]}`)
   for (const m of src.matchAll(/\.disabled\s*=\s*(\w+)/g)) assert.equal(m[1], 'false', 'the textarea is only ever enabled, never disabled, by the component')
 })
@@ -1063,23 +1067,39 @@ function renderedPages(): Record<'guest' | 'guestSent' | 'user' | 'userSent', st
 
 // F1 -------------------------------------------------------------------------
 
-function logoutReports(): { sid: string; bare: any; withRequest: any } {
+type LogoutRun = { threw?: string; status?: number; location?: string | null; clearSiteData?: string | null; setCookie?: unknown; calls?: unknown[][] }
+function logoutReports(): { sid: string; withSid: LogoutRun; noSid: LogoutRun; otherCookie: LogoutRun } {
   return probeReport('probe-logout.mts')
 }
 
-test('88.42 (5.2 F1): POST /auth/logout answers 303 with Location "/" and Clear-Site-Data exactly "\\"storage\\""', () => {
+// Re-aimed for spec 5.3: Clear-Site-Data is sent only when the request carries
+// the session cookie. The 303, the Location and the exact header value are
+// asserted for the request that has it, as before; the probe now passes a
+// request (Next always does) with the cookie in both cookies() and the Cookie
+// header, so a handler may read either.
+test('88.42 (5.2 F1, 5.3): POST /auth/logout for a request carrying the session cookie answers 303 with Location "/" and Clear-Site-Data exactly "\\"storage\\""', () => {
+  const res = logoutReports().withSid
+  assert.equal(res.threw, undefined, `the handler must return a response, not throw (a redirect() throws): ${res.threw}`)
+  assert.equal(res.status, 303, 'status')
+  assert.equal(res.location, '/', 'Location is the relative path /')
+  assert.equal(res.clearSiteData, '"storage"', 'Clear-Site-Data is exactly "storage" with the quotes')
+})
+
+test('88.42b (5.3): a request without the session cookie still gets 303 and Location "/" but no Clear-Site-Data header', () => {
   const r = logoutReports()
-  for (const [name, res] of [['no request argument', r.bare], ['a request to the bind address', r.withRequest]] as const) {
-    assert.equal(res.threw, undefined, `${name}: the handler must return a response, not throw (a redirect() throws): ${res.threw}`)
+  // Control: the same handler does send the header when the cookie is there.
+  assert.equal(r.withSid.clearSiteData, '"storage"', 'control: with the cookie the header is sent')
+  for (const [name, res] of [['no cookie at all', r.noSid], ['only an unrelated cookie', r.otherCookie]] as const) {
+    assert.equal(res.threw, undefined, `${name}: the handler must return a response: ${res.threw}`)
     assert.equal(res.status, 303, `${name}: status`)
-    assert.equal(res.location, '/', `${name}: Location is the relative path /`)
-    assert.equal(res.clearSiteData, '"storage"', `${name}: Clear-Site-Data is exactly "storage" with the quotes`)
+    assert.equal(res.location, '/', `${name}: Location`)
+    assert.equal(res.clearSiteData, null, `${name}: no Clear-Site-Data header`)
   }
 })
 
-test('88.43 (5.2 F1): POST /auth/logout still deletes the session cookie', () => {
+test('88.43 (5.2 F1): POST /auth/logout deletes the session cookie with or without the cookie on the request', () => {
   const r = logoutReports()
-  const cleared = (res: any): boolean => {
+  const cleared = (res: LogoutRun): boolean => {
     const calls: unknown[][] = res.calls ?? []
     const viaStore = calls.some((c) => {
       if (c[0] === 'delete') return c[1] === r.sid || (typeof c[1] === 'object' && c[1] !== null && (c[1] as any).name === r.sid)
@@ -1088,18 +1108,22 @@ test('88.43 (5.2 F1): POST /auth/logout still deletes the session cookie', () =>
       const opts = typeof c[1] === 'object' && c[1] !== null ? named : { ...(c[3] as any) }
       return named.name === r.sid && named.value === '' && (opts.maxAge === 0 || (opts.expires !== undefined && new Date(opts.expires).getTime() <= 1000))
     })
-    const header = ([] as string[]).concat(res.setCookie ?? []).join('\n')
+    const header = ([] as string[]).concat((res.setCookie as string | string[] | null) ?? []).join('\n')
     const viaHeader = new RegExp(`(^|\\n)${r.sid}=;`).test(header) && /Max-Age=0|Expires=Thu, 01 Jan 1970/i.test(header)
     return viaStore || viaHeader
   }
-  assert.equal(r.bare.threw, undefined, `the handler must return a response: ${r.bare.threw}`)
-  assert.ok(cleared(r.bare), `the session cookie "${r.sid}" must be deleted; saw ${JSON.stringify(r.bare)}`)
+  for (const [name, res] of [['with the cookie', r.withSid], ['without it', r.noSid], ['with an unrelated cookie', r.otherCookie]] as const) {
+    assert.equal(res.threw, undefined, `${name}: the handler must return a response: ${res.threw}`)
+    assert.ok(cleared(res), `${name}: the session cookie "${r.sid}" must be deleted; saw ${JSON.stringify(res)}`)
+  }
 })
 
 test('88.44 (5.2 F1): the redirect target does not come from the request: Location is "/" whatever the request URL says, and the source never reads request.url', () => {
   const r = logoutReports()
-  assert.equal(r.withRequest.location, '/', 'a request whose URL is http://0.0.0.0:3000/auth/logout still gets Location /')
-  assert.ok(!/^[a-z][a-z0-9+.-]*:/i.test(String(r.withRequest.location)), 'the Location is relative')
+  for (const [name, res] of [['with the cookie', r.withSid], ['without it', r.noSid]] as const) {
+    assert.equal(res.location, '/', `${name}: a request whose URL is http://0.0.0.0:3000/auth/logout still gets Location /`)
+    assert.ok(!/^[a-z][a-z0-9+.-]*:/i.test(String(res.location)), `${name}: the Location is relative`)
+  }
   const src = stripComments(readFileSync(LOGOUT_ROUTE, 'utf8'))
   assert.ok(!/\.url\b/.test(src), 'app/auth/logout/route.ts must not read a request URL (the rule test/17 pins for the admin logout)')
 })
@@ -1130,7 +1154,18 @@ test('88.46 (5.2 F2): the server markup of the signed-out page carries both hint
   assert.ok(!/data-draft-ready/.test(guest), 'the server markup never carries data-draft-ready')
 })
 
-type EffectRun = { log: string[]; threw: string | null; returned: string; effectCount: number; disabledAfter: boolean; storageAfter: Record<string, string> }
+type EffectRun = {
+  log: string[]
+  logAfterCleanup: string[]
+  threw: string | null
+  returned: string
+  effectCount: number
+  disabledAfter: boolean
+  storageAfter: Record<string, string>
+  attrAfterMount: boolean
+  attrAfterCleanup: boolean
+  cleanupThrew: string | null
+}
 const effectReports = () => probeReport('probe-guest-effect.mts') as Record<'ok' | 'throwSet' | 'throwRemove' | 'noCleanup' | 'existing', EffectRun>
 
 const READY = 'root.attr data-draft-ready'
@@ -1155,6 +1190,18 @@ test('88.47 (5.2 F3): the effect writes and removes a probe key, then wires the 
   assert.equal(run.disabledAfter, false, 'the textarea ends enabled')
   assert.equal(run.log.filter((l) => /^(root|textarea)\.(attr|removeAttr) /.test(l) && l !== READY).length, 0, 'no attribute other than data-draft-ready is touched')
   assert.notEqual(key, 'confession_draft_abc', 'the probe key is not the draft key')
+})
+
+// Spec 5.3: React reuses the [data-compose] element when OpenInBrowser swaps to
+// its escape card, so the attribute set by hand must not outlive the effect.
+test('88.55 (5.3): the effect cleanup removes data-draft-ready from the [data-compose] root and still runs the wiring cleanup', () => {
+  const run = effectReports().ok
+  assert.equal(run.threw, null)
+  assert.equal(run.returned, 'function', 'the effect returns a cleanup')
+  assert.equal(run.attrAfterMount, true, 'control: the attribute is on the root after mount')
+  assert.equal(run.cleanupThrew, null, `the cleanup must not throw: ${run.cleanupThrew}`)
+  assert.equal(run.attrAfterCleanup, false, `data-draft-ready is gone after the cleanup; cleanup log: ${JSON.stringify(run.logAfterCleanup)}`)
+  assert.ok(run.logAfterCleanup.includes('cleanup'), 'the wireDraftBox cleanup is still called')
 })
 
 for (const which of ['throwSet', 'throwRemove'] as const) {

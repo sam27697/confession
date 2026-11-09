@@ -87,12 +87,25 @@ function run(opts: { throwOn?: 'setItem' | 'removeItem' | 'getItem' | null; init
       log.push(`textarea.disabled=${v}`)
     },
   })
+  const attrs = new Set<string>()
   const root: any = {
     querySelector: (sel: string) => (sel.includes('textarea') ? textarea : null),
-    setAttribute: (n: string) => log.push(`root.attr ${n}`),
-    removeAttribute: (n: string) => log.push(`root.removeAttr ${n}`),
-    toggleAttribute: (n: string) => log.push(`root.attr ${n}`),
-    dataset: new Proxy({}, { set: (_t, k: string) => (log.push(`root.attr ${kebab(k)}`), true) }),
+    setAttribute: (n: string) => (attrs.add(n), log.push(`root.attr ${n}`)),
+    removeAttribute: (n: string) => (attrs.delete(n), log.push(`root.removeAttr ${n}`)),
+    toggleAttribute: (n: string, force?: boolean) => {
+      if (force === false || (force === undefined && attrs.has(n))) {
+        attrs.delete(n)
+        log.push(`root.removeAttr ${n}`)
+      } else {
+        attrs.add(n)
+        log.push(`root.attr ${n}`)
+      }
+    },
+    hasAttribute: (n: string) => attrs.has(n),
+    dataset: new Proxy({}, {
+      set: (_t, k: string) => (attrs.add(kebab(k)), log.push(`root.attr ${kebab(k)}`), true),
+      deleteProperty: (_t, k: string) => (attrs.delete(kebab(k)), log.push(`root.removeAttr ${kebab(k)}`), true),
+    }),
     addEventListener() {},
     removeEventListener() {},
   }
@@ -102,18 +115,37 @@ function run(opts: { throwOn?: 'setItem' | 'removeItem' | 'getItem' | null; init
   refObj.current = anchor
   let threw: string | null = null
   let returned = 'none'
+  const cleanups: Array<() => void> = []
   try {
-    for (const fn of effects) returned = typeof fn()
+    for (const fn of effects) {
+      const out = fn()
+      returned = typeof out
+      if (typeof out === 'function') cleanups.push(out as () => void)
+    }
   } catch (e) {
     threw = String(e)
   }
+  const mountLog = log.slice()
+  const attrAfterMount = attrs.has('data-draft-ready')
+  let cleanupThrew: string | null = null
+  for (const c of cleanups) {
+    try {
+      c()
+    } catch (e) {
+      cleanupThrew = String(e)
+    }
+  }
   return {
-    log: log.slice(),
+    log: mountLog,
+    logAfterCleanup: log.slice(mountLog.length),
     threw,
     returned,
     effectCount: effects.length,
     disabledAfter: disabled,
     storageAfter: Object.fromEntries(store),
+    attrAfterMount,
+    attrAfterCleanup: attrs.has('data-draft-ready'),
+    cleanupThrew,
   }
 }
 
