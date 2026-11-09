@@ -624,6 +624,9 @@ test('item 10b: every client component under app/ lives in app/_components and i
   const AUTHORISED = [
     'app/_components/Celebrate.tsx',
     'app/_components/CopyLink.tsx',
+    // Added week 36, spec section 5.1. GuestSignIn wires the signed-out draft
+    // box to sessionStorage and an input listener, so it needs the browser.
+    'app/_components/GuestSignIn.tsx',
     // Added 2026-09-23, deliberately and not as a convenience. OpenInBrowser
     // is the guard that keeps a story link from dead-ending in an in-app
     // browser Google refuses to authorise in, and ShareRow is the share

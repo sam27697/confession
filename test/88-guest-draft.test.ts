@@ -447,6 +447,18 @@ test('88.14: GuestSignIn is a client component that exports GuestSignIn and wire
   assert.match(src, /textarea\[data-draft-slug\]/, 'finds textarea[data-draft-slug] inside it')
 })
 
+test('88.14b: GuestSignIn imports only react and ./SubmitButton.js (spec section 5.1)', () => {
+  const src = readGuestSignIn()
+  const sources: string[] = []
+  for (const m of src.matchAll(/\b(?:import|export)\b[^;'"`]*?\bfrom\s*['"]([^'"]+)['"]/g)) sources.push(m[1]!)
+  for (const m of src.matchAll(/(?:^|[;\n])\s*import\s*['"]([^'"]+)['"]/g)) sources.push(m[1]!)
+  for (const m of src.matchAll(/\b(?:import|require)\s*\(\s*['"]([^'"]+)['"]/g)) sources.push(m[1]!)
+  assert.ok(sources.includes('react'), 'GuestSignIn imports react')
+  assert.ok(sources.includes('./SubmitButton.js'), 'GuestSignIn imports ./SubmitButton.js')
+  const extra = sources.filter((s) => s !== 'react' && s !== './SubmitButton.js')
+  assert.deepEqual(extra, [], `GuestSignIn may import only react and ./SubmitButton.js, found: ${JSON.stringify(extra)}`)
+})
+
 test('88.15: GuestSignIn does nothing at click time: no handler, no value read, no navigation, no href change', () => {
   const src = readGuestSignIn()
   const banned = /\bonClick\b|\bonMouseDown\b|\bonPointerDown\b|addEventListener\(\s*['"](?:click|mousedown|pointerdown|touchstart)|\.value\b|preventDefault|\blocation\b|window\.open|useRouter|\brouter\b|\.href\s*=|setAttribute\(|\bfetch\s*\(|sendBeacon|XMLHttpRequest|<form\b/
