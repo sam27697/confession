@@ -11,11 +11,20 @@
 // between <OpenInBrowser and </OpenInBrowser>, with local function
 // components used inside it expanded in place and comments removed.
 //
+// Spec section 5.2 (review pass 1) is tested in section 8 and in the tests
+// marked "5.2" below. Four child-process probes under test/fixtures/w36/ run
+// the real code with test doubles for what Next supplies: the page rendered to
+// markup (probe-page.mts), the logout handler (probe-logout.mts), the mount
+// effect of GuestSignIn against a fake DOM and a fake sessionStorage
+// (probe-guest-effect.mts) and OpenInBrowser's state machine
+// (probe-open-in-browser.mts).
+//
 // Run with PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright.
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { chromium, type Browser } from 'playwright'
@@ -27,10 +36,12 @@ const SEND_PAGE = path.join(APP_DIR, 'c', '[slug]', 'page.tsx')
 const SUBMIT_BUTTON = path.join(APP_DIR, '_components', 'SubmitButton.tsx')
 const GUEST_SIGN_IN = path.join(APP_DIR, '_components', 'GuestSignIn.tsx')
 const GLOBALS_CSS = path.join(APP_DIR, 'globals.css')
-const FIXTURE = path.join(REPO_ROOT, 'test', 'fixtures', 'w36', 'guest-signed-out.html')
+const LOGOUT_ROUTE = path.join(APP_DIR, 'auth', 'logout', 'route.ts')
+const FIXTURE_DIR = path.join(REPO_ROOT, 'test', 'fixtures', 'w36')
+const FIXTURE = path.join(FIXTURE_DIR, 'guest-signed-out.html')
 
 const PRIVACY_HINT = 'رسالتك بتضل على جهازك وما بتوصلنا قبل ما تكبس ابعت. سجّل دخول ومنرجعك لهون لتبعتها.'
-const NOJS_HINT = 'تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.'
+const FALLBACK_HINT = 'تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.'
 const PITCH = /صارح \{[^}]+\} باللي بقلبك بدون ما يعرف هويتك\./
 const SIGN_IN_LABEL = /سجل دخول وكمّل\s*(?:\{ACTION_EMOJI\.send\}|\u{1F680})/u
 const PLACEHOLDER = 'اكتب اللي بقلبك...'
@@ -366,14 +377,21 @@ test('88.7: #draft-status with aria-live="polite" in the signed-out branch', () 
   assert.match(tag, /aria-live="polite"/)
 })
 
-test('88.8: the two hints carry the exact spec text and the nojs hint has class guest-nojs', () => {
+// Re-aimed for spec 5.2: the old hint is now class guest-fallback (renamed from
+// guest-nojs) and the draft hint is class guest-draft__hint.
+test('88.8: the two hints carry the exact spec text; the draft hint has class guest-draft__hint and the old hint has class guest-fallback', () => {
   const region = guestBranch()
-  assert.ok(region.includes(PRIVACY_HINT), 'the privacy hint text must match the spec exactly')
-  const at = region.indexOf(NOJS_HINT)
-  assert.ok(at >= 0, 'the no-JS hint text must match the spec exactly')
+  const hintAt = region.indexOf(PRIVACY_HINT)
+  assert.ok(hintAt >= 0, 'the privacy hint text must match the spec exactly')
+  const hintOpen = openingTagAt(region, hintAt)
+  const hintTag = region.slice(hintOpen, tagEnd(region, hintOpen))
+  assert.match(hintTag, /className="[^"]*(?<![\w-])guest-draft__hint(?![\w-])/, 'the draft hint element carries class guest-draft__hint')
+  const at = region.indexOf(FALLBACK_HINT)
+  assert.ok(at >= 0, 'the old hint text must match the spec exactly')
   const open = openingTagAt(region, at)
   const tag = region.slice(open, tagEnd(region, open))
-  assert.match(tag, /className="[^"]*(?<![\w-])guest-nojs(?![\w-])/, 'the no-JS hint element carries class guest-nojs')
+  assert.match(tag, /className="[^"]*(?<![\w-])guest-fallback(?![\w-])/, 'the old hint element carries class guest-fallback')
+  assert.ok(!/guest-nojs/.test(region), 'guest-nojs is renamed guest-fallback, nothing in the branch still uses it')
 })
 
 test('88.9: the draft block has class guest-draft and holds chips, label, textarea, status and privacy hint in that order', () => {
@@ -390,16 +408,16 @@ test('88.9: the draft block has class guest-draft and holds chips, label, textar
     ['#draft-status', block.indexOf('id="draft-status"')],
     ['privacy hint', block.indexOf(PRIVACY_HINT)],
   ])
-  assert.ok(!block.includes(NOJS_HINT), 'the no-JS hint must sit outside the draft block')
+  assert.ok(!block.includes(FALLBACK_HINT), 'the old hint (guest-fallback) must sit outside the draft block')
   assert.ok(!block.includes('<GuestSignIn'), 'the sign-in link must sit outside the draft block so it shows without JS')
 })
 
-test('88.10: order in the branch is pitch, draft block, no-JS hint, sign-in link', () => {
+test('88.10: order in the branch is pitch, draft block, old hint, sign-in link', () => {
   const region = guestBranch()
   assertOrder(region, [
     ['pitch', indexOfRe(region, PITCH)],
     ['guest-draft', indexOfRe(region, /(?<![\w-])guest-draft(?![\w-])/)],
-    ['guest-nojs', indexOfRe(region, /(?<![\w-])guest-nojs(?![\w-])/)],
+    ['guest-fallback', indexOfRe(region, /(?<![\w-])guest-fallback(?![\w-])/)],
     ['GuestSignIn', region.indexOf('<GuestSignIn')],
   ])
 })
@@ -459,11 +477,23 @@ test('88.14b: GuestSignIn imports only react and ./SubmitButton.js (spec section
   assert.deepEqual(extra, [], `GuestSignIn may import only react and ./SubmitButton.js, found: ${JSON.stringify(extra)}`)
 })
 
-test('88.15: GuestSignIn does nothing at click time: no handler, no value read, no navigation, no href change', () => {
+// Re-aimed for spec 5.2: the effect may now set exactly one attribute,
+// data-draft-ready, on the [data-compose] root and set textarea.disabled =
+// false. The ban on setAttribute( is narrowed to "any other attribute"; every
+// other ban is unchanged.
+test('88.15: GuestSignIn does nothing at click time: no handler, no value read, no navigation, no href change; its only writes are data-draft-ready and textarea.disabled = false', () => {
   const src = readGuestSignIn()
-  const banned = /\bonClick\b|\bonMouseDown\b|\bonPointerDown\b|addEventListener\(\s*['"](?:click|mousedown|pointerdown|touchstart)|\.value\b|preventDefault|\blocation\b|window\.open|useRouter|\brouter\b|\.href\s*=|setAttribute\(|\bfetch\s*\(|sendBeacon|XMLHttpRequest|<form\b/
+  const banned = /\bonClick\b|\bonMouseDown\b|\bonPointerDown\b|addEventListener\(\s*['"](?:click|mousedown|pointerdown|touchstart)|\.value\b|preventDefault|\blocation\b|window\.open|useRouter|\brouter\b|\.href\s*=|\bfetch\s*\(|sendBeacon|XMLHttpRequest|<form\b/
   const hit = banned.exec(src)
   assert.equal(hit, null, `forbidden in GuestSignIn: ${hit?.[0]}`)
+  const attrNames = [...src.matchAll(/\bsetAttribute\(\s*(['"])([^'"]*)\1/g)].map((m) => m[2])
+  const attrCalls = src.match(/\bsetAttribute\(/g) ?? []
+  assert.equal(attrCalls.length, attrNames.length, 'every setAttribute call names its attribute with a string literal')
+  for (const name of attrNames) assert.equal(name, 'data-draft-ready', `the only attribute GuestSignIn may set is data-draft-ready, found ${name}`)
+  for (const m of src.matchAll(/\.dataset\.(\w+)/g)) assert.equal(m[1], 'draftReady', 'dataset may only carry draftReady')
+  assert.ok(!/\b(?:removeAttribute|toggleAttribute|classList|innerHTML|outerHTML|insertAdjacent\w*|appendChild|textContent\s*=)/.test(src), 'no other DOM writes')
+  for (const m of src.matchAll(/\.(\w+)\s*=(?!=)/g)) assert.equal(m[1], 'disabled', `the only property GuestSignIn may assign is disabled, found .${m[1]}`)
+  for (const m of src.matchAll(/\.disabled\s*=\s*(\w+)/g)) assert.equal(m[1], 'false', 'the textarea is only ever enabled, never disabled, by the component')
 })
 
 // ---------------------------------------------------------------------------
@@ -785,28 +815,64 @@ test('88.32: in Chromium a chip still fills a textarea inside a form and fires i
   assert.equal(r.inputs, 1)
 })
 
-test('88.33: globals.css has a scripting: none block hiding .guest-draft and showing .guest-nojs, and .guest-nojs hidden by default', () => {
-  const css = readFileSync(GLOBALS_CSS, 'utf8')
-  const at = css.search(/@media\s*\(\s*scripting\s*:\s*none\s*\)/)
-  assert.ok(at >= 0, 'an @media (scripting: none) block must exist')
-  const open = css.indexOf('{', at)
-  let depth = 0
-  let end = open
-  for (let i = open; i < css.length; i += 1) {
-    if (css[i] === '{') depth += 1
-    else if (css[i] === '}') {
-      depth -= 1
-      if (depth === 0) {
-        end = i
-        break
+// Re-aimed for spec 5.2: .guest-nojs is renamed .guest-fallback and is no
+// longer display: none by default; .guest-draft__hint is hidden by default and
+// shown on [data-draft-ready]; the scripting: none block still hides
+// .guest-draft. What each rule does to the page is proved in Chromium below;
+// this test pins the stylesheet's shape.
+function cssRules(css: string): { media: Array<{ query: string; rules: Array<[string, string]> }>; top: Array<[string, string]> } {
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  const top: Array<[string, string]> = []
+  const media: Array<{ query: string; rules: Array<[string, string]> }> = []
+  let i = 0
+  while (i < src.length) {
+    const open = src.indexOf('{', i)
+    if (open === -1) break
+    const head = src.slice(i, open).trim()
+    let depth = 0
+    let end = open
+    for (let k = open; k < src.length; k += 1) {
+      if (src[k] === '{') depth += 1
+      else if (src[k] === '}') {
+        depth -= 1
+        if (depth === 0) {
+          end = k
+          break
+        }
       }
     }
+    const body = src.slice(open + 1, end)
+    if (head.startsWith('@media')) {
+      const rules: Array<[string, string]> = []
+      for (const m of body.matchAll(/([^{}]+)\{([^{}]*)\}/g)) rules.push([m[1]!.trim(), m[2]!])
+      media.push({ query: head, rules })
+    } else if (!head.startsWith('@')) top.push([head, body])
+    i = end + 1
   }
-  const block = css.slice(open + 1, end)
-  assert.match(block, /\.guest-draft\s*\{[^}]*display\s*:\s*none/)
-  assert.match(block, /\.guest-nojs\s*\{[^}]*display\s*:\s*block/)
-  const rest = css.slice(0, at) + css.slice(end + 1)
-  assert.match(rest, /\.guest-nojs\s*\{[^}]*display\s*:\s*none/, '.guest-nojs is display: none by default')
+  return { media, top }
+}
+
+const HIDES = /display\s*:\s*none/
+
+test('88.33: globals.css hides .guest-draft under scripting: none, keeps .guest-fallback visible by default, hides .guest-draft__hint until [data-draft-ready]', () => {
+  const css = readFileSync(GLOBALS_CSS, 'utf8')
+  assert.ok(!/guest-nojs/.test(css), '.guest-nojs is renamed .guest-fallback, no rule may still name it')
+  const { media, top } = cssRules(css)
+  const scripting = media.filter((m) => /\(\s*scripting\s*:\s*none\s*\)/.test(m.query))
+  assert.equal(scripting.length, 1, 'one @media (scripting: none) block')
+  const inBlock = scripting[0]!.rules
+  assert.ok(inBlock.some(([sel, body]) => sel.split(',').map((s) => s.trim()).includes('.guest-draft') && HIDES.test(body)), 'the block hides .guest-draft')
+  assert.ok(!inBlock.some(([sel, body]) => /\.guest-fallback/.test(sel) && HIDES.test(body)), 'the block does not hide .guest-fallback')
+
+  const fallbackDefault = top.filter(([sel]) => sel.split(',').map((s) => s.trim()).includes('.guest-fallback'))
+  assert.ok(!fallbackDefault.some(([, body]) => HIDES.test(body)), '.guest-fallback has no default display: none')
+
+  const hintDefault = top.filter(([sel]) => /\.guest-draft__hint/.test(sel) && !/data-draft-ready/.test(sel))
+  assert.ok(hintDefault.some(([, body]) => HIDES.test(body)), '.guest-draft__hint is display: none by default')
+
+  const onReady = top.filter(([sel]) => /\[data-draft-ready\]/.test(sel))
+  assert.ok(onReady.some(([sel, body]) => /\.guest-draft__hint/.test(sel) && !HIDES.test(body) && /display\s*:/.test(body)), 'a [data-draft-ready] rule shows .guest-draft__hint')
+  assert.ok(onReady.some(([sel, body]) => /\.guest-fallback/.test(sel) && HIDES.test(body)), 'a [data-draft-ready] rule hides .guest-fallback')
 })
 
 function fixtureWithCss(): string {
@@ -818,37 +884,79 @@ function fixtureWithCss(): string {
   return html.slice(0, idx) + '<style>' + css + '</style>' + html.slice(idx)
 }
 
+// The signed-out markup the page really renders, in a document with the real
+// stylesheet, next to the hand-written fixture: the fixture cannot drift from
+// the page without one of the two failing.
+function liveWithCss(): string {
+  const guest = renderedPages().guest
+  assert.ok(guest && !guest.startsWith('THREW'), `the page must render for a signed-out viewer: ${guest?.slice(0, 200)}`)
+  const css = readFileSync(GLOBALS_CSS, 'utf8')
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${css}</style></head><body><main>${guest}</main></body></html>`
+}
+
+const CSS_SOURCES: Array<[string, () => string]> = [
+  ['fixture', fixtureWithCss],
+  ['rendered page', liveWithCss],
+]
+
 test('88.34: the fixture carries no script', () => {
   assert.ok(!/<script/i.test(readFileSync(FIXTURE, 'utf8')))
 })
 
-test('88.35: in Chromium with JavaScript on the box shows and the no-JS hint does not', async () => {
-  const context = await browser.newContext({ javaScriptEnabled: true, viewport: { width: 390, height: 844 } })
+async function visibility(html: string, opts: { js: boolean; ready: boolean }) {
+  const context = await browser.newContext({ javaScriptEnabled: opts.js, viewport: { width: 390, height: 844 } })
   try {
     const page = await context.newPage()
-    await page.setContent(fixtureWithCss())
-    assert.equal(await page.locator('textarea').isVisible(), true, 'textarea visible')
-    assert.equal(await page.locator('.starter-chip').count(), 1)
-    assert.equal(await page.locator('.guest-draft .hint').isVisible(), true, 'privacy hint visible')
-    assert.equal(await page.locator('.guest-nojs').isVisible(), false, 'no-JS hint hidden')
-    assert.equal(await page.locator('a[href^="/?next=/c/"]').isVisible(), true, 'sign-in link visible')
+    await page.setContent(html)
+    if (opts.ready) await page.evaluate(() => document.querySelector('[data-compose]')!.setAttribute('data-draft-ready', ''))
+    const vis = async (selector: string) => {
+      const loc = page.locator(selector)
+      assert.equal(await loc.count(), 1, `${selector} must match exactly one element`)
+      return loc.isVisible()
+    }
+    return {
+      textarea: await vis('textarea'),
+      chips: await page.locator('.starter-chip').first().isVisible(),
+      status: await vis('#draft-status'),
+      draftHint: await vis('.guest-draft__hint'),
+      fallback: await vis('.guest-fallback'),
+      link: await vis('a[href^="/?next=/c/"]'),
+    }
   } finally {
     await context.close()
+  }
+}
+
+test('88.35: in Chromium with JavaScript on and no data-draft-ready the box shows, the old hint shows and the draft hint does not', async () => {
+  for (const [name, html] of CSS_SOURCES) {
+    const v = await visibility(html(), { js: true, ready: false })
+    assert.equal(v.textarea, true, `${name}: textarea visible`)
+    assert.equal(v.chips, true, `${name}: chips visible`)
+    assert.equal(v.fallback, true, `${name}: old hint (guest-fallback) visible`)
+    assert.equal(v.draftHint, false, `${name}: draft hint (guest-draft__hint) hidden`)
+    assert.equal(v.link, true, `${name}: sign-in link visible`)
+  }
+})
+
+test('88.35b: in Chromium with JavaScript on and data-draft-ready on the root the draft hint shows and the old hint does not', async () => {
+  for (const [name, html] of CSS_SOURCES) {
+    const v = await visibility(html(), { js: true, ready: true })
+    assert.equal(v.textarea, true, `${name}: textarea visible`)
+    assert.equal(v.draftHint, true, `${name}: draft hint (guest-draft__hint) visible`)
+    assert.equal(v.fallback, false, `${name}: old hint (guest-fallback) hidden`)
+    assert.equal(v.link, true, `${name}: sign-in link visible`)
   }
 })
 
 test('88.36: in Chromium with JavaScript off there is no visible textarea, the old hint and the link show', async () => {
-  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } })
-  try {
-    const page = await context.newPage()
-    await page.setContent(fixtureWithCss())
-    assert.equal(await page.locator('textarea').isVisible(), false, 'textarea hidden')
-    assert.equal(await page.locator('.starter-chip').isVisible(), false, 'chips hidden')
-    assert.equal(await page.locator('#draft-status').isVisible(), false, 'status hidden')
-    assert.equal(await page.locator('.guest-nojs').isVisible(), true, 'no-JS hint visible')
-    assert.equal(await page.locator('a[href^="/?next=/c/"]').isVisible(), true, 'sign-in link visible')
-  } finally {
-    await context.close()
+  for (const [name, html] of CSS_SOURCES) {
+    const v = await visibility(html(), { js: false, ready: false })
+    assert.equal(v.textarea, false, `${name}: textarea hidden`)
+    assert.equal(v.chips, false, `${name}: chips hidden`)
+    assert.equal(v.status, false, `${name}: status hidden`)
+    assert.equal(v.draftHint, false, `${name}: draft hint hidden`)
+    assert.equal(v.fallback, true, `${name}: old hint (guest-fallback) visible`)
+    assert.equal(v.link, true, `${name}: sign-in link visible`)
   }
 })
 
@@ -872,7 +980,10 @@ test('88.37: sendConfessionAction binding and the signed-in form are unchanged',
 test('88.38: the signed-in form keeps the sent key wrapper and the ?sent=1 draft cleanup script', () => {
   const src = readPage()
   assert.match(src, /<Fragment key=\{sent === '1' \? randomUUID\(\) : 'compose'\}>/)
-  assert.match(src, /sent === '1' && \([\s\S]*?sessionStorage\.removeItem\('confession_draft_\$\{slug\}'\)/)
+  // Re-aimed for spec 5.2 (F5): the sent block's condition now also names the
+  // viewer, so the old "sent === '1' && (" opening is no longer required. The
+  // cleanup script itself, and that it hangs off sent === '1', are unchanged.
+  assert.match(src, /\{[^{}()]*\bsent === '1'[^{}()]*&&\s*\(\s*<>[\s\S]*?sessionStorage\.removeItem\('confession_draft_\$\{slug\}'\)/)
 })
 
 test('88.39: the SubmitButton signature and pending behaviour are unchanged', () => {
@@ -905,4 +1016,243 @@ test('88.41: the landing page keeps its own OpenInBrowser', () => {
   const landing = path.join(APP_DIR, 'page.tsx')
   assert.ok(existsSync(landing))
   assert.match(readFileSync(landing, 'utf8'), /<OpenInBrowser>/)
+})
+
+// ---------------------------------------------------------------------------
+// 8. Spec section 5.2: review pass 1
+// ---------------------------------------------------------------------------
+
+type ProbeResult = { status: number | null; stderr: string; report: any }
+const probeCache = new Map<string, ProbeResult>()
+
+function runProbe(file: string): ProbeResult {
+  const cached = probeCache.get(file)
+  if (cached) return cached
+  const result = spawnSync('node', ['--import', 'tsx', '--experimental-test-module-mocks', path.join(FIXTURE_DIR, file)], {
+    encoding: 'utf8',
+    cwd: REPO_ROOT,
+    timeout: 120_000,
+    env: {
+      PATH: process.env.PATH ?? '',
+      HOME: process.env.HOME ?? '',
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgres://user:pass@localhost:1/confession',
+      SESSION_SECRET: 'w'.repeat(32),
+      APP_ORIGIN: 'http://localhost:3000',
+    },
+  })
+  const line = (result.stdout ?? '').split('\n').find((l) => l.startsWith('W36_REPORT '))
+  const out: ProbeResult = {
+    status: result.status,
+    stderr: result.stderr ?? '',
+    report: line ? JSON.parse(line.slice('W36_REPORT '.length)) : null,
+  }
+  probeCache.set(file, out)
+  return out
+}
+
+function probeReport(file: string): any {
+  const r = runProbe(file)
+  assert.ok(r.report, `${file} must print a report; exit ${r.status}; stderr:\n${r.stderr.slice(-1500)}`)
+  return r.report
+}
+
+function renderedPages(): Record<'guest' | 'guestSent' | 'user' | 'userSent', string> {
+  return probeReport('probe-page.mts')
+}
+
+// F1 -------------------------------------------------------------------------
+
+function logoutReports(): { sid: string; bare: any; withRequest: any } {
+  return probeReport('probe-logout.mts')
+}
+
+test('88.42 (5.2 F1): POST /auth/logout answers 303 with Location "/" and Clear-Site-Data exactly "\\"storage\\""', () => {
+  const r = logoutReports()
+  for (const [name, res] of [['no request argument', r.bare], ['a request to the bind address', r.withRequest]] as const) {
+    assert.equal(res.threw, undefined, `${name}: the handler must return a response, not throw (a redirect() throws): ${res.threw}`)
+    assert.equal(res.status, 303, `${name}: status`)
+    assert.equal(res.location, '/', `${name}: Location is the relative path /`)
+    assert.equal(res.clearSiteData, '"storage"', `${name}: Clear-Site-Data is exactly "storage" with the quotes`)
+  }
+})
+
+test('88.43 (5.2 F1): POST /auth/logout still deletes the session cookie', () => {
+  const r = logoutReports()
+  const cleared = (res: any): boolean => {
+    const calls: unknown[][] = res.calls ?? []
+    const viaStore = calls.some((c) => {
+      if (c[0] === 'delete') return c[1] === r.sid || (typeof c[1] === 'object' && c[1] !== null && (c[1] as any).name === r.sid)
+      if (c[0] !== 'set') return false
+      const named = typeof c[1] === 'object' && c[1] !== null ? (c[1] as any) : { name: c[1], value: c[2], ...(c[3] as object) }
+      const opts = typeof c[1] === 'object' && c[1] !== null ? named : { ...(c[3] as any) }
+      return named.name === r.sid && named.value === '' && (opts.maxAge === 0 || (opts.expires !== undefined && new Date(opts.expires).getTime() <= 1000))
+    })
+    const header = ([] as string[]).concat(res.setCookie ?? []).join('\n')
+    const viaHeader = new RegExp(`(^|\\n)${r.sid}=;`).test(header) && /Max-Age=0|Expires=Thu, 01 Jan 1970/i.test(header)
+    return viaStore || viaHeader
+  }
+  assert.equal(r.bare.threw, undefined, `the handler must return a response: ${r.bare.threw}`)
+  assert.ok(cleared(r.bare), `the session cookie "${r.sid}" must be deleted; saw ${JSON.stringify(r.bare)}`)
+})
+
+test('88.44 (5.2 F1): the redirect target does not come from the request: Location is "/" whatever the request URL says, and the source never reads request.url', () => {
+  const r = logoutReports()
+  assert.equal(r.withRequest.location, '/', 'a request whose URL is http://0.0.0.0:3000/auth/logout still gets Location /')
+  assert.ok(!/^[a-z][a-z0-9+.-]*:/i.test(String(r.withRequest.location)), 'the Location is relative')
+  const src = stripComments(readFileSync(LOGOUT_ROUTE, 'utf8'))
+  assert.ok(!/\.url\b/.test(src), 'app/auth/logout/route.ts must not read a request URL (the rule test/17 pins for the admin logout)')
+})
+
+// F2, F3 ---------------------------------------------------------------------
+
+function guestTextareaTag(markup: string): string {
+  const m = /<textarea\b[^>]*>/.exec(markup)
+  assert.ok(m, 'the markup must contain a textarea')
+  return m![0]
+}
+
+test('88.45 (5.2 F2): the signed-out textarea renders disabled, the signed-in one does not', () => {
+  const pages = renderedPages()
+  assert.ok(!pages.guest.startsWith('THREW'), pages.guest.slice(0, 300))
+  assert.match(guestTextareaTag(pages.guest), /\sdisabled(?=[\s=>/])(?!=\s*"?false)/, 'the guest textarea carries disabled in the server markup')
+  assert.ok(!/\sdisabled\b/.test(guestTextareaTag(pages.user)), 'the signed-in textarea is not disabled')
+  const src = guestBranch()
+  const start = src.indexOf('<textarea')
+  const tag = src.slice(start, tagEnd(src, start))
+  assert.match(tag, /\sdisabled(?![\w-])(?!=\{false\})/, 'the guest textarea in page.tsx carries disabled')
+})
+
+test('88.46 (5.2 F2): the server markup of the signed-out page carries both hints and no data-draft-ready, so before any script runs the old hint is the visible one', () => {
+  const guest = renderedPages().guest
+  assert.match(guest, /class="[^"]*(?<![\w-])guest-fallback(?![\w-])[^"]*"[^>]*>تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك\./)
+  assert.match(guest, /class="[^"]*(?<![\w-])guest-draft__hint(?![\w-])[^"]*"[^>]*>رسالتك بتضل على جهازك/)
+  assert.ok(!/data-draft-ready/.test(guest), 'the server markup never carries data-draft-ready')
+})
+
+type EffectRun = { log: string[]; threw: string | null; returned: string; effectCount: number; disabledAfter: boolean; storageAfter: Record<string, string> }
+const effectReports = () => probeReport('probe-guest-effect.mts') as Record<'ok' | 'throwSet' | 'throwRemove' | 'noCleanup' | 'existing', EffectRun>
+
+const READY = 'root.attr data-draft-ready'
+const ENABLE = 'textarea.disabled=false'
+
+test('88.47 (5.2 F3): the effect writes and removes a probe key, then wires the box, and only then sets data-draft-ready and enables the textarea', () => {
+  const run = effectReports().ok
+  assert.equal(run.threw, null, `the effect must not throw: ${run.threw}`)
+  assert.ok(run.effectCount >= 1, 'GuestSignIn registers an effect')
+  const set = run.log.findIndex((l) => l.startsWith('storage.setItem '))
+  assert.ok(set >= 0, `the effect must write a probe key to sessionStorage; log: ${JSON.stringify(run.log)}`)
+  const key = run.log[set]!.slice('storage.setItem '.length)
+  const remove = run.log.indexOf(`storage.removeItem ${key}`)
+  const wire = run.log.indexOf('wire')
+  const ready = run.log.indexOf(READY)
+  const enable = run.log.indexOf(ENABLE)
+  assert.ok(remove > set, 'the probe key is removed again after it is written')
+  assert.ok(wire > remove, 'wireDraftBox runs after the probe has been written and removed')
+  assert.ok(ready > wire, 'data-draft-ready is set after wireDraftBox returned')
+  assert.ok(enable > wire, 'textarea.disabled = false happens after wireDraftBox returned')
+  assert.equal(run.log.filter((l) => l === READY).length, 1, 'data-draft-ready is set once')
+  assert.equal(run.disabledAfter, false, 'the textarea ends enabled')
+  assert.equal(run.log.filter((l) => /^(root|textarea)\.(attr|removeAttr) /.test(l) && l !== READY).length, 0, 'no attribute other than data-draft-ready is touched')
+  assert.notEqual(key, 'confession_draft_abc', 'the probe key is not the draft key')
+})
+
+for (const which of ['throwSet', 'throwRemove'] as const) {
+  test(`88.48${which === 'throwSet' ? 'a' : 'b'} (5.2 F3): when sessionStorage.${which === 'throwSet' ? 'setItem' : 'removeItem'} throws the box stays disabled and data-draft-ready is not set`, () => {
+    const reports = effectReports()
+    // Control: the same fake DOM with a working storage does become ready, so
+    // the absence below is the effect declining and not the probe missing.
+    assert.ok(reports.ok.log.includes(READY) && reports.ok.log.includes(ENABLE), 'control: a working storage enables the box')
+    const run = reports[which]
+    assert.equal(run.threw, null, `the exception is caught inside the effect: ${run.threw}`)
+    assert.ok(!run.log.includes(READY), `data-draft-ready must not be set; log: ${JSON.stringify(run.log)}`)
+    assert.ok(!run.log.includes(ENABLE), 'textarea.disabled = false must not run')
+    assert.equal(run.disabledAfter, true, 'the textarea stays disabled')
+  })
+}
+
+test('88.49 (5.2 F3): when wireDraftBox returns no cleanup the box stays disabled and data-draft-ready is not set', () => {
+  const reports = effectReports()
+  assert.ok(reports.ok.log.includes(READY), 'control: with a cleanup the box is enabled')
+  const run = reports.noCleanup
+  assert.equal(run.threw, null)
+  assert.ok(run.log.includes('wire'), 'wireDraftBox was reached')
+  assert.ok(!run.log.includes(READY), 'data-draft-ready is not set without a cleanup')
+  assert.ok(!run.log.includes(ENABLE), 'the textarea is not enabled without a cleanup')
+  assert.equal(run.disabledAfter, true)
+})
+
+test('88.50 (5.2 F3): the probe leaves a stored draft alone (its key is not the draft key)', () => {
+  const run = effectReports().existing
+  assert.equal(run.threw, null)
+  assert.equal(run.storageAfter.confession_draft_abc, 'kept text', 'the stored draft survives the probe')
+  assert.ok(!run.log.some((l) => /^storage\.(setItem|removeItem|clear)\b.*confession_draft_abc|^storage\.clear/.test(l)), 'the probe does not write, remove or clear the draft key')
+  assert.ok(run.log.includes(READY), 'a stored draft does not stop the box from being enabled')
+})
+
+test('88.51 (5.2 F2/F3): GuestSignIn source: probe in try/catch before wireDraftBox, enabling after it', () => {
+  const src = readGuestSignIn()
+  const set = src.search(/sessionStorage\.setItem\(/)
+  const remove = src.search(/sessionStorage\.removeItem\(/)
+  const wire = src.search(/wireDraftBox\(/)
+  const ready = src.search(/data-draft-ready|draftReady/)
+  const enable = src.search(/\.disabled\s*=\s*false/)
+  assertOrder(src, [
+    ['setItem probe', set],
+    ['removeItem probe', remove],
+    ['wireDraftBox call', wire],
+    ['data-draft-ready', ready],
+  ])
+  assert.ok(enable > wire, 'textarea.disabled = false comes after the wireDraftBox call')
+  const tryAt = src.search(/\btry\s*\{/)
+  assert.ok(tryAt >= 0 && tryAt < set, 'a try block opens before the probe write')
+  assert.match(src, /\bcatch\b/, 'the probe has a catch')
+  const catchAt = src.search(/\bcatch\b/)
+  assert.ok(catchAt > remove, 'the catch closes over the probe write and removal')
+})
+
+// F5 -------------------------------------------------------------------------
+
+test('88.52 (5.2 F5): ?sent=1 renders the delivered notice, the draft removal and the reciprocal card only for a signed-in viewer', () => {
+  const pages = renderedPages()
+  for (const name of ['guest', 'guestSent', 'user', 'userSent'] as const) assert.ok(!pages[name].startsWith('THREW'), `${name}: ${pages[name].slice(0, 300)}`)
+  // Control: the signed-in viewer still gets the block, so the guest result
+  // below is the gate and not a page that stopped rendering it for everyone.
+  assert.ok(pages.userSent.includes('الرسالة وصلت'), 'control: a signed-in viewer with ?sent=1 still sees the notice')
+  assert.ok(pages.userSent.includes("sessionStorage.removeItem('confession_draft_abc')"), 'control: and the draft removal script')
+  assert.ok(pages.userSent.includes('reciprocal-card'), 'control: and the reciprocal card')
+  assert.ok(!pages.guestSent.includes('الرسالة وصلت'), 'a signed-out viewer with ?sent=1 is not told the message arrived')
+  assert.ok(!pages.guestSent.includes('removeItem'), 'a signed-out viewer with ?sent=1 does not get the draft removal script')
+  assert.ok(!pages.guestSent.includes('reciprocal-card'), 'nor the reciprocal card')
+  assert.ok(pages.guestSent.includes('data-compose'), 'a signed-out viewer with ?sent=1 still gets the guest box')
+})
+
+// F6 -------------------------------------------------------------------------
+
+test('88.53 (5.2 F6a): no form attribute on the guest textarea or on any element of the signed-out branch', () => {
+  const guest = renderedPages().guest
+  assert.ok(!guest.startsWith('THREW'), guest.slice(0, 300))
+  assert.ok(guest.includes('data-compose'), 'control: the guest box is in the markup')
+  const hit = /\s(?:form|formaction|formmethod|formtarget|formenctype)\s*=/i.exec(guest)
+  assert.equal(hit, null, `no element of the rendered signed-out page may carry ${hit?.[0]}`)
+  const src = withoutChipsScript(guestBranch())
+  const srcHit = /\s(?:form|formAction|formMethod|formTarget|formEncType)\s*=/.exec(src)
+  assert.equal(srcHit, null, `no element of the signed-out branch source may carry ${srcHit?.[0]}`)
+})
+
+type OibState = { hasBox: boolean; hasEscape: boolean; hasOverrideLabel: boolean }
+type OibRun = { before: OibState; hasOverrideButton: boolean; after: OibState | null }
+
+test('88.54 (5.2 F6b): OpenInBrowser returns its children outside an in-app browser and renders the escape inside one, until the override is pressed', () => {
+  const r = probeReport('probe-open-in-browser.mts') as Record<'desktop' | 'instagramIos' | 'facebookAndroid', OibRun>
+  assert.deepEqual(r.desktop.before, { hasBox: true, hasEscape: false, hasOverrideLabel: false }, 'a normal browser gets the children and no escape')
+  for (const name of ['instagramIos', 'facebookAndroid'] as const) {
+    const run = r[name]
+    assert.equal(run.before.hasBox, false, `${name}: the children are not rendered inside an in-app browser`)
+    assert.equal(run.before.hasEscape, true, `${name}: the escape «افتح بالمتصفح» is rendered`)
+    assert.equal(run.hasOverrideButton, true, `${name}: the override «جرّب تسجيل الدخول هون على كل حال» is a pressable control`)
+    assert.ok(run.after, `${name}: the override could be pressed`)
+    assert.equal(run.after!.hasBox, true, `${name}: after the override the children are rendered`)
+    assert.equal(run.after!.hasEscape, false, `${name}: after the override the escape is gone`)
+  }
 })
