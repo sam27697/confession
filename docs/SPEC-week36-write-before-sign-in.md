@@ -178,4 +178,18 @@ visit still comes before the compose box.
 
 ## §5 Amendments
 
-(none yet)
+### §5.1 A new client component, authorised here (22:4x)
+
+`test/21-design-system.test.ts` item 10b lists every `'use client'` file by
+name and says a new one "is a decision that belongs in the spec first". This
+is that decision: `app/_components/GuestSignIn.tsx` joins the client island.
+It needs the browser (`sessionStorage`, an input listener) and cannot be a
+server component. It imports React and `./SubmitButton.js` only: no domain
+layer, no database, no `next/headers` or `next/cookies` (item 10c holds).
+
+Rejected: exporting the same component from `SubmitButton.tsx`, which is
+already on the list. It would pass item 10b without the decision 10b asks
+for, which is the guard bypassed rather than satisfied.
+
+The allow-list in test/21 is updated by the test author, not by the hand
+that wrote the component.
