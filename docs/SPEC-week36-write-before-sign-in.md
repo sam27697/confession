@@ -128,8 +128,9 @@ visit still comes before the compose box.
   they typed.
 - The privacy copy already says (`src/privacy.ts` `cookies`): «A message you
   are still writing is kept as a draft in your browser only, not on our
-  side.» That stays true and needs no edit; the Arabic page must say the same
-  thing (verify, do not edit unless it contradicts).
+  side.» That stays true and needs no edit. The Arabic copy says the same
+  (`src/privacy.ts` `cookies`, ar): «الرسالة يلي عم تكتبها بتنحفظ مسودة
+  بمتصفحك بس، مش عنا.»
 
 ## §3 Rejected
 
