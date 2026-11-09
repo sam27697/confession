@@ -1,0 +1,305 @@
+# Week 36 - a visitor can write before signing in
+
+Frozen 2026-11-09 21:3x +04, before any code. Measured on staging, which runs
+the same tarball as production since week 35 (`898824d`).
+
+## §0 What was measured
+
+### §0.1 A friend's link shows a stranger a login wall and nothing else
+
+Driven headless at 390x844 on `stg.masaraha.provefair.app`
+(`work/confession-app/probes/w36-walk.mjs`, workspace repo), one dev-login
+account owning a link and a second browser context, signed out, opening it:
+
+- `/c/<slug>` signed out renders the avatar, «ابعتلـ <name>», the pitch line,
+  «تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.» and one
+  button, «سجل دخول {ACTION_EMOJI.send}» to `/?next=/c/<slug>`.
+- `textarea` count on that screen: **0**. There is nothing to write in until
+  the visitor has been to Google (or Facebook), accepted the terms on a first
+  visit, and come back.
+
+This is the screen every shared link lands on. The person who tapped it
+wanted to say something to a friend; the first thing they are asked for is an
+account.
+
+### §0.2 The way back already restores a draft
+
+Since week 22, `SubmitButton`'s `wireDraft` restores `sessionStorage`
+`confession_draft_<slug>` into an empty compose box on mount, with
+«تم استعادة المسودة», and the `?sent=1` render removes it. A sign-in returns
+to `/c/<slug>` as a document load (server redirect from the OAuth callback or
+from `/onboarding`), in the same tab, so a key written before sign-in on this
+origin is still there when the signed-in form mounts.
+
+### §0.3 The in-app browser case
+
+Google refuses OAuth in an embedded webview. Today the escape («افتح
+بالمتصفح», `OpenInBrowser`) shows on `/`, after the visitor has tapped the
+sign-in button. If the visitor could type on `/c/<slug>` first, inside
+Instagram's browser, and the escape then moved them to Chrome or Safari, the
+text would stay behind in the webview's storage. So the escape has to come
+before the box, on `/c/<slug>` itself, for a signed-out visitor.
+
+### §0.4 No-JS
+
+`@media (scripting: none)` measured in this repo's Playwright Chromium: with
+`javaScriptEnabled: false` it matches, with JS on it does not. Browsers that
+do not know the feature match neither branch.
+
+## §1 The change
+
+### §1.1 Signed-out branch of `app/c/[slug]/page.tsx`
+
+The signed-out branch (no viewer account, link enabled, not owner) renders,
+in this order, inside `<OpenInBrowser>`:
+
+1. The existing pitch line «صارح <name> باللي بقلبك بدون ما يعرف هويتك.»
+2. A draft block, class `guest-draft`, containing:
+   - the starter chips, the same four `STARTER_PROMPTS`, same markup
+     (`button type="button" data-starter-prompt`);
+   - a visually hidden label «رسالتك» and a `textarea` with `id="body"`,
+     `name="body"`, `data-draft-slug={slug}`, `maxLength={4000}`, `rows={5}`,
+     placeholder «اكتب اللي بقلبك...», and **no `data-draft-sent`**;
+   - `#draft-status` (`aria-live="polite"`);
+   - the hint «رسالتك بتضل على جهازك وما بتوصلنا قبل ما تكبس ابعت. سجّل دخول ومنرجعك لهون لتبعتها.»
+3. A no-JS hint, class `guest-nojs`, with today's text «تسجيل الدخول بياخد
+   ثواني، وبعدها منرجعك لهون لتكتب رسالتك.»
+4. The sign-in link, unchanged target `/?next=/c/<encoded slug>`, label
+   «سجل دخول وكمّل» followed by `{ACTION_EMOJI.send}` as today.
+
+**The draft block is not a `<form>` and is not inside one.** The container is
+a `div` carrying `data-compose`. There is no element in the signed-out branch
+that can submit the textarea's value anywhere: no form, no `formaction`, no
+`fetch`, no URL built from its value. Its value lives in the page and in
+`sessionStorage` only.
+
+### §1.2 CSS, `app/globals.css`
+
+- `.guest-nojs` is `display: none` by default.
+- `@media (scripting: none)`: `.guest-draft { display: none }` and
+  `.guest-nojs { display: block }`.
+
+So with JS off the visitor sees today's screen (pitch, today's hint, the
+button); with JS on, the box; in a browser that does not know the feature, the
+box (JS is the overwhelmingly common case there).
+
+### §1.3 Draft wiring for the signed-out box
+
+`app/_components/SubmitButton.tsx` gains an exported
+`wireDraftBox(root: Element, textarea: HTMLTextAreaElement)`: the restore and
+autosave half of `wireDraft`, same key `confession_draft_<slug>` from the
+textarea's `data-draft-slug`, same indicator texts (`#draft-status` inside
+`root`: «عم يحفظ...», «تم الحفظ تلقائياً», «تم استعادة المسودة»), same 150 ms
+debounce, same try/catch around storage, returns its cleanup. `wireDraft`
+keeps its exported signature and behaviour and delegates the restore/autosave
+part to it; the `data-draft-sent="1"` removal stays in `wireDraft`.
+
+A new client component `app/_components/GuestSignIn.tsx` renders the sign-in
+`<a>` (§1.1 item 4) and, in an effect on mount, finds the closest
+`[data-compose]` ancestor and its `textarea[data-draft-slug]`, and calls
+`wireDraftBox`. It does nothing else: it does not read the value at click
+time, does not change the `href`, and does not navigate itself. Without JS it
+is a plain link.
+
+### §1.4 Starter chips
+
+The existing inline `starter-chips` script finds the chip's container with
+`t.closest('form,[data-compose]')` instead of `t.closest('form')`. Everything
+else in that script stays byte-identical, including
+`ta.dispatchEvent(new Event('input',{bubbles:true}))`. It is still rendered
+once per page.
+
+### §1.5 Signed-in branch
+
+Unchanged. A visitor who wrote while signed out, signed in and came back sees
+the text restored by `wireDraft` with «تم استعادة المسودة» and still has to
+press «ابعت». **Nothing is sent automatically.** The terms step on a first
+visit still comes before the compose box.
+
+## §2 What must not change
+
+- `sendConfessionAction`, its binding, the signed-in form, `SubmitButton`'s
+  signature and pending behaviour, the `?sent=1` cleanup (week 22).
+- The sign-in link target. `/?next=` and its validation are week 21's.
+- The owner view and the disabled-link view.
+- The landing page and its own `OpenInBrowser`.
+- No new request, cookie, header read, route, log line or database column.
+  The server learns nothing about what a signed-out visitor typed or whether
+  they typed.
+- The privacy copy already says (`src/privacy.ts` `cookies`): «A message you
+  are still writing is kept as a draft in your browser only, not on our
+  side.» That stays true and needs no edit. The Arabic copy says the same
+  (`src/privacy.ts` `cookies`, ar): «الرسالة يلي عم تكتبها بتنحفظ مسودة
+  بمتصفحك بس، مش عنا.»
+
+## §3 Rejected
+
+- **Send the message before sign-in and attach it to the account after.**
+  The server would hold text with no account behind it, and the identity
+  model (STACK.md, his decision 08-25) is that every message is tied to a
+  signed-in sender. Also a spam door.
+- **Carry the draft through the sign-in round trip in the URL or a cookie.**
+  The text would reach the proxy's access log or every request header. The
+  log contract (weeks 18, 33-35) exists to stop exactly that.
+- **`localStorage`.** Survives closing the tab, so an unsent confession sits
+  on a shared phone for the next person. `sessionStorage` is what week 22
+  chose for the signed-in box.
+- **A `<form method="get" action="/">` around the box with an unnamed
+  textarea, or a `form=` attribute pointing nowhere.** Each makes "the text
+  never leaves the device" depend on one attribute someone will tidy away.
+- **Send automatically after sign-in.** The sender has not yet seen the
+  notice that the admin can see their account (it sits above «ابعت» in the
+  signed-in form), and a first-time visitor has just accepted terms; the
+  last tap stays theirs.
+- **Skip the landing screen and link straight to `/auth/google/start`.** One
+  fewer tap, but it loses the dev-login and Facebook choices and the landing's
+  terms/privacy links; a separate slice if wanted.
+
+## §4 Acceptance
+
+1. Signed out, JS on, normal browser: `/c/<slug>` shows one `textarea` and
+   four starter chips; the sign-in link points at `/?next=/c/<slug>`.
+2. Typing writes `confession_draft_<slug>` in `sessionStorage` and sets
+   `#draft-status` to «تم الحفظ تلقائياً»; a chip fills the box and saves.
+3. Typing then following the sign-in link, signing in (dev login on
+   staging), accepting terms on a first visit: back on `/c/<slug>` the box
+   holds the text and `#draft-status` says «تم استعادة المسودة». No
+   confession exists for that sender until «ابعت» is pressed; after it, one.
+4. While signed out, typing sends no request at all (network log empty
+   between first keystroke and the click on the sign-in link), and the text
+   appears in no URL, cookie or request body at any point before «ابعت».
+5. Signed out, JS off: no visible `textarea`, the old hint, the sign-in link.
+6. Signed out with an Instagram in-app user agent: the escape card shows on
+   `/c/<slug>` and the box does not, until «جرّب تسجيل الدخول هون على كل حال» (the override) is pressed.
+7. The signed-in, owner and disabled-link renders are unchanged.
+8. Signed in, after a send (`?sent=1`), the week 22 behaviour holds: no draft
+   offered back.
+9. `tsc --noEmit` 0, the whole suite green.
+
+## §5 Amendments
+
+### §5.1 A new client component, authorised here (21:4x)
+
+`test/21-design-system.test.ts` item 10b lists every `'use client'` file by
+name and says a new one "is a decision that belongs in the spec first". This
+is that decision: `app/_components/GuestSignIn.tsx` joins the client island.
+It needs the browser (`sessionStorage`, an input listener) and cannot be a
+server component. It imports React and `./SubmitButton.js` only: no domain
+layer, no database, no `next/headers` or `next/cookies` (item 10c holds).
+
+Rejected: exporting the same component from `SubmitButton.tsx`, which is
+already on the list. It would pass item 10b without the decision 10b asks
+for, which is the guard bypassed rather than satisfied.
+
+The allow-list in test/21 is updated by the test author, not by the hand
+that wrote the component.
+
+### §5.2 Review pass 1: FAIL, and what changes (22:1x)
+
+The independent review (app-adversary, staging `e547f09`) confirmed the
+privacy claim: no signed-out text reached any request, URL, cookie, Referer
+or header, with Enter, Ctrl+Enter, chips and the full sign-in round trip. It
+failed the slice on these, each re-measured or reasoned before acting:
+
+**F1, blocker: a draft outlives a logout in the same tab.** Signed in as A,
+type on `/c/<slug>`, press «تسجيل خروج», open the same link: the signed-out
+box shows A's text; signing in as B in that tab puts it in B's compose box,
+one tap from sending under B. Week 22's signed-in drafts already survived a
+logout; this slice made them visible with nobody signed in. §3's reason for
+rejecting `localStorage` applies to this path too.
+
+Change: `app/auth/logout/route.ts` answers **303** with `Location: /`
+(relative, no `request.url`, the rule test/17 pins for the admin logout) and
+**`Clear-Site-Data: "storage"`**; the session cookie is deleted as before.
+Measured locally in this repo's Chromium: a 303 or 307 carrying that header
+clears `sessionStorage` (and `localStorage`) on the redirect; without it the
+key survives. The header is supported since Safari 17 (MDN: baseline since
+September 2023); **an iPhone on iOS 16 or older keeps the draft after
+logout**, as every browser did before tonight. Account deletion is a Server
+Action and cannot set this header; not changed tonight (residual, §6).
+
+**F2, should-fix: in an in-app browser the box is typeable before the escape
+replaces it.** The server HTML carries the textarea and `OpenInBrowser`
+decides in an effect: 157 ms unthrottled, about 1 s on fast 3G with 4x CPU,
+3.3 s on slow 3G with 6x CPU. Text typed in that window vanishes.
+
+**F3, should-fix: the hint promises a kept draft where nothing is kept.**
+Script blocked or failing, `sessionStorage.setItem` throwing: the box takes
+text, the hint says it waits, and after sign-in it is gone.
+
+One change answers both: the guest `textarea` renders **`disabled`**. The
+new hint (`.guest-draft__hint`) is hidden and the old one
+(`.guest-fallback`, today's text «تسجيل الدخول بياخد ثواني، وبعدها منرجعك
+لهون لتكتب رسالتك.») shows, until `GuestSignIn`'s effect has written and
+removed a probe key in `sessionStorage` without an exception and wired the
+box. Only then it sets `data-draft-ready` on the `[data-compose]` root and
+enables the textarea; CSS swaps the two hints on that attribute. If the probe
+throws, the box stays disabled and the old hint stays. So text can only be
+typed where it will be kept, and before hydration nothing can be typed, so the
+in-app escape never takes text with it. `@media (scripting: none)` still hides
+`.guest-draft`; the old hint is now visible by default, so `.guest-nojs` is
+renamed `.guest-fallback` and has no default `display: none`.
+
+**F5, note acted on: a crafted `?sent=1` link wipes a guest's draft and says
+«الرسالة وصلت» to someone who sent nothing.** The `sent === '1'` block (notice,
+key removal, reciprocal card) now renders only for a signed-in viewer. A
+signed-in viewer with a crafted `?sent=1` still sees the notice; that predates
+this slice.
+
+**F4, note, not changed: override, then escape.** After «جرّب تسجيل الدخول
+هون على كل حال» the box works inside the webview; if the visitor later leaves
+for the real browser, the draft stays behind. The override is the visitor
+choosing to stay; recorded in §6.
+
+**F6, tests.** Two regressions survived every test: `OpenInBrowser` forced to
+always render its children, and a `form="..."` attribute on the guest
+textarea (which would associate it with a form elsewhere on the page). Both
+get a test. The rest of the §5.2 changes get tests from a fresh hand.
+
+### §5.3 Review pass 2: PASS, one should-fix taken (22:5x)
+
+Second pass (staging `6ab6d0c`) measured F1, F2, F3, F5 and F6 closed and
+the promise intact. One should-fix, measured: `POST /auth/logout` has no
+origin check (the origin gate covers multipart and `next-action` only), so a
+page on any other site can `fetch` it with `mode: 'no-cors'`; the `sid`
+cookie is `SameSite=Lax` and is not sent, the visitor stays signed in, but
+the response's `Clear-Site-Data` still wiped their unsent draft. Before §5.2
+that request could do nothing to a draft.
+
+Change: the logout route sends `Clear-Site-Data: "storage"` **only when the
+request carries the session cookie**. A real logout from this site always
+does; a cross-site POST does not. Everything else in the response is as
+§5.2 (303, `Location: /`, cookie deleted).
+
+Also taken, note 4: React reuses the `[data-compose]` element when
+`OpenInBrowser` swaps to its escape card, and the attribute set by hand
+stayed on it. `GuestSignIn`'s cleanup now removes `data-draft-ready`.
+
+Recorded, not changed (§6): the disabled box has no stated reason for a
+screen reader, and a chip can fill it while storage is refused (canned text,
+nothing promised); the box is enabled for 27-40 ms before the escape card
+replaces it on throttled phones (nothing typeable by a person in that time);
+a quota failure after a good probe leaves «عم يحفظ...»; a stale signed-in
+tab can re-save a draft after logout in another tab; a crafted `?error=`
+shows its banner to a guest (predates this slice).
+
+## §6 Residual, known and left
+
+- iOS 16 and older: a draft survives logout (F1).
+- Account deletion does not clear drafts in the tab (F1).
+- Override then escape strands a draft in the webview (F4).
+- Ctrl-click or long-press "open in new tab" on the sign-in link: the new
+  tab starts with an empty box; the original tab keeps the text.
+- `OpenInBrowser`'s escape decision is still made after hydration; the box
+  is disabled until then, not hidden.
+- The disabled guest box gives a screen reader no reason; a chip can fill
+  it while storage is refused (canned text, no draft promised).
+- On a throttled phone in an in-app browser the box is enabled for 27-40 ms
+  before the escape card replaces it.
+- A storage quota failure after a good probe leaves «عم يحفظ...» showing.
+- A stale signed-in tab can write a draft again after a logout in another
+  tab.
+- A crafted `?error=` shows its banner to a signed-out visitor (predates).
+- Logout from another site still deletes the session cookie in a top-level
+  cross-site form POST (predates this slice); it no longer clears storage
+  unless the request carried the session cookie.

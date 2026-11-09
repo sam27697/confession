@@ -49,26 +49,52 @@ export function wireDraft(button: HTMLButtonElement | null): (() => void) | unde
   const slug = textarea.getAttribute('data-draft-slug')
   if (!slug) return
 
-  const indicator = form.querySelector('#draft-status') as HTMLElement | null
-
   if (textarea.getAttribute('data-draft-sent') === '1') {
     try {
       sessionStorage.removeItem('confession_draft_' + slug)
     } catch {
       void 0
     }
-  } else {
-    let saved: string | null = null
-    try {
-      saved = sessionStorage.getItem('confession_draft_' + slug)
-    } catch {
-      void 0
-    }
-    if (saved && !textarea.value) {
-      textarea.value = saved
-      if (indicator) indicator.textContent = 'تم استعادة المسودة'
-      textarea.dispatchEvent(new Event('input', { bubbles: true }))
-    }
+  }
+
+  // On the ?sent=1 render the key is gone by now, so nothing is offered back.
+  const unwire = wireDraftBox(form, textarea)
+  const handleSubmit = () => {
+    const indicator = form.querySelector('#draft-status') as HTMLElement | null
+    if (indicator) indicator.textContent = ''
+  }
+  form.addEventListener('submit', handleSubmit)
+  return () => {
+    unwire?.()
+    form.removeEventListener('submit', handleSubmit)
+  }
+}
+
+/**
+ * The restore and autosave half of wireDraft, for any box that carries
+ * `data-draft-slug`, inside a form or not (week 36). The signed-out compose
+ * box on /c/<slug> uses it directly: it has no form and no submit, and the
+ * same key is what the signed-in form restores from after sign-in.
+ */
+export function wireDraftBox(
+  root: Element,
+  textarea: HTMLTextAreaElement,
+): (() => void) | undefined {
+  const slug = textarea.getAttribute('data-draft-slug')
+  if (!slug) return
+
+  const indicator = root.querySelector('#draft-status') as HTMLElement | null
+
+  let saved: string | null = null
+  try {
+    saved = sessionStorage.getItem('confession_draft_' + slug)
+  } catch {
+    void 0
+  }
+  if (saved && !textarea.value) {
+    textarea.value = saved
+    if (indicator) indicator.textContent = 'تم استعادة المسودة'
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -85,16 +111,10 @@ export function wireDraft(button: HTMLButtonElement | null): (() => void) | unde
     }, 150)
   }
 
-  const handleSubmit = () => {
-    if (indicator) indicator.textContent = ''
-  }
-
   textarea.addEventListener('input', handleInput)
-  form.addEventListener('submit', handleSubmit)
   return () => {
     if (debounceTimer) clearTimeout(debounceTimer)
     textarea.removeEventListener('input', handleInput)
-    form.removeEventListener('submit', handleSubmit)
   }
 }
 

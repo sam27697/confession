@@ -1798,6 +1798,22 @@ main{
   color:var(--text-1);
 }
 
+/* Week 36: the signed-out box keeps its draft through script. Until the
+   script has proved sessionStorage works it stays disabled and the old
+   sign-in hint shows; data-draft-ready swaps the hints (§5.2). Without
+   script the box is hidden. */
+.guest-draft{
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-3);
+}
+.guest-draft__hint{ display:none; }
+[data-draft-ready] .guest-draft__hint{ display:block; }
+[data-draft-ready] .guest-fallback{ display:none; }
+@media (scripting: none){
+  .guest-draft{ display:none; }
+}
+
 /* Sent screen header & badge */
 .sent-header{
   display:flex;
