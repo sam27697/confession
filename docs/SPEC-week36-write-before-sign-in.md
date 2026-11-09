@@ -13,7 +13,7 @@ account owning a link and a second browser context, signed out, opening it:
 
 - `/c/<slug>` signed out renders the avatar, «ابعتلـ <name>», the pitch line,
   «تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.» and one
-  button, «سجل دخول 🚀» to `/?next=/c/<slug>`.
+  button, «سجل دخول {ACTION_EMOJI.send}» to `/?next=/c/<slug>`.
 - `textarea` count on that screen: **0**. There is nothing to write in until
   the visitor has been to Google (or Facebook), accepted the terms on a first
   visit, and come back.
@@ -65,7 +65,7 @@ in this order, inside `<OpenInBrowser>`:
 3. A no-JS hint, class `guest-nojs`, with today's text «تسجيل الدخول بياخد
    ثواني، وبعدها منرجعك لهون لتكتب رسالتك.»
 4. The sign-in link, unchanged target `/?next=/c/<encoded slug>`, label
-   «سجل دخول وكمّل 🚀».
+   «سجل دخول وكمّل» followed by `{ACTION_EMOJI.send}` as today.
 
 **The draft block is not a `<form>` and is not inside one.** The container is
 a `div` carrying `data-compose`. There is no element in the signed-out branch
