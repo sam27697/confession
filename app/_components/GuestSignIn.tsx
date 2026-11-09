@@ -40,7 +40,12 @@ export function GuestSignIn({ href, className, children }: { href: string; class
     if (!unwire) return
     textarea.disabled = false
     root.setAttribute('data-draft-ready', '')
-    return unwire
+    // React can reuse this element for OpenInBrowser's escape card, so the
+    // attribute set by hand goes when the wiring does (§5.3).
+    return () => {
+      unwire()
+      root.removeAttribute('data-draft-ready')
+    }
   }, [])
 
   return (
