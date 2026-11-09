@@ -11,6 +11,8 @@ import { sendConfessionAction } from './actions.js'
 import { SubmitButton } from '../../_components/SubmitButton.js'
 import { Celebrate } from '../../_components/Celebrate.js'
 import { CopyLink } from '../../_components/CopyLink.js'
+import { GuestSignIn } from '../../_components/GuestSignIn.js'
+import { OpenInBrowser } from '../../_components/OpenInBrowser.js'
 import { ACTION_EMOJI, MOOD_EMOJI, STATE_EMOJI } from '../../_lib/emoji.js'
 import Script from 'next/script'
 
@@ -76,17 +78,74 @@ const STARTER_PROMPTS = [
   'نصيحة صادقة من قلبك بتفيدني بهالفترة...',
 ]
 
-function SignInCard({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
+function StarterChips() {
   return (
-    <div className="card send-card">
-      <p className="send-pitch">
-        صارح {ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
-      </p>
-      {/* True for a first-time visitor too: next rides through /onboarding
-          in the after_login cookie (week 15 §2.3). */}
-      <p className="hint">تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.</p>
-      <a className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول {ACTION_EMOJI.send}</a>
-    </div>
+    <>
+      <div className="compose-starters" role="group" aria-label="أفكار للبدء">
+        <span className="compose-starters__label">أفكار للبدء:</span>
+        <div className="compose-starters__list">
+          {STARTER_PROMPTS.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className="starter-chip"
+              data-starter-prompt={prompt}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </div>
+      <Script
+        id="starter-chips"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form,[data-compose]');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
+        }}
+      />
+    </>
+  )
+}
+
+// Week 36: a visitor who followed a friend's link writes first and signs in
+// second. The box is a div, not a form, and nothing in it can send the text
+// anywhere: it waits in this tab's sessionStorage and the signed-in form
+// restores it after sign-in, where the last tap on «ابعت» is still the visitor's.
+// Inside an in-app browser the escape comes first, so the text is never
+// typed into a webview the visitor is about to leave. With JavaScript off
+// the box is hidden by CSS and the screen is the old one.
+function GuestCompose({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
+  return (
+    <OpenInBrowser>
+      <div className="card send-card" data-compose="">
+        <p className="send-pitch">
+          صارح {ownerDisplayName} باللي بقلبك بدون ما يعرف هويتك.
+        </p>
+        <div className="guest-draft">
+          <StarterChips />
+          <div className="field-row">
+            <label className="sr-only" htmlFor="body">رسالتك</label>
+            <textarea
+              id="body"
+              className="textarea textarea--hero"
+              name="body"
+              data-draft-slug={slug}
+              maxLength={4000}
+              rows={5}
+              placeholder="اكتب اللي بقلبك..."
+            />
+          </div>
+          <div className="compose-meta">
+            <span id="draft-status" className="draft-indicator" aria-live="polite" />
+          </div>
+          <p className="hint">رسالتك بتضل على جهازك وما بتوصلنا قبل ما تكبس ابعت. سجّل دخول ومنرجعك لهون لتبعتها.</p>
+        </div>
+        {/* True for a first-time visitor too: next rides through /onboarding
+            in the after_login cookie (week 15 §2.3). */}
+        <p className="hint guest-nojs">تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.</p>
+        <GuestSignIn className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول وكمّل {ACTION_EMOJI.send}</GuestSignIn>
+      </div>
+    </OpenInBrowser>
   )
 }
 
@@ -179,28 +238,7 @@ export default async function SendPage({
         // The key sits on a Fragment because test 31 pins the form tag.
         <Fragment key={sent === '1' ? randomUUID() : 'compose'}>
           <form action={action}>
-            <div className="compose-starters" role="group" aria-label="أفكار للبدء">
-              <span className="compose-starters__label">أفكار للبدء:</span>
-              <div className="compose-starters__list">
-                {STARTER_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    className="starter-chip"
-                    data-starter-prompt={prompt}
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Script
-              id="starter-chips"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `(function(){document.addEventListener('click',function(e){var t=e.target.closest('button[data-starter-prompt]');if(!t)return;var f=t.closest('form');if(!f)return;var ta=f.querySelector('textarea[name="body"]');if(!ta)return;ta.value=t.getAttribute('data-starter-prompt')||'';ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}));});})();`,
-              }}
-            />
+            <StarterChips />
             <div className="field-row">
               {/* The field had a placeholder and no label, so a screen reader
                   announced it as an unnamed text area. The label is visually
@@ -236,7 +274,7 @@ export default async function SendPage({
           </form>
         </Fragment>
       ) : (
-        <SignInCard slug={slug} ownerDisplayName={link.ownerDisplayName} />
+        <GuestCompose slug={slug} ownerDisplayName={link.ownerDisplayName} />
       )}
     </div>
   )
