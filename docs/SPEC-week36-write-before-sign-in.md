@@ -256,6 +256,33 @@ always render its children, and a `form="..."` attribute on the guest
 textarea (which would associate it with a form elsewhere on the page). Both
 get a test. The rest of the §5.2 changes get tests from a fresh hand.
 
+### §5.3 Review pass 2: PASS, one should-fix taken (22:5x)
+
+Second pass (staging `6ab6d0c`) measured F1, F2, F3, F5 and F6 closed and
+the promise intact. One should-fix, measured: `POST /auth/logout` has no
+origin check (the origin gate covers multipart and `next-action` only), so a
+page on any other site can `fetch` it with `mode: 'no-cors'`; the `sid`
+cookie is `SameSite=Lax` and is not sent, the visitor stays signed in, but
+the response's `Clear-Site-Data` still wiped their unsent draft. Before §5.2
+that request could do nothing to a draft.
+
+Change: the logout route sends `Clear-Site-Data: "storage"` **only when the
+request carries the session cookie**. A real logout from this site always
+does; a cross-site POST does not. Everything else in the response is as
+§5.2 (303, `Location: /`, cookie deleted).
+
+Also taken, note 4: React reuses the `[data-compose]` element when
+`OpenInBrowser` swaps to its escape card, and the attribute set by hand
+stayed on it. `GuestSignIn`'s cleanup now removes `data-draft-ready`.
+
+Recorded, not changed (§6): the disabled box has no stated reason for a
+screen reader, and a chip can fill it while storage is refused (canned text,
+nothing promised); the box is enabled for 27-40 ms before the escape card
+replaces it on throttled phones (nothing typeable by a person in that time);
+a quota failure after a good probe leaves «عم يحفظ...»; a stale signed-in
+tab can re-save a draft after logout in another tab; a crafted `?error=`
+shows its banner to a guest (predates this slice).
+
 ## §6 Residual, known and left
 
 - iOS 16 and older: a draft survives logout (F1).
@@ -265,3 +292,14 @@ get a test. The rest of the §5.2 changes get tests from a fresh hand.
   tab starts with an empty box; the original tab keeps the text.
 - `OpenInBrowser`'s escape decision is still made after hydration; the box
   is disabled until then, not hidden.
+- The disabled guest box gives a screen reader no reason; a chip can fill
+  it while storage is refused (canned text, no draft promised).
+- On a throttled phone in an in-app browser the box is enabled for 27-40 ms
+  before the escape card replaces it.
+- A storage quota failure after a good probe leaves «عم يحفظ...» showing.
+- A stale signed-in tab can write a draft again after a logout in another
+  tab.
+- A crafted `?error=` shows its banner to a signed-out visitor (predates).
+- Logout from another site still deletes the session cookie in a top-level
+  cross-site form POST (predates this slice); it no longer clears storage
+  unless the request carried the session cookie.
