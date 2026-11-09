@@ -193,3 +193,75 @@ for, which is the guard bypassed rather than satisfied.
 
 The allow-list in test/21 is updated by the test author, not by the hand
 that wrote the component.
+
+### §5.2 Review pass 1: FAIL, and what changes (22:1x)
+
+The independent review (app-adversary, staging `e547f09`) confirmed the
+privacy claim: no signed-out text reached any request, URL, cookie, Referer
+or header, with Enter, Ctrl+Enter, chips and the full sign-in round trip. It
+failed the slice on these, each re-measured or reasoned before acting:
+
+**F1, blocker: a draft outlives a logout in the same tab.** Signed in as A,
+type on `/c/<slug>`, press «تسجيل خروج», open the same link: the signed-out
+box shows A's text; signing in as B in that tab puts it in B's compose box,
+one tap from sending under B. Week 22's signed-in drafts already survived a
+logout; this slice made them visible with nobody signed in. §3's reason for
+rejecting `localStorage` applies to this path too.
+
+Change: `app/auth/logout/route.ts` answers **303** with `Location: /`
+(relative, no `request.url`, the rule test/17 pins for the admin logout) and
+**`Clear-Site-Data: "storage"`**; the session cookie is deleted as before.
+Measured locally in this repo's Chromium: a 303 or 307 carrying that header
+clears `sessionStorage` (and `localStorage`) on the redirect; without it the
+key survives. The header is supported since Safari 17 (MDN: baseline since
+September 2023); **an iPhone on iOS 16 or older keeps the draft after
+logout**, as every browser did before tonight. Account deletion is a Server
+Action and cannot set this header; not changed tonight (residual, §6).
+
+**F2, should-fix: in an in-app browser the box is typeable before the escape
+replaces it.** The server HTML carries the textarea and `OpenInBrowser`
+decides in an effect: 157 ms unthrottled, about 1 s on fast 3G with 4x CPU,
+3.3 s on slow 3G with 6x CPU. Text typed in that window vanishes.
+
+**F3, should-fix: the hint promises a kept draft where nothing is kept.**
+Script blocked or failing, `sessionStorage.setItem` throwing: the box takes
+text, the hint says it waits, and after sign-in it is gone.
+
+One change answers both: the guest `textarea` renders **`disabled`**. The
+new hint (`.guest-draft__hint`) is hidden and the old one
+(`.guest-fallback`, today's text «تسجيل الدخول بياخد ثواني، وبعدها منرجعك
+لهون لتكتب رسالتك.») shows, until `GuestSignIn`'s effect has written and
+removed a probe key in `sessionStorage` without an exception and wired the
+box. Only then it sets `data-draft-ready` on the `[data-compose]` root and
+enables the textarea; CSS swaps the two hints on that attribute. If the probe
+throws, the box stays disabled and the old hint stays. So text can only be
+typed where it will be kept, and before hydration nothing can be typed, so the
+in-app escape never takes text with it. `@media (scripting: none)` still hides
+`.guest-draft`; the old hint is now visible by default, so `.guest-nojs` is
+renamed `.guest-fallback` and has no default `display: none`.
+
+**F5, note acted on: a crafted `?sent=1` link wipes a guest's draft and says
+«الرسالة وصلت» to someone who sent nothing.** The `sent === '1'` block (notice,
+key removal, reciprocal card) now renders only for a signed-in viewer. A
+signed-in viewer with a crafted `?sent=1` still sees the notice; that predates
+this slice.
+
+**F4, note, not changed: override, then escape.** After «جرّب تسجيل الدخول
+هون على كل حال» the box works inside the webview; if the visitor later leaves
+for the real browser, the draft stays behind. The override is the visitor
+choosing to stay; recorded in §6.
+
+**F6, tests.** Two regressions survived every test: `OpenInBrowser` forced to
+always render its children, and a `form="..."` attribute on the guest
+textarea (which would associate it with a form elsewhere on the page). Both
+get a test. The rest of the §5.2 changes get tests from a fresh hand.
+
+## §6 Residual, known and left
+
+- iOS 16 and older: a draft survives logout (F1).
+- Account deletion does not clear drafts in the tab (F1).
+- Override then escape strands a draft in the webview (F4).
+- Ctrl-click or long-press "open in new tab" on the sign-in link: the new
+  tab starts with an empty box; the original tab keeps the text.
+- `OpenInBrowser`'s escape decision is still made after hydration; the box
+  is disabled until then, not hidden.
