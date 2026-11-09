@@ -57,7 +57,8 @@ export function wireDraft(button: HTMLButtonElement | null): (() => void) | unde
     }
   }
 
-  const unwire = wireDraftBox(form, textarea, textarea.getAttribute('data-draft-sent') !== '1')
+  // On the ?sent=1 render the key is gone by now, so nothing is offered back.
+  const unwire = wireDraftBox(form, textarea)
   const handleSubmit = () => {
     const indicator = form.querySelector('#draft-status') as HTMLElement | null
     if (indicator) indicator.textContent = ''
@@ -74,32 +75,26 @@ export function wireDraft(button: HTMLButtonElement | null): (() => void) | unde
  * `data-draft-slug`, inside a form or not (week 36). The signed-out compose
  * box on /c/<slug> uses it directly: it has no form and no submit, and the
  * same key is what the signed-in form restores from after sign-in.
- *
- * `restore` is false only for wireDraft's `?sent=1` render, where the key
- * was just removed and nothing may be offered back.
  */
 export function wireDraftBox(
   root: Element,
   textarea: HTMLTextAreaElement,
-  restore = true,
 ): (() => void) | undefined {
   const slug = textarea.getAttribute('data-draft-slug')
   if (!slug) return
 
   const indicator = root.querySelector('#draft-status') as HTMLElement | null
 
-  if (restore) {
-    let saved: string | null = null
-    try {
-      saved = sessionStorage.getItem('confession_draft_' + slug)
-    } catch {
-      void 0
-    }
-    if (saved && !textarea.value) {
-      textarea.value = saved
-      if (indicator) indicator.textContent = 'تم استعادة المسودة'
-      textarea.dispatchEvent(new Event('input', { bubbles: true }))
-    }
+  let saved: string | null = null
+  try {
+    saved = sessionStorage.getItem('confession_draft_' + slug)
+  } catch {
+    void 0
+  }
+  if (saved && !textarea.value) {
+    textarea.value = saved
+    if (indicator) indicator.textContent = 'تم استعادة المسودة'
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
