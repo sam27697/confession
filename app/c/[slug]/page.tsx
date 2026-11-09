@@ -111,8 +111,9 @@ function StarterChips() {
 // second. The box is a div, not a form, and nothing in it can send the text
 // anywhere: it waits in this tab's sessionStorage and the signed-in form
 // restores it after sign-in, where the last tap on «ابعت» is still the visitor's.
-// Inside an in-app browser the escape comes first, so the text is never
-// typed into a webview the visitor is about to leave. With JavaScript off
+// The box is disabled until GuestSignIn has proved sessionStorage works and
+// wired it (§5.2), so nothing typed before hydration, in an in-app browser
+// about to be left, or with storage refused can be lost. With JavaScript off
 // the box is hidden by CSS and the screen is the old one.
 function GuestCompose({ slug, ownerDisplayName }: { slug: string; ownerDisplayName: string }) {
   return (
@@ -133,16 +134,17 @@ function GuestCompose({ slug, ownerDisplayName }: { slug: string; ownerDisplayNa
               maxLength={4000}
               rows={5}
               placeholder="اكتب اللي بقلبك..."
+              disabled
             />
           </div>
           <div className="compose-meta">
             <span id="draft-status" className="draft-indicator" aria-live="polite" />
           </div>
-          <p className="hint">رسالتك بتضل على جهازك وما بتوصلنا قبل ما تكبس ابعت. سجّل دخول ومنرجعك لهون لتبعتها.</p>
+          <p className="hint guest-draft__hint">رسالتك بتضل على جهازك وما بتوصلنا قبل ما تكبس ابعت. سجّل دخول ومنرجعك لهون لتبعتها.</p>
         </div>
         {/* True for a first-time visitor too: next rides through /onboarding
             in the after_login cookie (week 15 §2.3). */}
-        <p className="hint guest-nojs">تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.</p>
+        <p className="hint guest-fallback">تسجيل الدخول بياخد ثواني، وبعدها منرجعك لهون لتكتب رسالتك.</p>
         <GuestSignIn className="btn btn--primary btn--block" href={`/?next=/c/${encodeURIComponent(slug)}`}>سجل دخول وكمّل {ACTION_EMOJI.send}</GuestSignIn>
       </div>
     </OpenInBrowser>
@@ -198,7 +200,7 @@ export default async function SendPage({
         </div>
       </div>
 
-      {sent === '1' && (
+      {sent === '1' && viewerAccountId && (
         <>
           <p className="notice notice--citron">{STATE_EMOJI.delivered} الرسالة وصلت.</p>
           <script
