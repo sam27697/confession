@@ -615,3 +615,50 @@ test("89.8: middleware.ts still contains no `cookies` and no headers.get( but 'n
   // The new call is the one this slice adds; without it the two checks above pass on a tree with no change.
   assert.ok(/\bwipesStorage\b/.test(stripped), 'middleware.ts must use wipesStorage')
 })
+
+// ===========================================================================
+// 9. (added, spec §5.2) the second argument is APP_ORIGIN, not the request URL
+// ===========================================================================
+
+// Behind the proxy the URL the middleware sees is the container's own, not the
+// public host, so the host in the request URL differs from APP_ORIGIN's.
+const PROXIED_ORIGIN = 'http://0.0.0.0:3000'
+const PROXIED_DELETE_URL = `${PROXIED_ORIGIN}${DELETE_PATH}`
+
+test('89.9: a POST whose URL host differs from APP_ORIGIN (behind the proxy), with Origin equal to APP_ORIGIN, passes through with Clear-Site-Data: "storage"', async () => {
+  const { middleware } = await loadMiddleware()
+  await withAppOrigin(APP, async () => {
+    for (const make of [scriptRequest, noJsRequest]) {
+      for (const sid of [false, true]) {
+        const request = make({ url: PROXIED_DELETE_URL, origin: APP, sid })
+        assert.equal(request.nextUrl.origin, PROXIED_ORIGIN, 'fixture: the URL origin is the proxy-side one')
+        assert.notEqual(new URL(request.url).host, new URL(APP).host, 'fixture: the URL host differs from APP_ORIGIN host')
+        assert.equal(request.headers.get('origin'), APP, 'fixture: Origin is APP_ORIGIN')
+        const response = await middleware(request)
+        assertPassedThrough(response, `proxied ${make.name}, sid=${sid}`)
+        assertWipes(response, `proxied ${make.name}, sid=${sid}`)
+      }
+    }
+  })
+})
+
+test("89.9: the same POST with Origin equal to the request URL's own origin (not APP_ORIGIN) answers 403 with no Clear-Site-Data", async () => {
+  const { middleware } = await loadMiddleware()
+  await withAppOrigin(APP, async () => {
+    // The control: with Origin equal to APP_ORIGIN the same URL is wiped, so a
+    // middleware that never sets the header cannot satisfy this by default.
+    assertWipes(await middleware(scriptRequest({ url: PROXIED_DELETE_URL, origin: APP })), 'control: proxied URL, Origin = APP_ORIGIN')
+
+    for (const make of [scriptRequest, noJsRequest]) {
+      for (const sid of [false, true]) {
+        const request = make({ url: PROXIED_DELETE_URL, origin: PROXIED_ORIGIN, sid })
+        assert.equal(request.headers.get('origin'), request.nextUrl.origin, "fixture: Origin is the request URL's own origin")
+        const response = await middleware(request)
+        assert.ok(response, 'a response')
+        assert.equal(response.status, 403, `proxied ${make.name}, sid=${sid}: status`)
+        assertNoWipe(response, `proxied ${make.name}, Origin = URL origin, sid=${sid}`)
+        assert.notEqual(response.headers.get('x-middleware-next'), '1', 'a 403 is not a pass-through')
+      }
+    }
+  })
+})
