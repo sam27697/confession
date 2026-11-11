@@ -171,10 +171,92 @@ On staging (Chromium, `w37-delete-draft.mjs`):
 
 ## §5 Amendments
 
-None yet.
+### §5.1 The middleware reads no cookie, so the gate is the Origin (22:2x)
+
+The first build put `request.cookies.has(SID_COOKIE)` in `middleware.ts`.
+`test/68` §4.10 failed on it: week 18 §2 says the middleware "reads no
+cookie", and that rule is why the log gate can be trusted to carry no
+identity. Moving the cookie read into a `src/` helper would pass the test's
+wording and break its rule, so it is not done. The rule stands; the gate
+changes.
+
+**Supersedes §1.1, §1.2's call and its `SID_COOKIE` paragraph, §1.3, and §4
+items 1 to 8.** `src/sid-cookie.ts` is not created and `app/_lib/session.ts`
+does not change.
+
+`src/storage-wipe.ts`:
+
+```ts
+export const ACCOUNT_DELETE_PATH = '/account/delete'
+export function wipesStorage(
+  method: string,
+  pathname: string,
+  headers: Headers,
+  appOrigin: string | undefined,
+): boolean
+```
+
+`true` exactly when `method === 'POST'`, `pathname === '/account/delete'`,
+the request has an `Origin` header, `appOrigin` is defined, and both parse
+as URLs with the same `host` (the comparison `src/origin-gate.ts` makes). An
+unparseable Origin (including `null`) or `appOrigin` is `false`. It reads no
+header but `origin`.
+
+`middleware.ts` calls
+`wipesStorage(request.method, request.nextUrl.pathname, request.headers, process.env.APP_ORIGIN)`
+after the three gates and sets the header on `NextResponse.next()` when it
+is true. With comments stripped it still contains no `cookies` and no
+`headers.get(` other than `'next-action'`.
+
+**Why the Origin is enough.** The threat the gate exists for is another site
+wiping a visitor's drafts. A browser sends `Origin` on every cross-origin
+POST, form or script; a foreign one is already a 403 before this code runs,
+and `Origin: null` (a page with `Referrer-Policy: no-referrer`, a sandboxed
+frame) is too. A same-origin POST to `/account/delete` comes from this app's
+own pages. Without a session the action redirects to sign-in and deletes
+nothing, and the header then wipes the drafts of the person whose own tab
+sent it: no one else's. A POST with no `Origin` (curl, a browser too old to
+send it on a same-origin form) gets no header, so drafts survive there, as
+they did before tonight.
+
+**Acceptance, replacing §4 items 1 to 8:**
+
+1. `wipesStorage('POST', '/account/delete', h, A)` is `true` where `h` has
+   `Origin` equal to `A`, and also where `h`'s Origin differs from `A` only in
+   scheme or path (host equal).
+2. It is `false` for each of: method `GET`, `PUT`, `post`; path
+   `/account/delete/`, `/account/DELETE`, `/account/delete/x`, `/account`,
+   `/auth/logout`, `/`, `/c/x`; no `Origin`; `Origin` of another host
+   (including a subdomain of A's host and A's host with another port);
+   `Origin: null`; an unparseable Origin; `appOrigin` undefined; an
+   unparseable `appOrigin`.
+3. `middleware()` given a POST to `/account/delete` with a well-formed
+   `next-action`, a valid multipart body and a same-origin `Origin`, with
+   `APP_ORIGIN` set, passes it through (`x-middleware-next: 1`) with
+   `Clear-Site-Data: "storage"`, whether or not a `sid` cookie is present.
+4. The same with no `Origin` header: passes through, no `Clear-Site-Data`,
+   with or without a `sid` cookie.
+5. The same with a foreign `Origin`: 403, no `Clear-Site-Data`. With a
+   malformed `next-action` and a same Origin: 404, none. With a malformed
+   multipart body and a same Origin: 400, none.
+6. A no-JS shaped POST (multipart with a well-formed `$ACTION_ID_`, no
+   `next-action` header) to `/account/delete` with a same Origin: passes
+   through with the header.
+7. POSTs with a same Origin and a well-formed action to `/`, `/c/x`,
+   `/inbox`, `/onboarding`, `/admin/login`: pass through, no
+   `Clear-Site-Data`. A GET to `/account/delete` with a well-formed
+   `next-action` and a same Origin: no `Clear-Site-Data`.
+8. `src/storage-wipe.ts`, comments stripped, contains no `cookies`, no
+   `console.`, and every `headers.get(` in it takes the literal `'origin'`.
+   `middleware.ts` imports `wipesStorage` from `./src/storage-wipe.js`.
+
+§4 item 13 on staging becomes: a POST to `/account/delete` with no Origin
+(curl) answers without `Clear-Site-Data`; with a foreign Origin, 403.
 
 ## §6 Residual, known and left
 
 - Safari before 17 ignores `Clear-Site-Data`; there a draft outlives deletion
   as it outlives logout (week 36 §6).
 - A deletion that fails after the header was sent costs the drafts (§1.4).
+- A browser that sends no `Origin` on a same-origin form POST keeps the
+  drafts after deletion (§5.1).
