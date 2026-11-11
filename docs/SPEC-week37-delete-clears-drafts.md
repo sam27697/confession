@@ -253,6 +253,44 @@ they did before tonight.
 §4 item 13 on staging becomes: a POST to `/account/delete` with no Origin
 (curl) answers without `Clear-Site-Data`; with a foreign Origin, 403.
 
+### §5.2 Review pass 1: PASS, two should-fix taken (22:5x)
+
+The independent review (app-adversary, staging and 32 mutants) passed the
+slice with no must-fix. Its findings, and what was done:
+
+- **F1, a tab left open writes the draft back.** Tab 1 deletes; tab 2's
+  storage is emptied, but its page still shows the text in its signed-in
+  box, one keystroke writes it back to `sessionStorage`, and after a reload
+  the signed-out guest box restores it. `Clear-Site-Data` clears storage,
+  not a page already on screen, and nothing tells that tab it is signed
+  out. Week 36 §6 recorded the same for logout. Taken: the comment in
+  `middleware.ts` no longer says the drafts "in every tab go with the
+  account", and §6 lists it. Not fixed in code: it would need a signal to
+  other tabs that `sessionStorage` cannot give (it fires no cross-tab
+  event) and a check on every keystroke, for a page the person left open.
+- **F2, the second argument to `wipesStorage` was unpinned.** Replacing
+  `process.env.APP_ORIGIN` with `request.nextUrl.origin` passed all 27
+  tests, because every fixture's URL host equals `APP_ORIGIN`. Behind the
+  proxy the two differ, and the wipe would then never fire. Taken: one more
+  acceptance item, 9 below, written by a hand that has not seen the code.
+- **N1, Next's action forwarding.** A same-origin POST to `/inbox` carrying
+  the deletion action's id came back with the header: Next forwards an
+  action it does not find on that page to the page that owns it, that
+  internal request goes through the middleware as a POST to
+  `/account/delete`, and Next copies its headers back. Same-origin only, so
+  no other site can reach it. Listed in §6; the path `wipesStorage` sees is
+  the path Next routes the action to.
+- **N2, scheme.** `Origin: http://<host>` gets the header, as §5.1 says
+  (host comparison, like the Origin gate). HSTS covers the host. Left.
+
+**Acceptance item 9 (added).** `middleware()` given a POST to
+`/account/delete` whose URL host differs from `APP_ORIGIN`'s host (as behind
+the proxy, for example `http://0.0.0.0:3000/account/delete`), with a
+well-formed `next-action`, a valid multipart body and `Origin` equal to
+`APP_ORIGIN`: passes through with `Clear-Site-Data: "storage"`. And with
+`Origin` equal to the request URL's own origin instead (not `APP_ORIGIN`):
+403 and no header.
+
 ## §6 Residual, known and left
 
 - Safari before 17 ignores `Clear-Site-Data`; there a draft outlives deletion
@@ -260,3 +298,9 @@ they did before tonight.
 - A deletion that fails after the header was sent costs the drafts (§1.4).
 - A browser that sends no `Origin` on a same-origin form POST keeps the
   drafts after deletion (§5.1).
+- A tab left open on a link still shows its text after the deletion in
+  another tab, and writes it back to storage on the next keystroke; after a
+  reload the guest box restores it (§5.2 F1, the same as week 36 §6 for
+  logout).
+- A same-origin POST at another path carrying the deletion action's id gets
+  the header through Next's action forwarding (§5.2 N1).

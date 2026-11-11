@@ -10,8 +10,10 @@ import { wipesStorage } from './src/storage-wipe.js'
 // and 2). A body Next's action handler would throw on gets a bare 400 (week
 // 33 spec, section 1.2). An action from a foreign Origin gets a bare 403
 // before Next would log that Origin (week 34 spec, section 7). The account
-// deletion POST, once through all three, carries Clear-Site-Data so the
-// drafts in every tab go with the account (week 37 spec, section 5.1).
+// deletion POST, once through all three, carries Clear-Site-Data, which
+// empties the origin's storage in every tab as logout does (week 37 spec,
+// section 5.1). A page still open in another tab keeps what it shows and
+// can write it back (section 6).
 export async function middleware(request: NextRequest) {
   if (!originAllowed(request.headers, request.method, process.env.APP_ORIGIN)) {
     return new NextResponse(null, { status: 403 })
