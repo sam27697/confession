@@ -1,0 +1,180 @@
+# Week 37 - deleting an account clears the drafts it left in the browser
+
+Frozen 2026-11-11 21:5x +04, before any code. Measured on staging, which runs
+the same tarball as production since week 36 (`04541f1`).
+
+## §0 What was measured
+
+### §0.1 A deleted person's draft is waiting in the guest box
+
+Driven headless at 390x844 on `stg.masaraha.provefair.app`
+(`work/confession-app/probes/w37-delete-draft.mjs`, workspace repo). Owner A
+makes a link. Sender B signs in, types a draft on A's link (it goes to
+`sessionStorage` `confession_draft_<slug>`, week 22), opens `/account/delete`
+in the same tab, ticks the box and deletes:
+
+- B lands on `/?deleted=1`, signed out. The draft key is **still there**.
+- B's tab, now signed out, opens A's link again. Week 36's guest box restores
+  the draft into the box: the deleted person's words, typed out, on a phone
+  that is now nobody's. Whoever picks it up next can read it, or sign in and
+  send it under their own account.
+- A second tab of B's with its own draft on the same link keeps it too.
+- «رجوع بلا حذف» and a submit with the box unticked keep the draft (correct).
+
+Week 36 §6 recorded "Account deletion does not clear drafts in the tab (F1)"
+and left it.
+
+### §0.2 Logout already does this, and does it for every tab
+
+Same browser, staging, measured tonight: a signed-in tab and a second tab each
+hold a `confession_draft_` key; the first posts the logout form. Both keys are
+gone, and the second tab's is still gone after a reload. The same holds when
+the logout POST is made with `fetch()`: Chromium applies `Clear-Site-Data` on
+a response to a script request, redirect included, and clears the origin's
+`sessionStorage` in every tab. That is week 36 §5.2/§5.3: logout answers with
+`Clear-Site-Data: "storage"` when the request carries the session cookie.
+
+So today a person who signs out leaves less behind than a person who deletes
+their account. Clause 6 is the stronger request.
+
+### §0.3 Why the action cannot say it itself
+
+`deleteAccountAction` (`app/account/delete/actions.ts`) is a Server Action.
+Next gives an action no way to set a response header other than a cookie. The
+middleware can: a header set on `NextResponse.next()` is carried onto the
+response Next sends for that request. Both ways the deletion form is
+submitted reach the middleware's matcher today: with script, a POST with a
+`next-action` header and a multipart body; without, a native multipart POST
+carrying `$ACTION_ID_<id>`.
+
+## §1 The change
+
+### §1.1 `src/storage-wipe.ts` (new)
+
+```ts
+export const ACCOUNT_DELETE_PATH = '/account/delete'
+export function wipesStorage(method: string, pathname: string, hasSession: boolean): boolean
+```
+
+`true` exactly when `method === 'POST'`, `pathname === '/account/delete'`
+and `hasSession`. Nothing else: no other path, no other method, no case or
+trailing-slash variants, no reading of the body.
+
+### §1.2 `middleware.ts`
+
+After the three existing gates have let the request through, the middleware
+returns `NextResponse.next()` as before, and when
+`wipesStorage(request.method, request.nextUrl.pathname, request.cookies.has(SID_COOKIE))`
+is true it sets `Clear-Site-Data: "storage"` on that response. The three gates
+and their order do not change; a 403, 404 or 400 answer never carries the
+header. The matcher does not change.
+
+The cookie name is not written out a second time. `app/_lib/session.ts`
+imports the session secret and the HMAC helpers, which have no business in
+the middleware bundle, so `SID_COOKIE` moves to a new one-line module,
+`src/sid-cookie.ts`, and `app/_lib/session.ts` re-exports it under the same
+name. Every existing importer keeps working unchanged.
+
+### §1.3 Why the session cookie is the gate
+
+The same gate as logout (week 36 §5.3), for the same reason. A POST from
+another site is turned away by the Origin gate (403) when it carries an
+Origin, and the `sid` cookie is `SameSite=Lax`, so it is not sent on a
+cross-site POST at all. A same-origin POST to `/account/delete` with a
+session comes from this app's own deletion form: the page has one Server
+Action form, and the header's logout form posts to `/auth/logout`.
+
+### §1.4 When it fires, said plainly
+
+The header is decided before the action runs, so it does not depend on the
+outcome. The browser blocks a submit with the box unticked (`required`), so
+in practice it fires when the person has ticked the box and pressed «احذف
+حسابي». If the deletion then fails (`?error=generic`, a database fault) the
+drafts are gone and the account is not. That is the accepted cost: someone
+who has just asked to erase their account is not hurt by losing an unsent
+draft, and deciding after the fact would need either a header from inside the
+action (§0.3) or Next's internal redirect handling (§3).
+
+No copy changes. The deletion page already says what is erased on the
+server; drafts were never on the server.
+
+## §2 What must not change
+
+- Every existing middleware outcome for every request that is not a POST to
+  `/account/delete` with a session: same status, same headers.
+- The 403/404/400 answers, their order, and their bodies.
+- The matcher.
+- `deleteAccountAction`, its redirects, `/account/delete`'s page.
+- Logout's behaviour (week 36 §5.3).
+- Nothing new is logged. The middleware reads one cookie's presence, never
+  its value, and writes nothing.
+
+## §3 Rejected
+
+- **Clearing `sessionStorage` from a submit listener in the page.** Clears
+  one tab only; §0.1 measured a second tab keeping its draft, and logout
+  clears all of them. It would also mean a new client hook on the deletion
+  form for a weaker result.
+- **A one-shot cookie set by the action and a header on the redirect
+  target.** Works only because Next's action handler fetches the redirect
+  target on the server and copies that response's headers onto the action
+  response (`createRedirectRenderResult`, Next 15.5.24). That is internal
+  behaviour with no contract, and a target that redirects again loses the
+  header entirely.
+- **A GET route that clears storage.** Any site can send a top-level GET
+  with the Lax cookie attached, so a link anywhere could wipe a signed-in
+  visitor's drafts.
+- **Matching `confirm=on` in the body.** With script, React encodes the form
+  fields under a reference prefix, so the field name is not stable to match,
+  and the browser's `required` already covers the unticked case.
+- **`Clear-Site-Data: "*"` or `"cookies"`.** The action already deletes the
+  one cookie that matters; `"cookies"` would also drop cookies this slice has
+  no reason to touch.
+
+## §4 Acceptance
+
+Unit (no server):
+
+1. `wipesStorage('POST', '/account/delete', true)` is `true`.
+2. It is `false` for each of: method `GET`, `PUT`, `post` (lowercase);
+   path `/account/delete/`, `/account/DELETE`, `/account/delete/x`,
+   `/account`, `/auth/logout`, `/`, `/c/x`; and `hasSession` false.
+3. `middleware()` given a POST to `/account/delete` with a well-formed
+   `next-action`, a valid multipart body, a same-origin `Origin` and a `sid`
+   cookie passes it through (`x-middleware-next: 1`) with
+   `Clear-Site-Data: "storage"`.
+4. The same without the `sid` cookie: passes through, no `Clear-Site-Data`.
+5. The same with a foreign `Origin`: 403, no `Clear-Site-Data`. With a
+   malformed `next-action`: 404, none. With a malformed multipart body: 400,
+   none.
+6. A no-JS shaped POST (multipart with a well-formed `$ACTION_ID_`, no
+   `next-action` header) to `/account/delete` with `sid`: passes through with
+   the header.
+7. POSTs with `sid` and a well-formed action to `/`, `/c/x`, `/inbox`,
+   `/onboarding`, `/admin/login`: pass through, no `Clear-Site-Data`.
+8. `middleware.ts` takes the cookie name from `SID_COOKIE`, not a literal
+   `'sid'`; `SID_COOKIE` from `app/_lib/session.ts` and from
+   `src/sid-cookie.ts` are both `'sid'`; `middleware.ts` does not import
+   `app/_lib/session.ts`.
+
+On staging (Chromium, `w37-delete-draft.mjs`):
+
+9. After deletion, the deleting tab's `confession_draft_<slug>` is `null`,
+   and A's link opened signed out in that tab shows an empty guest box.
+10. A second tab's draft on the same link is `null` after the deletion.
+11. «رجوع بلا حذف» and an unticked submit keep the draft.
+12. The deletion still lands on `/?deleted=1`, signed out, and the account is
+    tombstoned (its link answers as week 10 specifies).
+13. A same-origin POST to `/account/delete` without a session cookie (curl)
+    answers without `Clear-Site-Data`; with a foreign Origin, 403.
+14. The staging web log gains no line from any of this.
+
+## §5 Amendments
+
+None yet.
+
+## §6 Residual, known and left
+
+- Safari before 17 ignores `Clear-Site-Data`; there a draft outlives deletion
+  as it outlives logout (week 36 §6).
+- A deletion that fails after the header was sent costs the drafts (§1.4).
